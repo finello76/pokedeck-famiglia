@@ -32,6 +32,18 @@ const statoScambio = document.querySelector('#stato-scambio');
 const fileImport = document.querySelector('#file-import');
 
 /**
+ * I nomi delle carte vengono da un dataset esterno: mai interpolati grezzi.
+ * @param {string} testo
+ * @returns {string}
+ */
+function escapeHtml(testo) {
+  return String(testo ?? '').replace(
+    /[&<>"']/g,
+    (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch],
+  );
+}
+
+/**
  * Scrive un messaggio in un elemento di stato.
  * @param {HTMLElement} elemento
  * @param {string} testo stringa vuota per nascondere
@@ -82,7 +94,11 @@ function mostraCandidati(trovate) {
   }
 
   for (const { set, carta } of trovate) {
+    // Ogni candidato sta in un riquadro suo: con due carte diverse che hanno lo
+    // stesso numero, un pulsante "Aggiungi" sospeso sotto le schede non lascia
+    // capire a quale delle due si riferisca.
     const contenitore = document.createElement('div');
+    contenitore.className = 'proposta';
 
     const scheda = document.createElement('scheda-carta');
     scheda.nomeSet = set.nome;
@@ -93,7 +109,7 @@ function mostraCandidati(trovate) {
     azioni.innerHTML = `
       <label for="quante-${set.id}-${carta.numero}">Copie possedute</label>
       <input id="quante-${set.id}-${carta.numero}" type="number" min="1" value="1" />
-      <button type="button">Aggiungi</button>
+      <button type="button">Aggiungi ${escapeHtml(carta.nome)}</button>
     `;
 
     const campo = azioni.querySelector('input');

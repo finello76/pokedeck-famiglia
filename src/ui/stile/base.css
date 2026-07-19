@@ -200,13 +200,38 @@ button.secondario:hover {
   color: var(--colore-primario-scuro);
 }
 
+/* Ogni candidato della ricerca in un riquadro proprio: quando due carte
+   diverse hanno lo stesso numero stampato, deve essere ovvio a quale delle
+   due appartiene il pulsante "Aggiungi". */
+.proposta {
+  border: 2px solid var(--colore-bordo);
+  border-radius: var(--raggio);
+  padding: 0.6rem;
+  margin-bottom: 0.9rem;
+  background: var(--colore-fondo);
+}
+
+.proposta:focus-within {
+  border-color: var(--colore-primario);
+}
+
+/* Dentro il riquadro la scheda non ripete bordo e ombra, ma conserva la
+   striscia colorata del tipo, che serve a riconoscere la carta a colpo d'occhio.
+   ::part() è il modo previsto per stilare dall'esterno un pezzo di Shadow DOM
+   che il componente ha esposto con part="scheda". */
+.proposta scheda-carta::part(scheda) {
+  border-color: transparent;
+  box-shadow: none;
+  margin-bottom: 0.3rem;
+}
+
 /* Modulo "quante copie" sotto una carta trovata dalla ricerca. */
 .azioni-aggiunta {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.5rem;
   align-items: end;
-  margin: -0.4rem 0 1rem;
+  margin: 0;
 }
 
 .azioni-aggiunta label {
