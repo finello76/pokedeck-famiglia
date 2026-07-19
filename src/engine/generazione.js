@@ -110,7 +110,7 @@ export function scegliTipi(analisi, numeroMazzi) {
  * @param {Set<string>} nomiInMazzo nomi già presenti, per completare le linee
  * @returns {Array<{carta: object, disponibili: number}>}
  */
-function ordinaPokemon(candidati, tipi, nomiInMazzo, permessi = {}) {
+function ordinaPokemon(candidati, tipi, nomiInMazzo, permessi = {}, orfaniGia = 0) {
   const punteggio = ({ carta }) => {
     let p = 0;
 
@@ -129,10 +129,19 @@ function ordinaPokemon(candidati, tipi, nomiInMazzo, permessi = {}) {
       Boolean(carta.evolveDa) && nomiInMazzo.has(normalizzaNome(carta.evolveDa));
     const orfana = livello > 0 && !preEvoluzionePresente;
 
-    // Con la regola della casa "le evoluzioni si giocano come Base" quelle
-    // carte tornano giocabili: la penalità sparisce. Resta una piccola
-    // preferenza per i Base veri, che non hanno bisogno di alcuna deroga.
-    if (orfana) p -= permessi.evoluzioniComeBase ? 10 : 250;
+    if (orfana && !permessi.evoluzioniComeBase) {
+      p -= 250;
+    } else if (orfana) {
+      // Con la deroga attiva la carta è giocabile, ma non è gratis:
+      //
+      // 1. si preferisce il Livello 1 al Livello 2. Un Livello 2 è costruito
+      //    per stare in cima a una catena di tre carte, e giocarlo subito come
+      //    Base lo rende molto più forte di un Base vero;
+      // 2. la penalità cresce con le deroghe già presenti nel mazzo, così non
+      //    si concentrano tutte in uno solo. Senza, un mazzo si prendeva tre
+      //    carte potenti e l'altro una: la partita era decisa dalla pesca.
+      p -= 15 * livello + 35 * orfaniGia;
+    }
 
     if (tipi.some((t) => (carta.tipi ?? []).includes(t))) p += 100;
     if (eBase(carta) || (orfana && permessi.evoluzioniComeBase)) p += 50;
@@ -198,10 +207,17 @@ export function generaMazzi(voci, opzioni) {
       if (mazzo.composizione.pokemon >= quota.pokemon) continue;
 
       const nomi = new Set(mazzo.carte.map((c) => normalizzaNome(c.carta.nome)));
+      // Quante carte del mazzo si giocano già solo grazie a una deroga: serve a
+      // non concentrarle tutte nello stesso mazzo.
+      const orfaniGia = mazzo.carte.filter((c) => {
+        const liv = classifica(c.carta).livello ?? 0;
+        return liv > 0 && !(c.carta.evolveDa && nomi.has(normalizzaNome(c.carta.evolveDa)));
+      }).length;
+
       const candidati = dispensa.cerca(
         (c) => c.categoria === 'Pokémon' && classifica(c).livello !== null,
       );
-      const ordinati = ordinaPokemon(candidati, mazzo.tipi, nomi, permessi);
+      const ordinati = ordinaPokemon(candidati, mazzo.tipi, nomi, permessi, orfaniGia);
       if (!ordinati.length) continue;
 
       const scelta = ordinati[0].carta;

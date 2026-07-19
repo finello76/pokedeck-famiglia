@@ -50,15 +50,33 @@ const CATALOGO = [
      * caso dominante di questo progetto: senza questa regola quelle carte non
      * entrano in nessun mazzo.
      */
-    condizione: ({ analisi }) => {
+    condizione: ({ analisi, carenze }) => {
       const orfani = analisi.orfani ?? [];
       if (orfani.length === 0) return null;
       const nomi = [...new Set(orfani.map((o) => o.voce.carta.nome))];
+
+      // Quali stadi hanno davvero ottenuto la deroga nei mazzi. Alla prima
+      // passata l'elenco è vuoto, perché gli orfani sono ancora esclusi: il
+      // testo si arricchisce alla rivalutazione finale.
+      const neiMazzi = carenze
+        .filter((c) => c.codice === 'orfani-nel-mazzo')
+        .flatMap((c) => c.dati.orfani);
+      const conLivello2 = neiMazzi.filter((o) => o.stadio === 'Livello 2');
+
+      // Un Livello 2 è costruito per stare in cima a una catena di tre carte:
+      // giocarlo subito è molto più forte di un Base vero. Serve un
+      // contrappeso, altrimenti la regola non pareggia i conti, li sbilancia.
+      const clausola = conLivello2.length
+        ? ' I Pokémon di **Livello 2** giocati in questo modo non possono attaccare nel ' +
+          'turno in cui entrano in gioco: rappresentano il tempo che sarebbe servito ' +
+          `per farli evolvere (${conLivello2.map((o) => o.nome).join(', ')}).`
+        : '';
+
       return {
         testo:
           'Le carte evolute contrassegnate nella lista del mazzo si mettono in gioco ' +
           'direttamente dalla mano, come se fossero Pokémon Base. Non serve avere la ' +
-          'carta da cui evolvono.',
+          'carta da cui evolvono.' + clausola,
         motivazione:
           `Nella collezione ci sono ${orfani.length} carte evolute senza la loro ` +
           `pre-evoluzione (${nomi.slice(0, 4).join(', ')}${nomi.length > 4 ? ', e altre' : ''}). ` +

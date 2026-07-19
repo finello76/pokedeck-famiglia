@@ -72,9 +72,63 @@ export class MazzoGenerato extends HTMLElement {
             ${m.totale} carte · tipo ${escapeHtml((m.tipi ?? []).join(' e ') || 'misto')}
           </p>
         </header>
+        ${this.#htmlCarosello(m)}
         ${gruppi}
       </article>
     `;
+
+    this.#collegaCarosello();
+  }
+
+  /**
+   * Striscia di illustrazioni scorrevole in orizzontale.
+   *
+   * La lista testuale serve a pescare le carte dalla scatola; il carosello
+   * serve a **vedere** che mazzo è venuto fuori, che è una domanda diversa.
+   * Non si stampa: su carta le immagini piccole non aiutano e consumano
+   * inchiostro.
+   *
+   * @param {object} m
+   * @returns {string}
+   */
+  #htmlCarosello(m) {
+    const conImmagine = m.carte.filter((c) => (c.carta ?? c).immagine);
+    if (!conImmagine.length) return '';
+
+    const figure = conImmagine
+      .map((c) => {
+        const dati = c.carta ?? c;
+        const deroga = this.#conDeroga.has(dati.nome);
+        return `
+          <button type="button" class="miniatura${deroga ? ' deroga' : ''}"
+                  data-nome="${escapeHtml(dati.nome)}"
+                  title="${escapeHtml(dati.nome)}">
+            <img src="${dati.immagine}/low.webp" alt="${escapeHtml(dati.nome)}" loading="lazy" />
+            ${c.quantita > 1 ? `<span class="quante-mini">×${c.quantita}</span>` : ''}
+          </button>`;
+      })
+      .join('');
+
+    return `<div class="carosello no-stampa" role="list">${figure}</div>`;
+  }
+
+  /** Il click su una miniatura chiede di ingrandire, come nel catalogo. */
+  #collegaCarosello() {
+    for (const bottone of this.querySelectorAll('.miniatura')) {
+      bottone.addEventListener('click', () => {
+        const voce = this.#mazzo.carte.find(
+          (c) => (c.carta ?? c).nome === bottone.dataset.nome,
+        );
+        if (!voce) return;
+        this.dispatchEvent(
+          new CustomEvent('carta-scelta', {
+            bubbles: true,
+            composed: true,
+            detail: { carta: voce.carta ?? voce, nomeSet: '' },
+          }),
+        );
+      });
+    }
   }
 }
 

@@ -78,6 +78,7 @@ function disegnaPiano(piano, opzioni) {
       ${piano.mazzi.length} mazzi da ${opzioni.taglia} carte.
       Pesca le carte elencate dalla tua collezione.
     </p>
+    ${spiegazioneLineeEvolutive(piano)}
     ${
       incompleti.length
         ? `<p class="errore">Attenzione: ${incompleti.length} mazzo/i non si è potuto completare
@@ -119,6 +120,53 @@ function disegnaPiano(piano, opzioni) {
       stato.hidden = false;
     }
   });
+}
+
+/**
+ * Spiega perché nei mazzi compaiono evoluzioni giocate come Base invece di
+ * vere catene evolutive.
+ *
+ * Serve perché il risultato è controintuitivo: chi ha chiesto mazzi con le
+ * evoluzioni si aspetta Base + evoluzione, e trovarsi un Livello 2 giocato
+ * dalla mano sembra un errore del programma. Non lo è: è l'unica cosa
+ * possibile con questa collezione, e va detto.
+ *
+ * @param {object} piano
+ * @returns {string} HTML, vuoto se non c'è niente da spiegare
+ */
+function spiegazioneLineeEvolutive(piano) {
+  const linee = piano.analisi?.linee ?? [];
+  const complete = linee.filter(
+    (l) => l.giocabile && l.livelli.filter((liv) => liv.length).length > 1,
+  ).length;
+  const derogate = piano.carenze
+    .filter((c) => c.codice === 'orfani-nel-mazzo')
+    .flatMap((c) => c.dati.orfani);
+
+  if (!derogate.length) return '';
+
+  const dettaglio =
+    complete === 0
+      ? 'Nella tua collezione <strong>non c\'è nessuna linea evolutiva completa</strong>: ' +
+        'per ogni evoluzione che possiedi manca la carta da cui evolve.'
+      : `Nella tua collezione ci sono solo ${complete} linee evolutive complete, ` +
+        'non abbastanza per riempire i mazzi.';
+
+  return `
+    <div class="nota-spiegazione">
+      <h3>Perché ci sono evoluzioni giocate come Base?</h3>
+      <p>
+        ${dettaglio}
+        Le carte contrassegnate
+        (${derogate.map((o) => o.nome).join(', ')})
+        si possono usare solo grazie alla regola della casa: senza, resterebbero fuori dai mazzi.
+      </p>
+      <p class="aiuto">
+        Per avere vere catene evolutive servirebbero le pre-evoluzioni mancanti
+        (${[...new Set(derogate.map((o) => o.manca).filter(Boolean))].join(', ') || 'non identificabili dai dati'}),
+        oppure i proxy stampabili.
+      </p>
+    </div>`;
 }
 
 /**

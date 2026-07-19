@@ -1,5 +1,7 @@
 mazzo-generato {
   display: block;
+  /* Come sopra: senza, il carosello detta la larghezza al mazzo. */
+  min-inline-size: 0;
 }
 
 .mazzo {
@@ -10,6 +12,7 @@ mazzo-generato {
   box-shadow: var(--ombra);
   padding: 1rem;
   block-size: 100%;
+  min-inline-size: 0;
 }
 
 .mazzo header {
@@ -28,6 +31,65 @@ mazzo-generato {
   margin: 0.15rem 0 0;
   font-size: 0.85rem;
   color: var(--colore-testo-tenue);
+}
+
+/* Carosello: si scorre col dito, senza barre né frecce.
+   scroll-snap fa fermare lo scorrimento su una carta intera invece che a
+   metà, che col pollice è molto più gradevole. */
+.carosello {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-block-end: 0.5rem;
+  margin-block-end: 0.9rem;
+  /* Su iOS lo scorrimento orizzontale dentro una pagina verticale va
+     dichiarato, altrimenti il gesto viene rubato dalla pagina. */
+  touch-action: pan-x;
+  scrollbar-width: thin;
+}
+
+.miniatura {
+  position: relative;
+  flex: none;
+  inline-size: 5.5rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  cursor: zoom-in;
+  scroll-snap-align: start;
+}
+
+.miniatura img {
+  inline-size: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+  background: var(--colore-bordo);
+}
+
+.miniatura:focus-visible {
+  outline: 3px solid var(--colore-primario);
+  outline-offset: 2px;
+}
+
+/* Le carte giocabili solo per deroga si riconoscono anche nel carosello. */
+.miniatura.deroga {
+  border-color: var(--colore-attenzione, #c2410c);
+}
+
+.quante-mini {
+  position: absolute;
+  inset-block-end: 0.2rem;
+  inset-inline-end: 0.2rem;
+  background: rgb(0 0 0 / 75%);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .gruppo + .gruppo {

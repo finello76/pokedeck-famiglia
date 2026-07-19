@@ -207,17 +207,62 @@ button:hover {
   }
 }
 
+/* Lo spazio orizzontale lo dà già `main`: qui servono solo quelli verticali,
+   perché la sezione dei risultati non è un .pannello e non ha padding proprio. */
+#risultato-mazzi > .no-stampa {
+  margin-bottom: calc(var(--spazio) * 1.25);
+}
+
+#risultato-mazzi .azioni {
+  margin-top: 0.8rem;
+}
+
+/* Spiegazione di un risultato controintuitivo: si distingue dal resto senza
+   sembrare un errore, perché non lo è. */
+.nota-spiegazione {
+  background: var(--tipo-tenue, #eef2fb);
+  border-left: 4px solid var(--colore-primario);
+  border-radius: var(--raggio-piccolo);
+  padding: 0.8rem 1rem;
+  margin: 0.8rem 0;
+}
+
+.nota-spiegazione h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.35rem;
+}
+
+.nota-spiegazione p {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+}
+
+.nota-spiegazione p:last-child {
+  margin-bottom: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .nota-spiegazione {
+    background: #1f2839;
+  }
+}
+
 /* Mazzi generati, affiancati quando c'è spazio. */
 .elenco-mazzi {
   display: grid;
   gap: var(--spazio);
-  grid-template-columns: 1fr;
-  margin-bottom: var(--spazio);
+  /* minmax(0, 1fr) e non 1fr: i figli di una griglia hanno min-width auto,
+     cioe' non si restringono sotto la larghezza del proprio contenuto. Con
+     `1fr` il carosello di 10 miniature allargava il mazzo a 952px dentro uno
+     schermo da 375, e la pagina scorreva in orizzontale. Stesso errore gia'
+     visto sul testo delle schede: qui si vedeva molto di piu'. */
+  grid-template-columns: minmax(0, 1fr);
+  margin: var(--spazio) 0 calc(var(--spazio) * 1.5);
 }
 
 @media (min-width: 46rem) {
   .elenco-mazzi {
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   }
 }
 
