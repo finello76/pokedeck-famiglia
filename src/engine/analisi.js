@@ -83,7 +83,12 @@ function risali(carta, indice) {
   for (let passo = 0; passo < PROFONDITA_MASSIMA; passo++) {
     const precedente = corrente.evolveDa;
     if (!precedente) {
-      return { radice: corrente.nome, radicePosseduta: true, mancanti };
+      // Attenzione: `evolveDa` assente NON significa "è una carta iniziale".
+      // Il 41% delle evoluzioni del dataset non lo dichiara. Chi ha uno stadio
+      // evoluto è comunque in cima a una catena incompleta: dirlo "radice
+      // posseduta" farebbe credere al generatore che sia giocabile.
+      const suoLivello = classifica(corrente).livello ?? 0;
+      return { radice: corrente.nome, radicePosseduta: suoLivello === 0, mancanti };
     }
 
     const chiave = normalizzaNome(precedente);
@@ -172,7 +177,9 @@ export function costruisciLinee(voci, opzioni = {}) {
  *
  * @param {VoceCollezione[]} voci
  * @param {{ammettiEsotici?: boolean}} [opzioni]
- * @returns {Array<{voce: VoceCollezione, manca: string}>}
+ * @returns {Array<{voce: VoceCollezione, manca: string|null}>} `manca` è `null`
+ *   quando la carta non dichiara da cosa evolve: si sa che è orfana, non quale
+ *   carta procurarsi
  */
 export function trovaOrfani(voci, opzioni = {}) {
   const indice = perNome(voci);
@@ -180,11 +187,19 @@ export function trovaOrfani(voci, opzioni = {}) {
 
   for (const voce of voci) {
     const { carta } = voce;
-    if (carta?.categoria !== 'Pokémon' || !carta.evolveDa) continue;
+    if (carta?.categoria !== 'Pokémon') continue;
 
     const info = classifica(carta);
     if (info.categoria === CATEGORIA.ESOTICO && !opzioni.ammettiEsotici) continue;
+    // Ci si basa sullo stadio, non su `evolveDa`: quel campo manca nel 41%
+    // delle evoluzioni, e fidarsene lascerebbe passare per giocabili carte che
+    // non lo sono.
+    if ((info.livello ?? 0) === 0) continue;
 
+    if (!carta.evolveDa) {
+      orfani.push({ voce, manca: null });
+      continue;
+    }
     const possedute = indice.get(normalizzaNome(carta.evolveDa));
     if (!possedute?.length) orfani.push({ voce, manca: carta.evolveDa });
   }

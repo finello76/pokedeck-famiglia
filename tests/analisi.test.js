@@ -205,3 +205,18 @@ test('le voci senza dati di carta vengono ignorate', () => {
   const esito = analizza([{ carta: null, quantita: 3 }, pk('Deino', 'Base')]);
   assert.equal(esito.conteggi.pokemon, 1);
 });
+
+test('una evoluzione che non dichiara evolveDa e\' comunque orfana', () => {
+  // Il 41% delle evoluzioni del dataset non ha il campo evolveDa. Fidarsi di
+  // quel campo faceva passare per giocabile un Livello 2 come Krookodile.
+  const orfani = trovaOrfani([pk('Krookodile', 'Livello 2', null, 1)]);
+  assert.equal(orfani.length, 1, 'lo stadio basta a capire che non e\' giocabile');
+  assert.equal(orfani[0].manca, null, 'ma non si puo\' sapere quale carta serve');
+});
+
+test('una evoluzione senza evolveDa non viene scambiata per una radice', () => {
+  const [linea] = costruisciLinee([pk('Krookodile', 'Livello 2', null, 1)]);
+  assert.equal(linea.radicePosseduta, false);
+  assert.equal(linea.giocabile, false);
+  assert.equal(linea.anelliMancanti, 2);
+});

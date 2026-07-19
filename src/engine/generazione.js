@@ -120,8 +120,14 @@ function ordinaPokemon(candidati, tipi, nomiInMazzo) {
     // giocabile di tipo sbagliato — ed è meglio un mazzo sporco di tipi che un
     // mazzo pieno di carte morte. Le regole della casa potranno riabilitarli
     // più avanti, ma è una decisione del motore delle regole, non di questo.
-    const orfanoNelMazzo = carta.evolveDa && !nomiInMazzo.has(normalizzaNome(carta.evolveDa));
-    if (orfanoNelMazzo) p -= 250;
+    //
+    // Il controllo si basa sullo STADIO, non sulla presenza di `evolveDa`: il
+    // 41% delle evoluzioni del dataset non dichiara da cosa evolve, e fidandosi
+    // di quel campo un Livello 2 come Krookodile passerebbe per giocabile.
+    const livello = classifica(carta).livello ?? 0;
+    const preEvoluzionePresente =
+      Boolean(carta.evolveDa) && nomiInMazzo.has(normalizzaNome(carta.evolveDa));
+    if (livello > 0 && !preEvoluzionePresente) p -= 250;
 
     if (tipi.some((t) => (carta.tipi ?? []).includes(t))) p += 100;
     if (eBase(carta)) p += 50; // senza Base non si comincia
@@ -289,8 +295,16 @@ function rilevaCarenze(mazzi, taglia, analisi) {
     // poter dire QUALI carte, altrimenti sul foglio stampato è inapplicabile.
     const nomiMazzo = new Set(mazzo.carte.map((c) => normalizzaNome(c.carta.nome)));
     const orfaniQui = mazzo.carte
-      .filter((c) => c.carta.evolveDa && !nomiMazzo.has(normalizzaNome(c.carta.evolveDa)))
-      .map((c) => ({ nome: c.carta.nome, manca: c.carta.evolveDa, stadio: c.carta.stadio }));
+      .filter((c) => {
+        const livello = classifica(c.carta).livello ?? 0;
+        if (livello === 0) return false;
+        return !c.carta.evolveDa || !nomiMazzo.has(normalizzaNome(c.carta.evolveDa));
+      })
+      .map((c) => ({
+        nome: c.carta.nome,
+        manca: c.carta.evolveDa ?? null,
+        stadio: c.carta.stadio,
+      }));
     if (orfaniQui.length) {
       carenze.push({ codice: 'orfani-nel-mazzo', mazzo: mazzo.nome, dati: { orfani: orfaniQui } });
     }
