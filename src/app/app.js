@@ -17,6 +17,8 @@ import {
 } from '../data/collezione.js';
 import { scaricaFile, importa } from '../data/scambio.js';
 import { registraServiceWorker } from './registra-sw.js';
+import { avviaViste } from './viste.js';
+import './vista-mazzi.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
 import '../ui/contatore-energie/contatore-energie.js';
@@ -222,6 +224,8 @@ fileImport.addEventListener('change', async () => {
     fileImport.value = '';
   }
 });
+
+avviaViste();
 
 aggiornaCollezione().catch((errore) => {
   riepilogo.textContent = `Impossibile leggere la collezione: ${errore.message}`;

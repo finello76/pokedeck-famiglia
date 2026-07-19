@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v4';
+const VERSIONE = 'v5';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -59,6 +59,22 @@ const GUSCIO = [
   './src/ui/contatore-energie/contatore-energie.css',
   './src/ui/visore-carta/visore-carta.js',
   './src/ui/visore-carta/visore-carta.css',
+  './src/app/viste.js',
+  './src/app/vista-mazzi.js',
+  './src/data/mazzi-salvati.js',
+  './src/engine/nomi.js',
+  './src/engine/stadi.js',
+  './src/engine/analisi.js',
+  './src/engine/dispensa.js',
+  './src/engine/proporzioni.js',
+  './src/engine/generazione.js',
+  './src/engine/regole.js',
+  './src/engine/pianifica.js',
+  './src/ui/procedura-guidata/procedura-guidata.js',
+  './src/ui/procedura-guidata/procedura-guidata.css',
+  './src/ui/mazzo-generato/mazzo-generato.js',
+  './src/ui/mazzo-generato/mazzo-generato.css',
+  './src/ui/stile/stampa.css',
   // Solo l'indice: i file dei singoli set arrivano su richiesta.
   './data/set/indice.json',
 ];

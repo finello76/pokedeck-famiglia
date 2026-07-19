@@ -15,14 +15,23 @@
     <link rel="stylesheet" href="src/ui/stile/base.css" />
     <link rel="stylesheet" href="src/ui/stile/tipi.css" />
     <link rel="stylesheet" href="src/ui/griglia-collezione/griglia-collezione.css" />
+    <link rel="stylesheet" href="src/ui/procedura-guidata/procedura-guidata.css" />
+    <link rel="stylesheet" href="src/ui/mazzo-generato/mazzo-generato.css" />
+    <link rel="stylesheet" href="src/ui/stile/stampa.css" />
   </head>
   <body>
     <header class="intestazione">
       <h1>PokéDeck Famiglia</h1>
-      <p class="sottotitolo">Catalogo della collezione</p>
+      <p class="sottotitolo">Catalogo e generatore di mazzi</p>
     </header>
 
+    <nav class="barra-viste" aria-label="Sezioni">
+      <button type="button" data-vai="catalogo">Catalogo</button>
+      <button type="button" data-vai="mazzi">Crea mazzi</button>
+    </nav>
+
     <main>
+      <div data-vista="catalogo">
       <section class="pannello">
         <h2>Aggiungi una carta</h2>
         <p class="aiuto">
@@ -101,6 +110,18 @@
         </div>
         <p id="stato-scambio" class="stato" hidden></p>
       </section>
+      </div>
+
+      <div data-vista="mazzi" hidden>
+        <section class="pannello no-stampa" id="zona-wizard">
+          <h2>Crea nuovi mazzi</h2>
+          <procedura-guidata id="wizard"></procedura-guidata>
+        </section>
+
+        <section id="risultato-mazzi" hidden></section>
+
+        <section class="pannello no-stampa" id="mazzi-salvati"></section>
+      </div>
     </main>
 
     <visore-carta id="visore"></visore-carta>

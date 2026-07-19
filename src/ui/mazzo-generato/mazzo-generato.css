@@ -1,0 +1,106 @@
+mazzo-generato {
+  display: block;
+}
+
+.mazzo {
+  background: var(--colore-superficie);
+  border: 1px solid var(--colore-bordo);
+  border-top: 5px solid var(--tipo-colore, #8b93a7);
+  border-radius: var(--raggio);
+  box-shadow: var(--ombra);
+  padding: 1rem;
+  block-size: 100%;
+}
+
+.mazzo header {
+  border-block-end: 1px solid var(--colore-bordo);
+  padding-block-end: 0.6rem;
+  margin-block-end: 0.8rem;
+}
+
+.mazzo h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--tipo-colore, var(--colore-testo));
+}
+
+.mazzo .sommario {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+}
+
+.gruppo + .gruppo {
+  margin-block-start: 0.9rem;
+}
+
+.gruppo h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-testo-tenue);
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.conteggio {
+  background: var(--colore-bordo);
+  color: var(--colore-testo);
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+}
+
+.gruppo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gruppo li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  border-block-end: 1px dotted var(--colore-bordo);
+  font-size: 0.92rem;
+}
+
+.quante {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-inline-size: 1.6rem;
+}
+
+.nome {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.dettaglio {
+  font-size: 0.78rem;
+  color: var(--colore-testo-tenue);
+  flex: none;
+}
+
+/* Le carte giocabili solo grazie a una regola della casa devono saltare
+   all'occhio: senza il contrassegno la regola sarebbe inapplicabile, perché
+   non si saprebbe a quali carte si riferisce. */
+.deroga .nome {
+  font-weight: 600;
+}
+
+.marchio {
+  background: var(--colore-attenzione, #c2410c);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.02rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex: none;
+}

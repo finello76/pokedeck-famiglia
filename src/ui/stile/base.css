@@ -177,6 +177,90 @@ button:hover {
   font-style: italic;
 }
 
+/* Barra delle sezioni. */
+.barra-viste {
+  display: flex;
+  gap: 0.4rem;
+  max-width: var(--larghezza-massima);
+  margin: 0.75rem auto -0.25rem;
+  padding: 0 var(--spazio);
+}
+
+.barra-viste button {
+  width: auto;
+  flex: 1 1 auto;
+  background: transparent;
+  color: var(--colore-testo-tenue);
+  border-color: var(--colore-bordo);
+  font-weight: 600;
+}
+
+.barra-viste button.attivo {
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .barra-viste button.attivo {
+    color: #10151f;
+  }
+}
+
+/* Mazzi generati, affiancati quando c'è spazio. */
+.elenco-mazzi {
+  display: grid;
+  gap: var(--spazio);
+  grid-template-columns: 1fr;
+  margin-bottom: var(--spazio);
+}
+
+@media (min-width: 46rem) {
+  .elenco-mazzi {
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  }
+}
+
+.foglio-regole .regola {
+  border-top: 1px solid var(--colore-bordo);
+  padding-top: 0.7rem;
+  margin-top: 0.7rem;
+}
+
+.foglio-regole .regola h3 {
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+}
+
+.foglio-regole .motivazione {
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+  font-style: italic;
+  margin: 0.3rem 0 0;
+}
+
+.elenco-salvati {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.elenco-salvati li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--colore-bordo);
+  font-size: 0.9rem;
+}
+
+.comandi-salvato {
+  display: flex;
+  gap: 0.8rem;
+}
+
 /* Riga di bottoni (export/import). */
 .azioni {
   display: flex;

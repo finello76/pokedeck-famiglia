@@ -1,0 +1,71 @@
+/* Stile del wizard. Vive nel DOM normale per ereditare il tema di pagina. */
+
+procedura-guidata {
+  display: block;
+}
+
+procedura-guidata .avanzamento {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--colore-testo-tenue);
+}
+
+procedura-guidata .barra {
+  block-size: 6px;
+  background: var(--colore-bordo);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+procedura-guidata .barra i {
+  display: block;
+  block-size: 100%;
+  background: var(--colore-primario);
+  transition: inline-size 0.25s ease;
+}
+
+procedura-guidata h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.3rem;
+}
+
+procedura-guidata .opzioni {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+/* Le opzioni sono bersagli grandi: si usano col telefono in una mano e le
+   carte nell'altra. */
+procedura-guidata .opzione {
+  display: grid;
+  gap: 0.15rem;
+  text-align: start;
+  background: var(--colore-superficie);
+  color: var(--colore-testo);
+  border: 2px solid var(--colore-bordo);
+  border-radius: var(--raggio);
+  padding: 0.9rem 1rem;
+  min-block-size: 3.5rem;
+  width: 100%;
+  cursor: pointer;
+}
+
+procedura-guidata .opzione:hover,
+procedura-guidata .opzione:focus-visible {
+  border-color: var(--colore-primario);
+  background: var(--colore-fondo);
+}
+
+procedura-guidata .etichetta {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+procedura-guidata .dettaglio {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+}

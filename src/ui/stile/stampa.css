@@ -1,0 +1,158 @@
+/* Regole di stampa.
+   Tutto qui dentro vale SOLO su carta: a schermo non cambia nulla.
+
+   Il foglio stampato è il vero prodotto della v2: si gioca al tavolo con le
+   carte in mano e il foglio accanto, non col telefono acceso. */
+
+@media print {
+  /* Su carta il tema scuro sarebbe uno spreco di inchiostro, e i grigi chiari
+     spariscono. Si forza il nero su bianco. */
+  :root {
+    --colore-fondo: #fff;
+    --colore-superficie: #fff;
+    --colore-testo: #000;
+    --colore-testo-tenue: #444;
+    --colore-bordo: #999;
+    --ombra: none;
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  /* Via tutto ciò che serve solo a interagire: intestazione fissa, moduli,
+     pulsanti, catalogo. Su carta non si clicca. */
+  .intestazione,
+  .barra-viste,
+  .no-stampa,
+  button,
+  input,
+  select,
+  procedura-guidata,
+  griglia-collezione,
+  visore-carta {
+    display: none !important;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .pannello {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0 0 8mm;
+  }
+
+  /* Un mazzo non deve spezzarsi a metà fra due pagine: chi pesca le carte
+     leggerebbe una lista tagliata. */
+  mazzo-generato,
+  .regola,
+  .carta-proxy {
+    break-inside: avoid;
+  }
+
+  .mazzo {
+    border: 1px solid #999;
+    border-top-width: 3px;
+  }
+
+  /* Due mazzi affiancati su A4: entrano comodamente e si confrontano. */
+  .elenco-mazzi {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6mm;
+  }
+
+  /* Il foglio regole comincia su pagina nuova: si consegna a chi gioca,
+     separato dalle liste delle carte. */
+  .foglio-regole {
+    break-before: page;
+  }
+
+  .foglio-regole h2 {
+    border-block-end: 2px solid #000;
+    padding-block-end: 2mm;
+  }
+
+  .regola {
+    margin-block-end: 5mm;
+  }
+
+  .regola h3 {
+    font-size: 12pt;
+    margin: 0 0 1mm;
+  }
+
+  .regola .testo {
+    margin: 0 0 1mm;
+  }
+
+  /* La motivazione resta stampata, in corsivo: è ciò che rende una regola
+     accettabile invece che arbitraria. */
+  .regola .motivazione {
+    font-style: italic;
+    color: #333;
+    font-size: 9.5pt;
+    margin: 0;
+  }
+
+  /* Gli URL non si stampano dietro i link: su carta sono rumore. */
+  a::after {
+    content: none !important;
+  }
+}
+
+/* --- Carte proxy da ritagliare ---
+   Fuori dalla media query perché servono anche in anteprima a schermo. */
+
+.foglio-proxy {
+  display: grid;
+  /* Misura reale di una carta Pokémon: 63×88 mm. Non si scala, altrimenti nel
+     mazzo si riconoscerebbero al tatto. */
+  grid-template-columns: repeat(3, 63mm);
+  gap: 0;
+  justify-content: center;
+}
+
+.carta-proxy {
+  inline-size: 63mm;
+  block-size: 88mm;
+  /* Il bordo tratteggiato è la linea di taglio: condiviso fra celle adiacenti
+     così non si stampa doppio. */
+  border: 1px dashed #999;
+  margin: -0.5px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #fff;
+}
+
+.carta-proxy img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.carta-proxy .segnaposto-proxy {
+  text-align: center;
+  padding: 4mm;
+  font-size: 10pt;
+  color: #333;
+}
+
+@media print {
+  .foglio-proxy {
+    break-before: page;
+  }
+}

@@ -17,10 +17,13 @@ const NOME_DB = 'pokedeck';
  * (nuovo store, nuovo indice): è ciò che fa scattare `onupgradeneeded`.
  * @type {number}
  */
-const VERSIONE_DB = 1;
+const VERSIONE_DB = 2;
 
 /** Store delle carte possedute. Chiave: `"<idSet>:<numero>"`. */
 export const STORE_COLLEZIONE = 'collezione';
+
+/** Store dei mazzi generati e salvati. Chiave: `id` (data di creazione). */
+export const STORE_MAZZI = 'mazzi';
 
 /** @type {Promise<IDBDatabase>|null} */
 let connessione = null;
@@ -63,6 +66,13 @@ export function apri() {
         const store = db.createObjectStore(STORE_COLLEZIONE, { keyPath: 'id' });
         // Indice per mostrare "tutte le carte del set X" senza scorrere tutto.
         store.createIndex('perSet', 'idSet', { unique: false });
+      }
+
+      // Migrazione alla versione 2: i mazzi generati. Chi aveva già la v1 non
+      // perde la collezione — è proprio il motivo per cui i passi sono a
+      // cascata e non in un `else`.
+      if (daVersione < 2) {
+        db.createObjectStore(STORE_MAZZI, { keyPath: 'id' });
       }
     };
 
