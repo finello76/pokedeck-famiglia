@@ -54,6 +54,15 @@ export class VisoreCarta extends HTMLElement {
     this.#dialogo.addEventListener('click', (evento) => {
       if (evento.target === this.#dialogo) this.chiudi();
     });
+
+    // `showModal()` blocca l'interazione con la pagina ma NON il suo scroll:
+    // la rotella e lo swipe continuano a far scorrere il catalogo sotto la
+    // carta. L'evento `close` copre la chiusura con Esc, che non passa da
+    // `chiudi()`; lo sblocco sta anche in `chiudi()` perché qualche ambiente
+    // non emette `close` in modo affidabile.
+    this.#dialogo.addEventListener('close', () => {
+      document.documentElement.classList.remove('scorrimento-bloccato');
+    });
   }
 
   /**
@@ -86,11 +95,15 @@ export class VisoreCarta extends HTMLElement {
       .join(' · ');
 
     this.#dialogo.showModal();
+    // La classe sta su <html> e non su <body>: su iOS Safari l'overflow del
+    // body da solo non ferma lo scroll della pagina.
+    document.documentElement.classList.add('scorrimento-bloccato');
   }
 
   /** @returns {void} */
   chiudi() {
     this.#dialogo?.close();
+    document.documentElement.classList.remove('scorrimento-bloccato');
   }
 }
 

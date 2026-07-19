@@ -39,6 +39,14 @@
   box-sizing: border-box;
 }
 
+/* Con la carta a tutto schermo aperta la pagina sotto non deve scorrere.
+   La classe la mette e la toglie <visore-carta>; `showModal()` da solo blocca
+   i click ma non la rotella né lo swipe. */
+html.scorrimento-bloccato,
+html.scorrimento-bloccato body {
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   padding: 0;
