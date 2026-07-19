@@ -33,7 +33,43 @@ mazzo-generato {
   color: var(--colore-testo-tenue);
 }
 
-/* Carosello: si scorre col dito, senza barre né frecce.
+/* Carosello con frecce ai lati: lo swipe resta il gesto principale su
+   telefono, le frecce servono soprattutto col mouse. */
+.zona-carosello {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-block-end: 0.9rem;
+  min-inline-size: 0;
+}
+
+.freccia {
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2.75rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+  background: var(--colore-superficie);
+  color: var(--colore-testo);
+  font-size: 1.3rem;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.freccia:hover:not(:disabled) {
+  background: var(--tipo-tenue, #eef2fb);
+  color: var(--tipo-colore, var(--colore-primario));
+}
+
+.freccia:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Il carosello si scorre anche col dito.
    scroll-snap fa fermare lo scorrimento su una carta intera invece che a
    metà, che col pollice è molto più gradevole. */
 .carosello {
@@ -41,12 +77,24 @@ mazzo-generato {
   gap: 0.5rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  /* Le frecce scorrono in modo fluido; chi ha chiesto meno animazioni al
+     sistema ottiene lo scatto secco (vedi sotto). */
+  scroll-behavior: smooth;
   padding-block-end: 0.5rem;
-  margin-block-end: 0.9rem;
+  /* Figlio di un flex: senza questo non si restringe sotto il contenuto e
+     allargherebbe il mazzo (stesso errore già visto su .elenco-mazzi). */
+  flex: 1 1 auto;
+  min-inline-size: 0;
   /* Su iOS lo scorrimento orizzontale dentro una pagina verticale va
      dichiarato, altrimenti il gesto viene rubato dalla pagina. */
   touch-action: pan-x;
   scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carosello {
+    scroll-behavior: auto;
+  }
 }
 
 .miniatura {

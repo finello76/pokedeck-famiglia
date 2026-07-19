@@ -81,6 +81,7 @@ export class MazzoGenerato extends HTMLElement {
     `;
 
     this.#collegaCarosello();
+    this.#collegaFrecce();
   }
 
   /**
@@ -132,7 +133,53 @@ export class MazzoGenerato extends HTMLElement {
       })
       .join('');
 
-    return `<div class="carosello no-stampa" role="list">${figure}</div>`;
+    // Le frecce affiancano la striscia: su PC non c'è lo swipe col dito, e
+    // anche su telefono aiutano a capire che la striscia continua.
+    return `
+      <div class="zona-carosello no-stampa">
+        <button type="button" class="freccia" data-direzione="-1" aria-label="Carte precedenti">‹</button>
+        <div class="carosello" role="list">${figure}</div>
+        <button type="button" class="freccia" data-direzione="1" aria-label="Carte successive">›</button>
+      </div>`;
+  }
+
+  /** Collega frecce e stato ai bordi del carosello. */
+  #collegaFrecce() {
+    const zona = this.querySelector('.zona-carosello');
+    if (!zona) return;
+    const striscia = zona.querySelector('.carosello');
+
+    const aggiorna = () => {
+      // Un margine di 1px assorbe gli arrotondamenti dei subpixel.
+      const massimo = striscia.scrollWidth - striscia.clientWidth - 1;
+      const serve = massimo > 1;
+      for (const freccia of zona.querySelectorAll('.freccia')) {
+        freccia.hidden = !serve;
+        const direzione = Number(freccia.dataset.direzione);
+        freccia.disabled =
+          direzione < 0 ? striscia.scrollLeft <= 0 : striscia.scrollLeft >= massimo;
+      }
+    };
+
+    for (const freccia of zona.querySelectorAll('.freccia')) {
+      freccia.addEventListener('click', () => {
+        // La fluidità la decide il CSS (scroll-behavior), non il JS: così vale
+        // anche `prefers-reduced-motion` di chi non vuole animazioni.
+        striscia.scrollBy({ left: Number(freccia.dataset.direzione) * striscia.clientWidth * 0.8 });
+        // Di norma ci pensa l'evento scroll; il ritardo copre gli ambienti che
+        // non lo emettono per gli scorrimenti programmati, a fine animazione.
+        setTimeout(aggiorna, 400);
+      });
+    }
+    striscia.addEventListener('scroll', aggiorna, { passive: true });
+
+    // Al primo giro le immagini non hanno ancora una larghezza: si riaggiorna
+    // quando arrivano e quando cambia lo spazio disponibile.
+    for (const img of striscia.querySelectorAll('img')) {
+      img.addEventListener('load', aggiorna, { once: true });
+    }
+    new ResizeObserver(aggiorna).observe(striscia);
+    aggiorna();
   }
 
   /** Il click su una miniatura chiede di ingrandire, come nel catalogo. */
