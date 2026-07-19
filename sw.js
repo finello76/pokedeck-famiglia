@@ -5,23 +5,32 @@
  * URL che stanno al suo livello o più in basso. Se fosse in `src/` non potrebbe
  * servire `index.html`.
  *
- * Tre strategie, una per tipo di risorsa:
+ * Quattro strategie, una per tipo di risorsa:
  *
- * 1. Guscio dell'app (HTML, CSS, JS) e dati dei set → **cache-first**.
- *    Cambiano solo quando pubblico una versione nuova, quindi li precarico in
- *    installazione e li servo dalla cache: apertura istantanea e offline totale.
- * 2. Immagini delle carte (assets.tcgdex.net) → **cache-first a richiesta**.
- *    Sono migliaia: precaricarle tutte sarebbe assurdo. Le salvo man mano che
- *    vengono viste, così le carte già sfogliate restano disponibili offline.
- * 3. Tutto il resto → rete, senza intercettare.
+ * 1. Guscio dell'app (HTML, CSS, JS) e indice dei set → **cache-first**,
+ *    precaricati in installazione: apertura istantanea e offline garantito.
+ * 2. File dei singoli set (`data/set/<id>.json`) → **cache-first a richiesta**.
+ *    Sono 190 file per 6,4 MB complessivi: precaricarli tutti significherebbe
+ *    scaricare l'intero catalogo Pokémon alla prima apertura. Vengono salvati
+ *    man mano che servono, quindi resta offline ciò che si è davvero usato.
+ * 3. Immagini delle carte (assets.tcgdex.net) → **cache-first a richiesta**,
+ *    per lo stesso motivo.
+ * 4. Tutto il resto → rete, senza intercettare.
  *
  * Per pubblicare una versione nuova basta cambiare VERSIONE: i vecchi cache
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v2';
+const VERSIONE = 'v3';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
+
+/**
+ * I dati dei set NON sono versionati come il guscio: sopravvivono agli
+ * aggiornamenti dell'app. Ributtarli via a ogni pubblicazione costringerebbe a
+ * riscaricare set già visti solo perché è cambiato un CSS.
+ */
+const CACHE_DATI = 'pokedeck-dati';
 
 /**
  * Path RELATIVI: risolti rispetto alla posizione di sw.js, quindi funzionano
@@ -48,12 +57,8 @@ const GUSCIO = [
   './src/ui/griglia-collezione/griglia-collezione.css',
   './src/ui/contatore-energie/contatore-energie.js',
   './src/ui/contatore-energie/contatore-energie.css',
+  // Solo l'indice: i file dei singoli set arrivano su richiesta.
   './data/set/indice.json',
-  './data/set/sv03.5.json',
-  './data/set/swsh10.json',
-  './data/set/swsh12.5.json',
-  './data/set/sv08.json',
-  './data/set/me01.json',
 ];
 
 self.addEventListener('install', (evento) => {
@@ -74,7 +79,9 @@ self.addEventListener('activate', (evento) => {
       const nomi = await caches.keys();
       await Promise.all(
         nomi
-          .filter((n) => n.startsWith('pokedeck-') && !n.endsWith(VERSIONE))
+          // CACHE_DATI non ha suffisso di versione ed è esclusa apposta: i set
+          // già scaricati devono sopravvivere agli aggiornamenti dell'app.
+          .filter((n) => n.startsWith('pokedeck-') && n !== CACHE_DATI && !n.endsWith(VERSIONE))
           .map((n) => caches.delete(n)),
       );
       // Prende il controllo delle pagine già aperte senza ricaricarle.
@@ -94,9 +101,16 @@ self.addEventListener('fetch', (evento) => {
     return;
   }
 
-  if (url.origin === location.origin) {
-    evento.respondWith(cachePrima(richiesta));
+  if (url.origin !== location.origin) return;
+
+  // I file dei singoli set: non precaricati, salvati alla prima lettura.
+  // L'indice invece sta nel guscio e passa da cachePrima().
+  if (url.pathname.includes('/data/set/') && !url.pathname.endsWith('indice.json')) {
+    evento.respondWith(cacheARichiesta(richiesta, CACHE_DATI));
+    return;
   }
+
+  evento.respondWith(cachePrima(richiesta));
 });
 
 /**

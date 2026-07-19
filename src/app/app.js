@@ -124,18 +124,21 @@ moduloRicerca.addEventListener('submit', async (evento) => {
   try {
     // Il numero si passa così com'è digitato: gli zeri iniziali e i codici non
     // numerici (TG01, SV01) li normalizza il dataset.
-    const trovate = await cercaPerNumeroStampato(numero, totale);
+    const { trovate, nonLetti } = await cercaPerNumeroStampato(numero, totale);
 
     if (trovate.length === 0) {
-      mostraStato(
-        statoRicerca,
-        `Nessuna carta ${numero}/${totale} nei set scaricati. ` +
-          'Se il set non è ancora nella collezione, va aggiunto in tools/set-posseduti.json.',
-        true,
-      );
+      const motivo = nonLetti.length
+        ? ` Non è stato possibile leggere ${nonLetti.length} set (${nonLetti.join(', ')}): ` +
+          'probabilmente sei senza rete e quei set non erano ancora stati aperti.'
+        : ' Controlla il numero e il totale stampati sulla carta.';
+      mostraStato(statoRicerca, `Nessuna carta ${numero}/${totale}.${motivo}`, true);
       return;
     }
-    mostraStato(statoRicerca, '');
+
+    mostraStato(
+      statoRicerca,
+      nonLetti.length ? `Attenzione: ${nonLetti.length} set non leggibili offline.` : '',
+    );
     mostraCandidati(trovate);
   } catch (errore) {
     mostraStato(statoRicerca, `Errore nel caricamento dei dati: ${errore.message}`, true);

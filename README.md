@@ -15,18 +15,19 @@ python3 -m http.server 8000
 # poi apri http://localhost:8000
 ```
 
-## Aggiungere un set alla collezione
+## Aggiornare i dati delle carte
 
-1. Trova l'id del set su <https://api.tcgdex.net/v2/it/sets> (sono in italiano).
-2. Aggiungilo a `tools/set-posseduti.json`.
-3. Rilancia lo scaricamento e aggiorna l'elenco in `sw.js`:
+Il repository contiene già tutti i set (190 set, oltre 21.000 carte): non c'è niente da
+configurare per catalogare una carta qualsiasi. Serve solo quando escono set nuovi:
 
 ```bash
-node tools/scarica-set.mjs
+node tools/scarica-set.mjs     # scarica solo quello che manca
 ```
 
-Lo script è uno strumento di sviluppo: gira una volta e il risultato viene committato.
+Lo script è uno strumento di sviluppo: gira e il risultato viene committato.
 **La PWA non ha bisogno di Node né di rete per funzionare.**
+
+L'app non carica tutti i 6,4 MB: tiene in cache solo i set che apri davvero.
 
 ## Scelte di fondo
 

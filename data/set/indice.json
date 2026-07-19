@@ -1,10 +1,394 @@
 {
   "set": [
     {
-      "id": "sv03.5",
-      "nome": "151",
-      "totale": 165,
-      "carte": 207
+      "id": "base1",
+      "nome": "Set Base",
+      "totale": 102,
+      "carte": 102
+    },
+    {
+      "id": "bw1",
+      "nome": "Nero e Bianco",
+      "totale": 114,
+      "carte": 115
+    },
+    {
+      "id": "bw2",
+      "nome": "Nuove Forze",
+      "totale": 98,
+      "carte": 98
+    },
+    {
+      "id": "bw3",
+      "nome": "Vittorie Regali",
+      "totale": 101,
+      "carte": 102
+    },
+    {
+      "id": "bw4",
+      "nome": "Destini Futuri",
+      "totale": 99,
+      "carte": 103
+    },
+    {
+      "id": "bw5",
+      "nome": "Esploratori delle Tenebre",
+      "totale": 108,
+      "carte": 111
+    },
+    {
+      "id": "bw6",
+      "nome": "Stirpe dei Draghi",
+      "totale": 124,
+      "carte": 128
+    },
+    {
+      "id": "bw7",
+      "nome": "Confini Varcati",
+      "totale": 149,
+      "carte": 153
+    },
+    {
+      "id": "bw8",
+      "nome": "Uragano Plasma",
+      "totale": 135,
+      "carte": 138
+    },
+    {
+      "id": "bw9",
+      "nome": "Glaciazione Plasma",
+      "totale": 116,
+      "carte": 122
+    },
+    {
+      "id": "xy0",
+      "nome": "Benvenuti a Kalos",
+      "totale": 39,
+      "carte": 39
+    },
+    {
+      "id": "xy1",
+      "nome": "XY",
+      "totale": 146,
+      "carte": 146
+    },
+    {
+      "id": "tk-xy-sy",
+      "nome": "XY trainer Kit (Sylveon)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "tk-xy-n",
+      "nome": "XY trainer Kit (Noivern)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "xy2",
+      "nome": "Fuoco Infernale",
+      "totale": 106,
+      "carte": 110
+    },
+    {
+      "id": "xy3",
+      "nome": "Colpi Furiosi",
+      "totale": 111,
+      "carte": 114
+    },
+    {
+      "id": "tk-xy-b",
+      "nome": "XY trainer Kit (Bisharp)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "tk-xy-w",
+      "nome": "XY trainer Kit (Wigglytuff)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "xy4",
+      "nome": "Forze Spettrali",
+      "totale": 119,
+      "carte": 124
+    },
+    {
+      "id": "xy5",
+      "nome": "Scontro Primordiale",
+      "totale": 160,
+      "carte": 164
+    },
+    {
+      "id": "tk-xy-latia",
+      "nome": "XY trainer Kit (Latias)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "tk-xy-latio",
+      "nome": "XY trainer Kit (Latios)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "xy6",
+      "nome": "Furie Volanti",
+      "totale": 108,
+      "carte": 112
+    },
+    {
+      "id": "xy7",
+      "nome": "Antiche Origini",
+      "totale": 98,
+      "carte": 101
+    },
+    {
+      "id": "xy8",
+      "nome": "Turbo Blitz",
+      "totale": 162,
+      "carte": 165
+    },
+    {
+      "id": "xy9",
+      "nome": "Turbo Crash",
+      "totale": 122,
+      "carte": 126
+    },
+    {
+      "id": "tk-xy-su",
+      "nome": "XY trainer Kit (Suicune)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "tk-xy-p",
+      "nome": "XY trainer Kit (Pikachu Libre)",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "xy10",
+      "nome": "Destini Incrociati",
+      "totale": 124,
+      "carte": 129
+    },
+    {
+      "id": "xy11",
+      "nome": "Vapori Accesi",
+      "totale": 114,
+      "carte": 116
+    },
+    {
+      "id": "xy12",
+      "nome": "Evoluzioni",
+      "totale": 108,
+      "carte": 113
+    },
+    {
+      "id": "smp",
+      "nome": "SL Promo",
+      "totale": 248,
+      "carte": 240
+    },
+    {
+      "id": "sm1",
+      "nome": "Sole e Luna",
+      "totale": 149,
+      "carte": 163
+    },
+    {
+      "id": "tk-sm-r",
+      "nome": "Sole e Luna trainer Kit (Alolan Raichu)",
+      "totale": 30,
+      "carte": 19
+    },
+    {
+      "id": "tk-sm-l",
+      "nome": "Sole e Luna trainer Kit (Lycanroc)",
+      "totale": 30,
+      "carte": 18
+    },
+    {
+      "id": "sm2",
+      "nome": "Guardiani Nascenti",
+      "totale": 145,
+      "carte": 169
+    },
+    {
+      "id": "sm3",
+      "nome": "Ombre Infuocate",
+      "totale": 147,
+      "carte": 169
+    },
+    {
+      "id": "sm3.5",
+      "nome": "Leggende Iridescenti",
+      "totale": 73,
+      "carte": 78
+    },
+    {
+      "id": "sm4",
+      "nome": "Invasione Scarlatta",
+      "totale": 111,
+      "carte": 124
+    },
+    {
+      "id": "sm5",
+      "nome": "Ultraprisma",
+      "totale": 156,
+      "carte": 173
+    },
+    {
+      "id": "sm6",
+      "nome": "Apocalisse Di Luce",
+      "totale": 131,
+      "carte": 146
+    },
+    {
+      "id": "sm7",
+      "nome": "Tempesta Astrale",
+      "totale": 168,
+      "carte": 183
+    },
+    {
+      "id": "sm7.5",
+      "nome": "Trionfo Dei Draghi",
+      "totale": 70,
+      "carte": 78
+    },
+    {
+      "id": "sm8",
+      "nome": "Tuoni Perduti",
+      "totale": 214,
+      "carte": 236
+    },
+    {
+      "id": "sm9",
+      "nome": "Gioco di Squadra",
+      "totale": 181,
+      "carte": 196
+    },
+    {
+      "id": "det1",
+      "nome": "Detective Pikachu",
+      "totale": 18,
+      "carte": 18
+    },
+    {
+      "id": "sm10",
+      "nome": "Legami Inossidabili",
+      "totale": 214,
+      "carte": 234
+    },
+    {
+      "id": "sm11",
+      "nome": "Sintonia Mentale",
+      "totale": 236,
+      "carte": 258
+    },
+    {
+      "id": "sm12",
+      "nome": "Eclissi Cosmica",
+      "totale": 236,
+      "carte": 271
+    },
+    {
+      "id": "swshp",
+      "nome": "SPSC Promo",
+      "totale": 307,
+      "carte": 299
+    },
+    {
+      "id": "swsh1",
+      "nome": "Spada e Scudo",
+      "totale": 202,
+      "carte": 216
+    },
+    {
+      "id": "swsh2",
+      "nome": "Fragore Ribelle",
+      "totale": 192,
+      "carte": 209
+    },
+    {
+      "id": "swsh3",
+      "nome": "Fiamme Oscure",
+      "totale": 189,
+      "carte": 201
+    },
+    {
+      "id": "swsh3.5",
+      "nome": "Futuri Campioni",
+      "totale": 73,
+      "carte": 80
+    },
+    {
+      "id": "swsh4",
+      "nome": "Voltaggio Sfolgorante",
+      "totale": 185,
+      "carte": 203
+    },
+    {
+      "id": "swsh4.5sv",
+      "nome": "Destino Splendente Tesoro Lucente",
+      "totale": 122,
+      "carte": 122
+    },
+    {
+      "id": "swsh4.5",
+      "nome": "Destino Splendente",
+      "totale": 72,
+      "carte": 73
+    },
+    {
+      "id": "swsh5",
+      "nome": "Stili di Lotta",
+      "totale": 163,
+      "carte": 183
+    },
+    {
+      "id": "swsh6",
+      "nome": "Regno Glaciale",
+      "totale": 198,
+      "carte": 233
+    },
+    {
+      "id": "swsh7",
+      "nome": "Evoluzioni Eteree",
+      "totale": 203,
+      "carte": 237
+    },
+    {
+      "id": "cel25",
+      "nome": "Gran Festa",
+      "totale": 25,
+      "carte": 25
+    },
+    {
+      "id": "swsh8",
+      "nome": "Colpo Fusione",
+      "totale": 264,
+      "carte": 284
+    },
+    {
+      "id": "swsh9",
+      "nome": "Astri Lucenti",
+      "totale": 172,
+      "carte": 186
+    },
+    {
+      "id": "swsh9.5tg",
+      "nome": "Astri Lucenti Galleria Allenatori",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "swsh10.5tg",
+      "nome": "Lucentezza Siderale Galleria Allenatori",
+      "totale": 30,
+      "carte": 30
     },
     {
       "id": "swsh10",
@@ -13,10 +397,142 @@
       "carte": 216
     },
     {
+      "id": "swsh10.5",
+      "nome": "Pokémon GO",
+      "totale": 78,
+      "carte": 88
+    },
+    {
+      "id": "2022swsh",
+      "nome": "McDonald's Collection 2022",
+      "totale": 15,
+      "carte": 15
+    },
+    {
+      "id": "swsh11",
+      "nome": "Origine Perduta",
+      "totale": 196,
+      "carte": 217
+    },
+    {
+      "id": "swsh11.5tg",
+      "nome": "Origine Perduta Galleria Allenatori",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "swsh12.5tg",
+      "nome": "Tempesta Argentata Galleria Allenatori",
+      "totale": 30,
+      "carte": 30
+    },
+    {
+      "id": "swsh12",
+      "nome": "Tempesta Argentata",
+      "totale": 195,
+      "carte": 215
+    },
+    {
       "id": "swsh12.5",
       "nome": "Zenit Regale",
       "totale": 159,
       "carte": 160
+    },
+    {
+      "id": "swsh12.5gg",
+      "nome": "Zenit Regale Galleria di Galar",
+      "totale": 70,
+      "carte": 70
+    },
+    {
+      "id": "svp",
+      "nome": "SVP Black Star Promos",
+      "totale": 225,
+      "carte": 216
+    },
+    {
+      "id": "sve",
+      "nome": "Scarlatto e Violetto Energia",
+      "totale": 24,
+      "carte": 24
+    },
+    {
+      "id": "sv01",
+      "nome": "Scarlatto e Violetto",
+      "totale": 198,
+      "carte": 258
+    },
+    {
+      "id": "sv02",
+      "nome": "Evoluzioni a Paldea",
+      "totale": 193,
+      "carte": 279
+    },
+    {
+      "id": "2023sv",
+      "nome": "McDonald's Collection 2023",
+      "totale": 15,
+      "carte": 15
+    },
+    {
+      "id": "sv03",
+      "nome": "Ossidiana Infuocata",
+      "totale": 197,
+      "carte": 230
+    },
+    {
+      "id": "sv03.5",
+      "nome": "151",
+      "totale": 165,
+      "carte": 207
+    },
+    {
+      "id": "sv04",
+      "nome": "Paradosso Temporale",
+      "totale": 182,
+      "carte": 266
+    },
+    {
+      "id": "sv04.5",
+      "nome": "Destino di Paldea",
+      "totale": 91,
+      "carte": 245
+    },
+    {
+      "id": "sv05",
+      "nome": "Cronoforze",
+      "totale": 162,
+      "carte": 218
+    },
+    {
+      "id": "sv06",
+      "nome": "Crepuscolo Mascherato",
+      "totale": 167,
+      "carte": 226
+    },
+    {
+      "id": "sv06.5",
+      "nome": "Segreto Fiabesco",
+      "totale": 64,
+      "carte": 99
+    },
+    {
+      "id": "sv07",
+      "nome": "Corona Astrale",
+      "totale": 142,
+      "carte": 175
+    },
+    {
+      "id": "P-A",
+      "nome": "Promo-A",
+      "totale": 0,
+      "carte": 73
+    },
+    {
+      "id": "A1",
+      "nome": "Geni Supremi",
+      "totale": 226,
+      "carte": 286
     },
     {
       "id": "sv08",
@@ -25,10 +541,124 @@
       "carte": 252
     },
     {
+      "id": "2024sv",
+      "nome": "McDonald's Collection 2024",
+      "totale": 15,
+      "carte": 15
+    },
+    {
+      "id": "A1a",
+      "nome": "L'Isola Misteriosa",
+      "totale": 68,
+      "carte": 86
+    },
+    {
+      "id": "sv08.5",
+      "nome": "Evoluzioni Prismatiche",
+      "totale": 131,
+      "carte": 180
+    },
+    {
+      "id": "A2",
+      "nome": "Scontro Spaziotemporale",
+      "totale": 140,
+      "carte": 207
+    },
+    {
+      "id": "A2a",
+      "nome": "Luce Trionfale",
+      "totale": 75,
+      "carte": 96
+    },
+    {
+      "id": "A2b",
+      "nome": "Tripudio Splendente",
+      "totale": 72,
+      "carte": 111
+    },
+    {
+      "id": "sv09",
+      "nome": "Avventure Insieme",
+      "totale": 159,
+      "carte": 190
+    },
+    {
+      "id": "A3",
+      "nome": "Guardiani Astrali",
+      "totale": 155,
+      "carte": 239
+    },
+    {
+      "id": "sv10",
+      "nome": "Rivali Predestinati",
+      "totale": 182,
+      "carte": 244
+    },
+    {
+      "id": "sv10.5w",
+      "nome": "Fuoco Bianco",
+      "totale": 86,
+      "carte": 173
+    },
+    {
+      "id": "sv10.5b",
+      "nome": "Luce Nera",
+      "totale": 86,
+      "carte": 172
+    },
+    {
+      "id": "mee",
+      "nome": "Megaevoluzione Energia",
+      "totale": 8,
+      "carte": 8
+    },
+    {
       "id": "me01",
       "nome": "Megaevoluzione",
       "totale": 132,
       "carte": 188
+    },
+    {
+      "id": "mep",
+      "nome": "MEP Black Star Promos",
+      "totale": 0,
+      "carte": 60
+    },
+    {
+      "id": "me02",
+      "nome": "Flamme Spettrali",
+      "totale": 94,
+      "carte": 130
+    },
+    {
+      "id": "me02.5",
+      "nome": "Ascesa Eroica",
+      "totale": 217,
+      "carte": 295
+    },
+    {
+      "id": "B2a",
+      "nome": "Paldean Wonders",
+      "totale": 93,
+      "carte": 129
+    },
+    {
+      "id": "me03",
+      "nome": "Equilibrio Perfetto",
+      "totale": 88,
+      "carte": 124
+    },
+    {
+      "id": "me04",
+      "nome": "Caos Nascente",
+      "totale": 86,
+      "carte": 122
+    },
+    {
+      "id": "me05",
+      "nome": "Buio Pesto",
+      "totale": 84,
+      "carte": 120
     }
   ]
 }

@@ -1,16 +1,27 @@
 /**
- * Scarica da TCGdex (in italiano) i set elencati in `tools/set-posseduti.json`
- * e li normalizza in `data/set/<id>.json`, tenendo solo i campi che servono
- * all'app e al motore di generazione mazzi.
+ * Scarica da TCGdex (in italiano) **tutti** i set e li normalizza in
+ * `data/set/<id>.json`, tenendo solo i campi utili all'app e al motore.
  *
- * Questo script è uno strumento di SVILUPPO: gira una volta sola con Node e il
- * suo risultato viene committato. La PWA a runtime non lo esegue e non chiama
- * TCGdex: legge i JSON statici prodotti qui. Il vincolo "zero backend, zero
- * build" resta rispettato.
+ * Perché tutti e non solo quelli posseduti: la collezione è fatta di carte
+ * sciolte, non di set interi, quindi qualsiasi carta può venire da qualsiasi
+ * set. Limitarsi a un elenco significherebbe non poter catalogare la prossima
+ * carta che salta fuori da un cassetto.
+ *
+ * Il peso non è un problema perché la PWA **non li carica tutti**: il service
+ * worker precarica solo `indice.json` (~30 KB) e mette in cache il file di un
+ * set la prima volta che serve davvero.
+ *
+ * Questo script è uno strumento di SVILUPPO: gira con Node e il suo risultato
+ * viene committato. La PWA a runtime non lo esegue e non chiama TCGdex: legge
+ * i JSON statici prodotti qui.
+ *
+ * È **riprendibile**: i set già scaricati vengono saltati, quindi se si
+ * interrompe basta rilanciarlo. Sono oltre 21.000 richieste, ci vogliono
+ * diversi minuti.
  *
  * Uso:
  *   node tools/scarica-set.mjs            # scarica i set mancanti
- *   node tools/scarica-set.mjs --forza    # riscarica tutto
+ *   node tools/scarica-set.mjs --forza    # riscarica tutto da capo
  *
  * @module tools/scarica-set
  */
@@ -115,15 +126,17 @@ function normalizza(carta) {
 async function scaricaSet(set) {
   const dettaglio = await prendiJson(`${API}/sets/${set.id}`);
   const elenco = dettaglio.cards ?? [];
-  process.stdout.write(`  ${set.id} (${dettaglio.name}): ${elenco.length} carte `);
 
+  let fatte = 0;
   const carte = await inParallelo(elenco, PARALLELE, async (breve) => {
     const completa = await prendiJson(`${API}/cards/${breve.id}`);
-    process.stdout.write('.');
+    fatte++;
+    // Una riga sola riscritta, invece di 21.000 puntini.
+    if (fatte % 25 === 0) process.stdout.write(`\r  ${set.id}: ${fatte}/${elenco.length}   `);
     return normalizza(completa);
   });
 
-  console.log(' fatto');
+  console.log(`\r  ${set.id} (${dettaglio.name}): ${carte.length} carte           `);
   return {
     id: set.id,
     nome: dettaglio.name,
@@ -149,13 +162,20 @@ async function esiste(percorso) {
 
 async function main() {
   const forza = process.argv.includes('--forza');
-  const config = JSON.parse(await readFile(join(RADICE, 'tools', 'set-posseduti.json'), 'utf8'));
   await mkdir(CARTELLA_DATI, { recursive: true });
 
-  console.log(`Scarico ${config.set.length} set da TCGdex (italiano)`);
-  const indice = [];
+  // L'elenco dei set arriva dall'API, non da un file scritto a mano: così i
+  // set nuovi compaiono da soli a ogni rilancio.
+  const tutti = await prendiJson(`${API}/sets`);
+  const daScaricare = tutti
+    .filter((s) => (s.cardCount?.total ?? 0) > 0)
+    .map((s) => ({ id: s.id, nome: s.name }));
 
-  for (const set of config.set) {
+  console.log(`Scarico ${daScaricare.length} set da TCGdex (italiano)`);
+  const indice = [];
+  const saltati = [];
+
+  for (const set of daScaricare) {
     const destinazione = join(CARTELLA_DATI, `${set.id}.json`);
     if (!forza && (await esiste(destinazione))) {
       const gia = JSON.parse(await readFile(destinazione, 'utf8'));
@@ -164,6 +184,17 @@ async function main() {
       continue;
     }
     const scaricato = await scaricaSet(set);
+
+    // TCGdex elenca anche set mai usciti in italiano (Jungle, Fossil, era EX,
+    // Diamante & Perla, Neo, HeartGold…): compaiono con nome e totale ma senza
+    // nemmeno una carta. Vanno esclusi, altrimenti l'app scaricherebbe file
+    // vuoti a ogni ricerca che capita sul loro totale stampato.
+    if (scaricato.carte.length === 0) {
+      console.log(`  ${set.id} (${scaricato.nome}): nessuna carta in italiano, escluso`);
+      saltati.push(`${set.id} (${scaricato.nome})`);
+      continue;
+    }
+
     await writeFile(destinazione, JSON.stringify(scaricato), 'utf8');
     indice.push({
       id: scaricato.id,
@@ -177,6 +208,10 @@ async function main() {
   // esistono senza dover scaricare tutte le carte di tutti i set.
   await writeFile(join(CARTELLA_DATI, 'indice.json'), JSON.stringify({ set: indice }, null, 2), 'utf8');
   console.log(`\nIndice scritto: ${indice.length} set, ${indice.reduce((s, x) => s + x.carte, 0)} carte totali`);
+  if (saltati.length) {
+    console.log(`Esclusi ${saltati.length} set senza carte in italiano:`);
+    console.log('  ' + saltati.join('\n  '));
+  }
 }
 
 main().catch((errore) => {

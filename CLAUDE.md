@@ -45,9 +45,11 @@ Il service worker richiede `http://localhost` o HTTPS: aprire `index.html` con `
 Aggiornare i dati delle carte (strumento di **sviluppo**, non runtime):
 
 ```bash
-node tools/scarica-set.mjs           # scarica i set mancanti da TCGdex
-node tools/scarica-set.mjs --forza   # riscarica tutto
+node tools/scarica-set.mjs           # scarica solo i set mancanti (riprendibile)
+node tools/scarica-set.mjs --forza   # riscarica tutto: >21.000 richieste, ~10 minuti
 ```
+
+Serve solo quando escono set nuovi: i set già presenti vengono saltati.
 
 Node è installato via **nvm** e non è nel PATH delle shell non interattive. Anteporre:
 
@@ -98,8 +100,13 @@ inglese non permette di ritrovare la carta nel mazzetto — cioè fallisce propr
 TCGdex fornisce nomi, tipi, stadi, attacchi ed **effetti in italiano**, più le scansioni delle
 carte italiane.
 
-- **Includere solo i set posseduti**, da lista configurabile in `tools/set-posseduti.json` —
-  non l'intero dataset, per tenere leggera la PWA.
+- **Il repo contiene TUTTI i set** (190 set, 21.037 carte, ~6,4 MB in `data/set/`).
+  La collezione è fatta di **carte sciolte**, non di set interi: qualsiasi carta può venire
+  da qualsiasi set, quindi limitarsi a un elenco impedirebbe di catalogare la prossima carta
+  che salta fuori. Non esiste più un file di set posseduti.
+- **La PWA però non li carica tutti**: il service worker precarica solo `indice.json`
+  (~30 KB) e mette in cache il file di un set alla prima lettura. Offline resta disponibile
+  ciò che si è davvero usato. Non aggiungere i file dei set all'elenco `GUSCIO` di `sw.js`.
 - Identificazione carta = **codice set + numero di collezione** (es. `sv08` + `118`).
   Sono i due dati leggibili sulla carta fisica: il numero è stampato come `118/191`, dove 191
   è il totale del set. **Il totale non identifica il set**: più set condividono lo stesso totale

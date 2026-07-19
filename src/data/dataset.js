@@ -121,35 +121,64 @@ export async function trovaCarta(idSet, numero) {
  *
  * @param {string|number} numero numero di collezione, es. `118`
  * @param {number} totale totale stampato dopo la barra, es. `191`
- * @returns {Promise<Array<{set: object, carta: object}>>} candidati, anche vuoto
+ * @returns {Promise<{trovate: Array<{set: object, carta: object}>, nonLetti: string[]}>}
+ *   `trovate` sono i candidati; `nonLetti` i set che non è stato possibile
+ *   leggere (tipicamente offline), da segnalare all'utente.
  * @example
- * await cercaPerNumeroStampato(105, 165);
- * // → [{ set: {id:'sv03.5'...}, carta: {nome:'Marowak'...} }]
+ * const { trovate } = await cercaPerNumeroStampato(105, 165);
+ * // trovate → [{ set: {id:'sv03.5'...}, carta: {nome:'Marowak'...} }]
  */
 export async function cercaPerNumeroStampato(numero, totale) {
   const candidati = (await elencoSet()).filter((s) => s.totale === Number(totale));
+
+  // I set si scaricano su richiesta: se manca la rete, alcuni file potrebbero
+  // non essere raggiungibili. Un set irraggiungibile non deve far fallire
+  // l'intera ricerca — le altre carte si trovano lo stesso — ma va segnalato,
+  // altrimenti l'utente crede di non possedere una carta che invece esiste.
   const trovate = [];
-  for (const infoSet of candidati) {
-    const carta = await trovaCarta(infoSet.id, numero);
-    if (carta) trovate.push({ set: infoSet, carta });
-  }
-  return trovate;
+  const nonLetti = [];
+
+  const esiti = await Promise.allSettled(
+    candidati.map(async (infoSet) => ({ infoSet, carta: await trovaCarta(infoSet.id, numero) })),
+  );
+
+  esiti.forEach((esito, i) => {
+    if (esito.status === 'rejected') {
+      nonLetti.push(candidati[i].nome);
+      return;
+    }
+    if (esito.value.carta) trovate.push({ set: esito.value.infoSet, carta: esito.value.carta });
+  });
+
+  return { trovate, nonLetti };
 }
 
 /**
- * Cerca carte per nome, su tutti i set scaricati.
+ * Cerca carte per nome.
+ *
+ * **Cerca solo nei set già caricati in memoria**, non in tutti i 190. Non è una
+ * limitazione pigra: caricarli tutti significherebbe scaricare 6,4 MB a ogni
+ * ricerca, e la ricerca per nome serve come comodità su ciò che si sta già
+ * usando, non come censimento del catalogo mondiale. Per identificare una carta
+ * fisica si usa `cercaPerNumeroStampato()`, che carica solo i set giusti.
  *
  * @param {string} testo anche parziale, senza distinzione di maiuscole
+ * @param {string[]} [idSet] set aggiuntivi da caricare prima di cercare
  * @returns {Promise<Array<{set: object, carta: object}>>}
  */
-export async function cercaPerNome(testo) {
+export async function cercaPerNome(testo, idSet = []) {
   const ago = testo.trim().toLowerCase();
   if (!ago) return [];
+
+  await Promise.all(idSet.map((id) => caricaSet(id).catch(() => null)));
+
+  const info = new Map((await elencoSet()).map((s) => [s.id, s]));
   const trovate = [];
-  for (const infoSet of await elencoSet()) {
-    const set = await caricaSet(infoSet.id);
+  for (const [id, set] of cacheSet) {
     for (const carta of set.carte) {
-      if (carta.nome.toLowerCase().includes(ago)) trovate.push({ set: infoSet, carta });
+      if (carta.nome.toLowerCase().includes(ago)) {
+        trovate.push({ set: info.get(id) ?? { id, nome: set.nome }, carta });
+      }
     }
   }
   return trovate;
