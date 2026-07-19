@@ -55,12 +55,16 @@ Node è installato via **nvm** e non è nel PATH delle shell non interattive. An
 export PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH"
 ```
 
-Test del motore (da v2, runner `node --test`, nessuna dipendenza):
+Test (runner incluso in Node, nessuna dipendenza):
 
 ```bash
-node --test tests/                           # tutti
-node --test tests/engine/generazione.test.js # un singolo file
+node --test                        # tutti (li scopre da solo; NON passare tests/)
+node --test tests/energie.test.js  # un singolo file
 ```
+
+`package.json` esiste **solo** per dichiarare `"type": "module"`, senza il quale Node
+tratterebbe i `.js` come CommonJS e i test non potrebbero importare i moduli. Non ha
+dipendenze e non va mai eseguito `npm install`: la PWA non lo legge mai.
 
 Dopo aver aggiunto un set, aggiornare **anche l'elenco `GUSCIO` in `sw.js`**: altrimenti
 il set nuovo non viene precaricato e offline non esiste.

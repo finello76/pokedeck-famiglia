@@ -1,39 +1,75 @@
 /**
- * Punto di ingresso dell'app: collega il DOM della pagina ai moduli dati.
+ * Punto di ingresso dell'app: collega il DOM ai moduli dati.
  *
- * In v1 fa una cosa sola — cercare una carta per numero/totale — perché serve a
- * verificare che dataset, componenti e service worker funzionino insieme.
- * Catalogo e IndexedDB arrivano nello step successivo.
+ * Qui non c'è logica di dominio, solo orchestrazione: leggere i campi, chiamare
+ * `collezione.js`, aggiornare i componenti. Le regole stanno nei moduli di
+ * `src/data/`, la resa a video nei componenti di `src/ui/`.
  *
  * @module app/app
  */
 
-import { elencoSet, cercaPerNumeroStampato } from '../data/dataset.js';
+import { cercaPerNumeroStampato } from '../data/dataset.js';
+import {
+  aggiungiCopie,
+  elencoCompleto,
+  statistiche,
+  SET_ENERGIE_GENERICHE,
+} from '../data/collezione.js';
+import { scaricaFile, importa } from '../data/scambio.js';
 import { registraServiceWorker } from './registra-sw.js';
 import '../ui/scheda-carta/scheda-carta.js';
+import '../ui/griglia-collezione/griglia-collezione.js';
+import '../ui/contatore-energie/contatore-energie.js';
 
-const modulo = document.querySelector('#modulo-ricerca');
-const stato = document.querySelector('#stato-ricerca');
+const moduloRicerca = document.querySelector('#modulo-ricerca');
+const moduloEnergie = document.querySelector('#modulo-energie');
+const statoRicerca = document.querySelector('#stato-ricerca');
 const risultati = document.querySelector('#risultati');
-const elencoSetDom = document.querySelector('#elenco-set');
+const griglia = document.querySelector('#griglia');
+const contatore = document.querySelector('#contatore-energie');
+const riepilogo = document.querySelector('#riepilogo-collezione');
+const statoScambio = document.querySelector('#stato-scambio');
+const fileImport = document.querySelector('#file-import');
 
 /**
- * Mostra un messaggio sotto il modulo.
- * @param {string} testo
+ * Scrive un messaggio in un elemento di stato.
+ * @param {HTMLElement} elemento
+ * @param {string} testo stringa vuota per nascondere
  * @param {boolean} [errore=false]
  */
-function mostraStato(testo, errore = false) {
-  stato.textContent = testo;
-  stato.hidden = !testo;
-  stato.classList.toggle('errore', errore);
-  stato.classList.toggle('stato', !errore);
+function mostraStato(elemento, testo, errore = false) {
+  elemento.textContent = testo;
+  elemento.hidden = !testo;
+  elemento.classList.toggle('errore', errore);
+  elemento.classList.toggle('stato', !errore);
 }
 
 /**
- * Disegna i candidati trovati.
- * @param {Array<{set: object, carta: object}>} trovate
+ * Ricarica collezione, griglia e statistiche dal database.
+ *
+ * Unico punto di aggiornamento: qualunque modifica finisce qui, così le tre
+ * viste non possono mai disallinearsi fra loro.
+ *
+ * @returns {Promise<void>}
  */
-function mostraRisultati(trovate) {
+async function aggiornaCollezione() {
+  const voci = await elencoCompleto();
+  const stat = await statistiche(voci);
+
+  griglia.voci = voci;
+  contatore.dati = stat.energie;
+
+  const pezzi = Object.entries(stat.perCategoria)
+    .sort((a, b) => b[1] - a[1])
+    .map(([categoria, quante]) => `${quante} ${categoria}`);
+
+  riepilogo.textContent = voci.length
+    ? `${stat.totaleCarte} carte in totale (${pezzi.join(', ')})`
+    : 'Nessuna carta ancora catalogata.';
+}
+
+/** Disegna i candidati di una ricerca, con il modulo per aggiungerli. */
+function mostraCandidati(trovate) {
   risultati.replaceChildren();
 
   if (trovate.length > 1) {
@@ -46,22 +82,45 @@ function mostraRisultati(trovate) {
   }
 
   for (const { set, carta } of trovate) {
+    const contenitore = document.createElement('div');
+
     const scheda = document.createElement('scheda-carta');
     scheda.nomeSet = set.nome;
     scheda.carta = carta;
-    risultati.append(scheda);
+
+    const azioni = document.createElement('div');
+    azioni.className = 'azioni-aggiunta';
+    azioni.innerHTML = `
+      <label for="quante-${set.id}-${carta.numero}">Copie possedute</label>
+      <input id="quante-${set.id}-${carta.numero}" type="number" min="1" value="1" />
+      <button type="button">Aggiungi</button>
+    `;
+
+    const campo = azioni.querySelector('input');
+    azioni.querySelector('button').addEventListener('click', async () => {
+      const quante = Math.max(1, Number(campo.value) || 1);
+      const totale = await aggiungiCopie(set.id, carta.numero, quante);
+      await aggiornaCollezione();
+      mostraStato(statoRicerca, `${carta.nome}: ora ne hai ${totale}.`);
+      risultati.replaceChildren();
+      moduloRicerca.reset();
+      document.querySelector('#campo-numero').focus();
+    });
+
+    contenitore.append(scheda, azioni);
+    risultati.append(contenitore);
   }
 }
 
-modulo.addEventListener('submit', async (evento) => {
+moduloRicerca.addEventListener('submit', async (evento) => {
   evento.preventDefault();
   risultati.replaceChildren();
 
-  const dati = new FormData(modulo);
+  const dati = new FormData(moduloRicerca);
   const numero = String(dati.get('numero')).trim();
   const totale = String(dati.get('totale')).trim();
 
-  mostraStato('Cerco…');
+  mostraStato(statoRicerca, 'Cerco…');
   try {
     // Il numero si passa così com'è digitato: gli zeri iniziali e i codici non
     // numerici (TG01, SV01) li normalizza il dataset.
@@ -69,40 +128,77 @@ modulo.addEventListener('submit', async (evento) => {
 
     if (trovate.length === 0) {
       mostraStato(
+        statoRicerca,
         `Nessuna carta ${numero}/${totale} nei set scaricati. ` +
           'Se il set non è ancora nella collezione, va aggiunto in tools/set-posseduti.json.',
         true,
       );
       return;
     }
-    mostraStato('');
-    mostraRisultati(trovate);
+    mostraStato(statoRicerca, '');
+    mostraCandidati(trovate);
   } catch (errore) {
-    mostraStato(`Errore nel caricamento dei dati: ${errore.message}`, true);
+    mostraStato(statoRicerca, `Errore nel caricamento dei dati: ${errore.message}`, true);
   }
 });
 
-/** Riempie l'elenco dei set disponibili, così si vede subito cosa c'è. */
-async function mostraSetDisponibili() {
+moduloEnergie.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  const dati = new FormData(moduloEnergie);
+  const tipo = String(dati.get('tipo'));
+  const quante = Math.max(1, Number(dati.get('quante')) || 1);
+
+  await aggiungiCopie(SET_ENERGIE_GENERICHE, tipo, quante);
+  await aggiornaCollezione();
+});
+
+griglia.addEventListener('quantita-cambiata', async (evento) => {
+  const { idSet, numero, delta } = evento.detail;
+  await aggiungiCopie(idSet, numero, delta);
+  await aggiornaCollezione();
+});
+
+document.querySelector('#bottone-esporta').addEventListener('click', async () => {
   try {
-    const set = await elencoSet();
-    elencoSetDom.classList.remove('stato');
-    elencoSetDom.replaceChildren(
-      ...set.map((s) => {
-        const li = document.createElement('li');
-        li.textContent = `${s.nome} — ${s.totale} carte (id ${s.id})`;
-        return li;
-      }),
+    const nome = await scaricaFile();
+    mostraStato(statoScambio, `Esportato in ${nome}.`);
+  } catch (errore) {
+    mostraStato(statoScambio, `Export fallito: ${errore.message}`, true);
+  }
+});
+
+document.querySelector('#bottone-importa').addEventListener('click', () => fileImport.click());
+
+fileImport.addEventListener('change', async () => {
+  const file = fileImport.files?.[0];
+  if (!file) return;
+
+  // L'import sovrascrive dati esistenti: si chiede conferma, indicando cosa
+  // succede alle carte non presenti nel file.
+  const sostituisci = confirm(
+    'Sostituire la collezione attuale?\n\n' +
+      'OK = cancella tutto e carica il file.\n' +
+      'Annulla = unisci, tenendo le carte che non sono nel file.',
+  );
+
+  try {
+    const esito = await importa(await file.text(), { sostituisci });
+    await aggiornaCollezione();
+    mostraStato(
+      statoScambio,
+      `Importate ${esito.importate} carte (${esito.sostituito ? 'sostituzione' : 'unione'}).`,
     );
   } catch (errore) {
-    elencoSetDom.replaceChildren(
-      Object.assign(document.createElement('li'), {
-        className: 'errore',
-        textContent: `Dati non caricati: ${errore.message}`,
-      }),
-    );
+    mostraStato(statoScambio, `Import fallito: ${errore.message}`, true);
+  } finally {
+    // Senza questo, riselezionare lo stesso file non scatena 'change'.
+    fileImport.value = '';
   }
-}
+});
 
-mostraSetDisponibili();
+aggiornaCollezione().catch((errore) => {
+  riepilogo.textContent = `Impossibile leggere la collezione: ${errore.message}`;
+  riepilogo.classList.add('errore');
+});
+
 registraServiceWorker();

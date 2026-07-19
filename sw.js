@@ -19,7 +19,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v1';
+const VERSIONE = 'v2';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -36,10 +36,18 @@ const GUSCIO = [
   './src/app/app.js',
   './src/app/registra-sw.js',
   './src/data/dataset.js',
+  './src/data/deposito.js',
+  './src/data/collezione.js',
+  './src/data/energie.js',
+  './src/data/scambio.js',
   './src/ui/stile/base.css',
   './src/ui/stile/tipi.css',
   './src/ui/scheda-carta/scheda-carta.js',
   './src/ui/scheda-carta/scheda-carta.css',
+  './src/ui/griglia-collezione/griglia-collezione.js',
+  './src/ui/griglia-collezione/griglia-collezione.css',
+  './src/ui/contatore-energie/contatore-energie.js',
+  './src/ui/contatore-energie/contatore-energie.css',
   './data/set/indice.json',
   './data/set/sv03.5.json',
   './data/set/swsh10.json',

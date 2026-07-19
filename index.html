@@ -14,16 +14,17 @@
     <link rel="apple-touch-icon" href="risorse/icona.svg" />
     <link rel="stylesheet" href="src/ui/stile/base.css" />
     <link rel="stylesheet" href="src/ui/stile/tipi.css" />
+    <link rel="stylesheet" href="src/ui/griglia-collezione/griglia-collezione.css" />
   </head>
   <body>
     <header class="intestazione">
       <h1>PokéDeck Famiglia</h1>
-      <p class="sottotitolo">Catalogo della collezione — v1 in costruzione</p>
+      <p class="sottotitolo">Catalogo della collezione</p>
     </header>
 
     <main>
       <section class="pannello">
-        <h2>Cerca una carta</h2>
+        <h2>Aggiungi una carta</h2>
         <p class="aiuto">
           Sulla carta fisica, in basso, trovi qualcosa come <strong>118/191</strong>:
           il primo numero è la carta, il secondo il totale del set.
@@ -32,7 +33,7 @@
         <form id="modulo-ricerca" class="riga-modulo">
           <div>
             <label for="campo-numero">Numero della carta</label>
-            <input id="campo-numero" name="numero" inputmode="numeric" placeholder="118" required />
+            <input id="campo-numero" name="numero" placeholder="118" required />
           </div>
           <div>
             <label for="campo-totale">Totale del set</label>
@@ -44,15 +45,61 @@
         </form>
 
         <p id="stato-ricerca" class="stato" hidden></p>
+        <section id="risultati" aria-live="polite"></section>
       </section>
 
-      <section id="risultati" aria-live="polite"></section>
+      <section class="pannello">
+        <h2>Energie base</h2>
+        <p class="aiuto">
+          Le energie base arrivano quasi sempre dai mazzi di partenza e non
+          appartengono a nessun set catalogato: qui si contano e basta, senza
+          numero di collezione.
+        </p>
+        <form id="modulo-energie" class="riga-modulo">
+          <div>
+            <label for="campo-tipo-energia">Tipo</label>
+            <select id="campo-tipo-energia" name="tipo">
+              <option>Erba</option>
+              <option>Fuoco</option>
+              <option>Acqua</option>
+              <option>Lampo</option>
+              <option>Psico</option>
+              <option>Lotta</option>
+              <option>Oscurità</option>
+              <option>Metallo</option>
+              <option>Fata</option>
+              <option>Drago</option>
+            </select>
+          </div>
+          <div>
+            <label for="campo-quante-energie">Quante</label>
+            <input id="campo-quante-energie" name="quante" type="number" min="1" value="1" />
+          </div>
+          <div>
+            <button type="submit">Aggiungi</button>
+          </div>
+        </form>
+        <contatore-energie id="contatore-energie"></contatore-energie>
+      </section>
 
       <section class="pannello">
-        <h2>Set nella collezione</h2>
-        <ul id="elenco-set" class="stato">
-          <li>Caricamento…</li>
-        </ul>
+        <h2>La collezione</h2>
+        <p id="riepilogo-collezione" class="stato">Caricamento…</p>
+        <griglia-collezione id="griglia"></griglia-collezione>
+      </section>
+
+      <section class="pannello">
+        <h2>Salvataggio e trasferimento</h2>
+        <p class="aiuto">
+          I dati stanno solo in questo browser. Per portarli su un altro
+          dispositivo serve esportarli e reimportarli a mano.
+        </p>
+        <div class="azioni">
+          <button type="button" id="bottone-esporta">Esporta JSON</button>
+          <button type="button" id="bottone-importa" class="secondario">Importa JSON</button>
+          <input type="file" id="file-import" accept="application/json,.json" hidden />
+        </div>
+        <p id="stato-scambio" class="stato" hidden></p>
       </section>
     </main>
 
