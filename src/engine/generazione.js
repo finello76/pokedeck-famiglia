@@ -110,7 +110,7 @@ export function scegliTipi(analisi, numeroMazzi) {
  * @param {Set<string>} nomiInMazzo nomi già presenti, per completare le linee
  * @returns {Array<{carta: object, disponibili: number}>}
  */
-function ordinaPokemon(candidati, tipi, nomiInMazzo) {
+function ordinaPokemon(candidati, tipi, nomiInMazzo, permessi = {}) {
   const punteggio = ({ carta }) => {
     let p = 0;
 
@@ -127,10 +127,15 @@ function ordinaPokemon(candidati, tipi, nomiInMazzo) {
     const livello = classifica(carta).livello ?? 0;
     const preEvoluzionePresente =
       Boolean(carta.evolveDa) && nomiInMazzo.has(normalizzaNome(carta.evolveDa));
-    if (livello > 0 && !preEvoluzionePresente) p -= 250;
+    const orfana = livello > 0 && !preEvoluzionePresente;
+
+    // Con la regola della casa "le evoluzioni si giocano come Base" quelle
+    // carte tornano giocabili: la penalità sparisce. Resta una piccola
+    // preferenza per i Base veri, che non hanno bisogno di alcuna deroga.
+    if (orfana) p -= permessi.evoluzioniComeBase ? 10 : 250;
 
     if (tipi.some((t) => (carta.tipi ?? []).includes(t))) p += 100;
-    if (eBase(carta)) p += 50; // senza Base non si comincia
+    if (eBase(carta) || (orfana && permessi.evoluzioniComeBase)) p += 50;
     // Completa una linea già presente: molto più utile di una carta isolata.
     if (carta.evolveDa && nomiInMazzo.has(normalizzaNome(carta.evolveDa))) p += 40;
     p += Math.min(20, (carta.ps ?? 0) / 10);
@@ -153,13 +158,16 @@ function ordinaPokemon(candidati, tipi, nomiInMazzo) {
  * @param {number} opzioni.taglia carte per mazzo (15/20/30/60)
  * @param {number} [opzioni.numeroMazzi=2]
  * @param {boolean} [opzioni.ammettiEsotici=false]
+ * @param {object} [opzioni.permessi] deroghe concesse dalle regole della casa
+ *   (`evoluzioniComeBase`, `energiaUniversale`): arrivano dalla seconda passata
+ *   orchestrata da `pianifica()`
  * @returns {{mazzi: Mazzo[], carenze: object[], analisi: object}}
  *   `carenze` alimenta il motore delle regole della casa
  * @example
  * const { mazzi } = generaMazzi(collezione, { taglia: 15, numeroMazzi: 2 });
  */
 export function generaMazzi(voci, opzioni) {
-  const { taglia, numeroMazzi = 2, ammettiEsotici = false } = opzioni;
+  const { taglia, numeroMazzi = 2, ammettiEsotici = false, permessi = {} } = opzioni;
   const analisi = analizza(voci, { ammettiEsotici });
   const dispensa = new Dispensa(voci);
 
@@ -193,7 +201,7 @@ export function generaMazzi(voci, opzioni) {
       const candidati = dispensa.cerca(
         (c) => c.categoria === 'Pokémon' && classifica(c).livello !== null,
       );
-      const ordinati = ordinaPokemon(candidati, mazzo.tipi, nomi);
+      const ordinati = ordinaPokemon(candidati, mazzo.tipi, nomi, permessi);
       if (!ordinati.length) continue;
 
       const scelta = ordinati[0].carta;
@@ -246,7 +254,7 @@ export function generaMazzi(voci, opzioni) {
     if (!qualcosaAggiunto) break;
   }
 
-  return { mazzi, carenze: rilevaCarenze(mazzi, taglia, analisi), analisi };
+  return { mazzi, carenze: rilevaCarenze(mazzi, taglia, analisi, permessi), analisi };
 }
 
 /**
@@ -259,9 +267,13 @@ export function generaMazzi(voci, opzioni) {
  * @param {Mazzo[]} mazzi
  * @param {number} taglia
  * @param {object} analisi
+ * @param {object} [permessi] deroghe già concesse. Servono a **misurare
+ *   diversamente**, non a nascondere: con le evoluzioni giocabili come Base il
+ *   conteggio dei Base cambia davvero. Una carenza però non va mai soppressa
+ *   perché una regola la risolve, o quella regola sparirebbe dal foglio
  * @returns {Array<{codice: string, mazzo?: string, dati: object}>}
  */
-function rilevaCarenze(mazzi, taglia, analisi) {
+function rilevaCarenze(mazzi, taglia, analisi, permessi = {}) {
   const carenze = [];
 
   for (const mazzo of mazzi) {
@@ -272,8 +284,14 @@ function rilevaCarenze(mazzi, taglia, analisi) {
         dati: { previste: taglia, effettive: mazzo.totale },
       });
     }
+    // Con la deroga attiva, le evoluzioni orfane si giocano dalla mano: a tutti
+    // gli effetti sono Base, e vanno contate come tali.
     const basi = mazzo.carte
-      .filter((c) => eBase(c.carta))
+      .filter(
+        (c) =>
+          eBase(c.carta) ||
+          (permessi.evoluzioniComeBase && (classifica(c.carta).livello ?? 0) > 0),
+      )
       .reduce((s, c) => s + c.quantita, 0);
     if (basi < minimoBasi(mazzo.totale || taglia)) {
       carenze.push({
@@ -314,6 +332,10 @@ function rilevaCarenze(mazzi, taglia, analisi) {
     const fuoriTipo = mazzo.carte
       .filter((c) => eEnergiaBase(c.carta) && !mazzo.tipi.includes(tipoEnergia(c.carta)))
       .reduce((s, c) => s + c.quantita, 0);
+    // NON si sopprime quando la regola "energia universale" è già attiva: la
+    // carenza è un fatto misurato, e sopprimerla farebbe sparire dal foglio
+    // stampato proprio la regola che la risolve. Il giocatore si troverebbe
+    // energie fuori tipo e nessuna regola che le autorizza.
     if (fuoriTipo > 0) {
       carenze.push({
         codice: 'energie-fuori-tipo',
