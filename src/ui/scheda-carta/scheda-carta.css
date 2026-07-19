@@ -11,7 +11,7 @@
 
 article {
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 96px minmax(0, 1fr);
   gap: 0.9rem;
   align-items: start;
   background: var(--colore-superficie, #fff);
@@ -39,6 +39,15 @@ img,
   font-size: 1.5rem;
 }
 
+/* La colonna dei dati DEVE poter restringersi.
+   I figli di grid e flex hanno min-width:auto, cioe' "non piu' stretto del mio
+   contenuto": un nome lungo come "Dubwool di Hop" allarga la colonna e il testo
+   esce dalla card invece di andare a capo. min-width:0 toglie quel vincolo, ed
+   e' il motivo della minmax(0, 1fr) qui sopra. */
+.dati {
+  min-width: 0;
+}
+
 h3 {
   margin: 0 0 0.15rem;
   font-size: 1.05rem;
@@ -46,6 +55,10 @@ h3 {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+  min-width: 0;
+  /* I nomi delle carte possono essere lunghi e senza spazi utili: si spezzano
+     dove capita piuttosto che sfondare il bordo. */
+  overflow-wrap: anywhere;
 }
 
 /* Il contatore copie: deve saltare all'occhio mentre si cataloga. */
@@ -76,6 +89,7 @@ img:not([src]) {
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
   color: var(--colore-testo, #222);
+  overflow-wrap: anywhere;
 }
 
 .pastiglia {
@@ -104,13 +118,21 @@ img:not([src]) {
   gap: 0.35rem;
   font-size: 0.85rem;
   padding: 0.15rem 0;
+  /* Il costo puo' essere di 4 pastiglie: su schermo stretto va a capo invece
+     di schiacciare il nome dell'attacco fino a troncarlo. */
+  flex-wrap: wrap;
 }
 
 .nome-attacco {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
+/* Il danno resta sempre attaccato al bordo destro, anche quando il costo va
+   a capo: e' il numero che si cerca con l'occhio. */
 .danno {
+  margin-left: auto;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
