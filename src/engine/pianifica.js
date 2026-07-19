@@ -104,6 +104,29 @@ export function pianifica(voci, opzioni) {
 }
 
 /**
+ * Rivaluta carenze e regole di un piano i cui mazzi sono stati modificati a
+ * mano (sostituzione di carte).
+ *
+ * Serve perché il foglio regole descrive i mazzi CORRENTI: togliere una
+ * pre-evoluzione può creare un orfano, aggiungerla può far sparire una regola.
+ * Muta il piano ricevuto e lo restituisce.
+ *
+ * @param {object} piano risultato di `pianifica()` (con `opzioni` allegate)
+ * @param {object} [opzioni] se assenti si usano quelle salvate nel piano
+ * @returns {object} lo stesso piano, con `carenze` e `regole` aggiornate
+ */
+export function rivaluta(piano, opzioni = piano.opzioni ?? {}) {
+  piano.carenze = rilevaCarenze(piano.mazzi, opzioni.taglia, piano.analisi, piano.permessi);
+  piano.regole = valutaRegole({
+    analisi: piano.analisi,
+    mazzi: piano.mazzi,
+    carenze: piano.carenze,
+    opzioni,
+  }).regole;
+  return piano;
+}
+
+/**
  * Le carte di un mazzo che si giocano solo grazie a una deroga, da segnalare
  * nella lista stampata.
  *

@@ -318,6 +318,61 @@ button:hover {
   gap: 0.8rem;
 }
 
+/* Dialogo "Sostituisci carta". */
+.dialogo-sostituzione {
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio);
+  background: var(--colore-superficie);
+  color: var(--colore-testo);
+  box-shadow: var(--ombra);
+  padding: var(--spazio);
+  width: min(92vw, 34rem);
+  max-height: 80vh;
+  /* dialog ha margini auto: resta centrato anche su schermi piccoli */
+}
+
+.dialogo-sostituzione::backdrop {
+  background: rgb(10 14 22 / 55%);
+}
+
+.dialogo-sostituzione .proposte {
+  list-style: none;
+  margin: 0.8rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+.dialogo-sostituzione .proposte button {
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  background: var(--colore-fondo);
+  color: var(--colore-testo);
+  border: 1px solid var(--colore-bordo);
+}
+
+.dialogo-sostituzione .proposte button:hover {
+  border-color: var(--colore-primario);
+  background: var(--colore-fondo);
+}
+
+.dialogo-sostituzione .nome-proposta {
+  font-weight: 600;
+}
+
+.dialogo-sostituzione .dettagli-proposta {
+  font-size: 0.82rem;
+  color: var(--colore-testo-tenue);
+}
+
+.dialogo-sostituzione .note-proposta {
+  font-size: 0.78rem;
+  color: var(--colore-primario);
+}
+
 /* Riga di bottoni (export/import). */
 .azioni {
   display: flex;

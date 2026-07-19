@@ -247,3 +247,27 @@ mazzo-generato {
 .proxy .nome {
   font-style: italic;
 }
+
+/* Il pulsante ⇄ per sostituire la riga: discreto, ma bersaglio pieno da 2rem. */
+.cambia {
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+  background: transparent;
+  color: var(--colore-testo-tenue);
+  font-size: 1rem;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.cambia:hover {
+  border-color: var(--colore-primario);
+  color: var(--colore-primario);
+  background: transparent;
+}

@@ -12,6 +12,7 @@ import { pianifica, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
+import { apriSostituzione } from './sostituzione.js';
 import '../ui/procedura-guidata/procedura-guidata.js';
 import '../ui/mazzo-generato/mazzo-generato.js';
 
@@ -251,7 +252,10 @@ async function mostraSalvati() {
   salvati.querySelectorAll('[data-apri]').forEach((b) =>
     b.addEventListener('click', async () => {
       const piano = await leggiPiano(b.dataset.apri);
-      if (piano) disegnaPiano(piano, piano.opzioni ?? {});
+      if (!piano) return;
+      // Diventa il piano corrente: le sostituzioni devono lavorare su di lui.
+      pianoCorrente = piano;
+      disegnaPiano(piano, piano.opzioni ?? {});
     }),
   );
   salvati.querySelectorAll('[data-elimina]').forEach((b) =>
@@ -261,6 +265,22 @@ async function mostraSalvati() {
     }),
   );
 }
+
+// Richiesta di sostituzione da una riga di un mazzo: si propone la scelta e,
+// a cose fatte, si ridisegna l'intero piano perché contrassegni, regole e
+// foglio proxy devono restare coerenti con le carte nuove.
+risultato.addEventListener('sostituzione-richiesta', (evento) => {
+  const { mazzo, indice } = evento.detail;
+  if (!pianoCorrente) return;
+  apriSostituzione(pianoCorrente, mazzo, indice, () =>
+    disegnaPiano(pianoCorrente, pianoCorrente.opzioni ?? {}),
+  ).catch((errore) => {
+    risultato.insertAdjacentHTML(
+      'beforeend',
+      `<p class="errore">Sostituzione non riuscita: ${errore.message}</p>`,
+    );
+  });
+});
 
 wizard.addEventListener('completata', (evento) => {
   genera(evento.detail).catch((errore) => {

@@ -4,7 +4,11 @@
  *
  * Non mostra le illustrazioni: è una **lista di lavoro**. Chi la usa ha le
  * carte fisiche davanti e cerca nomi e quantità, non figure. Le figure si
- * guardano nel catalogo.
+ * guardano nel carosello e nel catalogo.
+ *
+ * @fires mazzo-generato#carta-scelta - detail: `{carta, nomeSet}`, per il visore
+ * @fires mazzo-generato#sostituzione-richiesta - detail: `{mazzo, indice}`,
+ *   quando si preme ⇄ su una riga: chi ascolta propone le alternative
  *
  * @module ui/mazzo-generato
  */
@@ -48,6 +52,12 @@ export class MazzoGenerato extends HTMLElement {
           const deroga = this.#conDeroga.has(dati.nome);
           const proxy = Boolean(c.proxy);
           const classi = [deroga && 'deroga', proxy && 'proxy'].filter(Boolean).join(' ');
+          // I proxy non si sostituiscono: non sono carte della collezione.
+          const cambia = proxy
+            ? ''
+            : `<button type="button" class="cambia" data-indice="${m.carte.indexOf(c)}"
+                       title="Sostituisci con un'altra carta della collezione"
+                       aria-label="Sostituisci ${escapeHtml(dati.nome)}">⇄</button>`;
           return `
             <li${classi ? ` class="${classi}"` : ''}>
               <span class="quante">${c.quantita}×</span>
@@ -55,6 +65,7 @@ export class MazzoGenerato extends HTMLElement {
               <span class="dettaglio">${escapeHtml(dati.stadio ?? '')}</span>
               ${proxy ? `<span class="marchio marchio-proxy" title="${escapeHtml(c.motivo ?? 'Carta stampata: non è nella collezione')}">da stampare</span>` : ''}
               ${deroga ? '<span class="marchio" title="Si gioca come Pokémon Base">come Base</span>' : ''}
+              ${cambia}
             </li>`;
         })
         .join('');
@@ -82,6 +93,22 @@ export class MazzoGenerato extends HTMLElement {
 
     this.#collegaCarosello();
     this.#collegaFrecce();
+
+    for (const bottone of this.querySelectorAll('.cambia')) {
+      bottone.addEventListener('click', () => {
+        this.dispatchEvent(
+          new CustomEvent('sostituzione-richiesta', {
+            bubbles: true,
+            detail: { mazzo: this.#mazzo, indice: Number(bottone.dataset.indice) },
+          }),
+        );
+      });
+    }
+  }
+
+  /** Ridisegna la lista con i dati correnti (dopo una sostituzione). */
+  aggiorna() {
+    this.#disegna();
   }
 
   /**
