@@ -1,0 +1,13 @@
+{
+  "name": "pokedeck-famiglia",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PWA per catalogare la collezione Pokemon TCG e generare mazzi equilibrati.",
+  "scripts": {
+    "test": "node --test",
+    "dati": "node tools/scarica-set.mjs",
+    "avvia": "python3 -m http.server 8000"
+  },
+  "_nota": "Questo file NON introduce dipendenze e NON e' un sistema di build: non esiste un campo dependencies e non va mai eseguito 'npm install'. Serve solo a dire a Node che i .js del progetto sono moduli ES, altrimenti li tratterebbe come CommonJS e i test non potrebbero importarli. La PWA non lo legge mai: il browser sa gia' che sono moduli grazie a <script type=module>."
+}
