@@ -26,11 +26,39 @@ const cssCaricato = fetch(new URL('./scheda-carta.css', import.meta.url))
     /* senza CSS il componente resta leggibile, solo spoglio */
   });
 
+/**
+ * Osservatore condiviso da tutte le schede: carica l'immagine solo quando la
+ * scheda sta per entrare nel viewport.
+ *
+ * Sostituisce `loading="lazy"`, che su un `<img>` inserito via `innerHTML`
+ * dentro uno Shadow DOM non si attiva mai (verificato nello step 1). Con
+ * centinaia di carte in griglia, caricarle tutte insieme sarebbe uno spreco.
+ *
+ * `rootMargin` fa partire il caricamento 200px prima del bordo, così scorrendo
+ * l'immagine è già pronta.
+ */
+const osservatore = new IntersectionObserver(
+  (voci) => {
+    for (const voce of voci) {
+      if (!voce.isIntersecting) continue;
+      const img = voce.target;
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+        delete img.dataset.src;
+      }
+      osservatore.unobserve(img);
+    }
+  },
+  { rootMargin: '200px' },
+);
+
 export class SchedaCarta extends HTMLElement {
   /** @type {object|null} */
   #carta = null;
   /** @type {string} */
   #nomeSet = '';
+  /** @type {number|null} copie possedute; null = non mostrare il contatore */
+  #quantita = null;
 
   constructor() {
     super();
@@ -55,6 +83,16 @@ export class SchedaCarta extends HTMLElement {
     this.#disegna();
   }
 
+  /** @param {number|null} valore copie possedute, o null per non mostrarle */
+  set quantita(valore) {
+    this.#quantita = valore ?? null;
+    this.#disegna();
+  }
+
+  get quantita() {
+    return this.#quantita;
+  }
+
   async connectedCallback() {
     await cssCaricato;
     this.shadowRoot.adoptedStyleSheets = [stile];
@@ -67,30 +105,40 @@ export class SchedaCarta extends HTMLElement {
     const c = this.#carta;
     const tipoPrincipale = c.tipi?.[0] ?? 'Incolore';
 
+    const quantita =
+      this.#quantita === null ? '' : `<span class="quantita">×${this.#quantita}</span>`;
+
     this.shadowRoot.innerHTML = `
       <article part="scheda" data-tipo="${tipoPrincipale}">
         ${this.#htmlImmagine(c)}
         <div class="dati">
-          <h3>${escapeHtml(c.nome)}</h3>
+          <h3>${escapeHtml(c.nome)}${quantita}</h3>
           <p class="set">${escapeHtml(this.#nomeSet)} · n. ${escapeHtml(c.numero)}</p>
           ${this.#htmlRigaPokemon(c)}
           ${this.#htmlAttacchi(c)}
         </div>
       </article>
     `;
+
+    // L'immagine è stata appena ricreata da innerHTML: va riosservata.
+    const img = this.shadowRoot.querySelector('img[data-src]');
+    if (img) osservatore.observe(img);
   }
 
   /** @param {object} c */
   #htmlImmagine(c) {
     const src = urlImmagine(c, 'griglia');
-    if (!src) return '<div class="segnaposto" aria-hidden="true">?</div>';
-    // NIENTE loading="lazy": verificato che su un <img> inserito via innerHTML
-    // dentro uno Shadow DOM il caricamento non parte mai, nemmeno con
-    // l'immagine ben dentro il viewport (resta complete=false all'infinito).
-    // Le miniature pesano ~14 KB, quindi caricarle subito è accettabile.
-    // Quando la griglia della collezione ne mostrerà centinaia (step 2),
-    // servirà un IntersectionObserver esplicito invece dell'attributo.
-    return `<img src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />`;
+    // Le energie base generiche non hanno illustrazione: non appartengono a
+    // nessun set, quindi non esiste una scansione da mostrare.
+    if (!src) {
+      const sigla = c.categoria === 'Energia' ? 'E' : '?';
+      return `<div class="segnaposto" aria-hidden="true">${sigla}</div>`;
+    }
+    // L'URL sta in data-src, non in src: lo assegna l'IntersectionObserver
+    // quando la scheda si avvicina al viewport. NON si usa loading="lazy"
+    // perché su un <img> inserito via innerHTML dentro uno Shadow DOM non si
+    // attiva mai (verificato nello step 1).
+    return `<img data-src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />`;
   }
 
   /** @param {object} c */

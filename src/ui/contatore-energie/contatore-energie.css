@@ -1,0 +1,54 @@
+:host {
+  display: block;
+}
+
+.totale {
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+  color: var(--colore-testo, #222);
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* auto-fill riempie la riga con quante celle ci stanno: da telefono ne
+     entrano due, da PC sei, senza scrivere breakpoint. */
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  background: var(--tipo-tenue, #eee);
+  border: 1px solid var(--tipo-colore, #ccc);
+  border-radius: var(--raggio-piccolo, 8px);
+  padding: 0.35rem 0.6rem;
+}
+
+.nome {
+  color: var(--tipo-colore, #444);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.numero {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--colore-testo, #222);
+}
+
+.nota,
+.vuoto {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue, #666);
+}
+
+.vuoto {
+  margin-top: 0;
+}

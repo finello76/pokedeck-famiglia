@@ -43,6 +43,27 @@ h3 {
   margin: 0 0 0.15rem;
   font-size: 1.05rem;
   color: var(--colore-testo, #222);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* Il contatore copie: deve saltare all'occhio mentre si cataloga. */
+.quantita {
+  margin-left: auto;
+  background: var(--tipo-colore, #666);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.05rem 0.55rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* Immagine non ancora caricata dall'osservatore: si tiene lo spazio, così la
+   griglia non sobbalza quando arrivano le illustrazioni. */
+img:not([src]) {
+  visibility: hidden;
 }
 
 .set {

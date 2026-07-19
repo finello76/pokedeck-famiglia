@@ -176,3 +176,44 @@ button:hover {
   color: var(--colore-testo-tenue);
   font-style: italic;
 }
+
+/* Riga di bottoni (export/import). */
+.azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.azioni button {
+  width: auto;
+  flex: 1 1 10rem;
+}
+
+button.secondario {
+  background: transparent;
+  color: var(--colore-primario);
+  border-color: var(--colore-primario);
+}
+
+button.secondario:hover {
+  background: var(--tipo-tenue, rgb(42 95 214 / 10%));
+  color: var(--colore-primario-scuro);
+}
+
+/* Modulo "quante copie" sotto una carta trovata dalla ricerca. */
+.azioni-aggiunta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: end;
+  margin: -0.4rem 0 1rem;
+}
+
+.azioni-aggiunta label {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.azioni-aggiunta button {
+  width: auto;
+}

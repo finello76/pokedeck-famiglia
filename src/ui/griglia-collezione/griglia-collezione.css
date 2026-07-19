@@ -1,0 +1,92 @@
+/* Stile di <griglia-collezione>.
+
+   A differenza di scheda-carta.css questo NON sta in uno Shadow DOM: il
+   componente usa il DOM normale per ereditare il tema della pagina, quindi il
+   foglio va incluso da index.html. */
+
+griglia-collezione {
+  display: block;
+  container-type: inline-size;
+}
+
+.filtri {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+@media (min-width: 34rem) {
+  .filtri {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    align-items: end;
+  }
+}
+
+.riepilogo {
+  margin: 0 0 0.8rem;
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+}
+
+.collegamento {
+  background: none;
+  border: none;
+  color: var(--colore-primario);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  width: auto;
+}
+
+.griglia {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+/* Container query, non media query: la griglia si adatta allo spazio che ha,
+   non alla finestra. Serve perché in futuro comparirà anche dentro colonne più
+   strette (elenco mazzi, wizard). */
+@container (min-width: 34rem) {
+  .griglia {
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  }
+}
+
+.cella {
+  display: flex;
+  flex-direction: column;
+}
+
+.cella scheda-carta {
+  flex: 1;
+}
+
+.comandi {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  margin: -0.4rem 0 0;
+}
+
+.comandi button {
+  width: 2.6rem;
+  /* Bersaglio comodo da toccare col pollice mentre si tengono le carte. */
+  min-height: 2.6rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.mancante {
+  background: var(--colore-superficie);
+  border: 1px dashed var(--colore-bordo);
+  border-radius: var(--raggio);
+  padding: 0.85rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+}
