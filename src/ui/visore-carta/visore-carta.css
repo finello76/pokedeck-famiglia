@@ -53,12 +53,21 @@ figcaption {
   /* Bersaglio da 44px: la misura minima raccomandata per il tocco. */
   width: 2.75rem;
   height: 2.75rem;
+  /* Il reset `box-sizing` di base.css non attraversa lo Shadow DOM: senza
+     queste due righe il padding di default del browser (più largo che alto)
+     si somma a width/height e il cerchio diventa un ovale. */
+  box-sizing: border-box;
+  padding: 0;
   border-radius: 50%;
   border: none;
   background: rgb(255 255 255 / 15%);
   color: #fff;
   font-size: 1.6rem;
-  line-height: 1;
+  /* Il glifo × non sta sulla linea di base come una lettera: centrarlo con
+     line-height era approssimativo, la griglia lo centra davvero. */
+  display: grid;
+  place-items: center;
+  line-height: 0;
   cursor: pointer;
 }
 
