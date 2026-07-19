@@ -123,6 +123,19 @@ export class SchedaCarta extends HTMLElement {
     // L'immagine è stata appena ricreata da innerHTML: va riosservata.
     const img = this.shadowRoot.querySelector('img[data-src]');
     if (img) osservatore.observe(img);
+
+    // Il click annuncia la richiesta, non apre nulla: la scheda non deve
+    // sapere che esiste un visore. Chi ascolta decide cosa farne.
+    const apribile = this.shadowRoot.querySelector('.apri');
+    apribile?.addEventListener('click', () => {
+      this.dispatchEvent(
+        new CustomEvent('carta-scelta', {
+          bubbles: true,
+          composed: true, // senza questo l'evento non uscirebbe dallo Shadow DOM
+          detail: { carta: this.#carta, nomeSet: this.#nomeSet },
+        }),
+      );
+    });
   }
 
   /** @param {object} c */
@@ -138,7 +151,14 @@ export class SchedaCarta extends HTMLElement {
     // quando la scheda si avvicina al viewport. NON si usa loading="lazy"
     // perché su un <img> inserito via innerHTML dentro uno Shadow DOM non si
     // attiva mai (verificato nello step 1).
-    return `<img data-src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />`;
+    //
+    // L'immagine è dentro un <button>, non un <div> con un onclick: così si
+    // raggiunge con il tastierino, si attiva con Invio e gli screen reader la
+    // annunciano come un comando.
+    return `
+      <button class="apri" type="button" title="Ingrandisci ${escapeHtml(c.nome)}">
+        <img data-src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />
+      </button>`;
   }
 
   /** @param {object} c */

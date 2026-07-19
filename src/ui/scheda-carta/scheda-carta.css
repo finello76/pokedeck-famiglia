@@ -23,6 +23,22 @@ article {
   margin-bottom: 0.75rem;
 }
 
+/* Il pulsante non deve sembrare un pulsante: è la carta stessa a essere
+   cliccabile. Restano però il focus da tastiera e il cursore a manina. */
+.apri {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  display: block;
+  border-radius: 6px;
+}
+
+.apri:focus-visible {
+  outline: 3px solid var(--colore-primario, #2a5fd6);
+  outline-offset: 2px;
+}
+
 img,
 .segnaposto {
   width: 96px;
@@ -30,6 +46,7 @@ img,
   border-radius: 6px;
   object-fit: cover;
   background: var(--tipo-tenue, #eee);
+  display: block;
 }
 
 .segnaposto {

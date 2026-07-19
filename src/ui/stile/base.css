@@ -226,9 +226,13 @@ button.secondario:hover {
 }
 
 /* Modulo "quante copie" sotto una carta trovata dalla ricerca. */
+/* La casella ha larghezza fissa e il pulsante prende il resto.
+   Con `1fr auto` era il contrario: un nome lungo ("Macchinario Tecnico:
+   Fluorite") faceva crescere il pulsante finché la casella del numero
+   diventava inutilizzabile. */
 .azioni-aggiunta {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
   gap: 0.5rem;
   align-items: end;
   margin: 0;
@@ -240,5 +244,9 @@ button.secondario:hover {
 }
 
 .azioni-aggiunta button {
-  width: auto;
+  width: 100%;
+  /* Il nome della carta può essere lungo: va a capo dentro il pulsante invece
+     di allargarlo. */
+  overflow-wrap: anywhere;
+  line-height: 1.2;
 }

@@ -1,0 +1,67 @@
+:host {
+  display: contents;
+}
+
+dialog {
+  border: none;
+  background: none;
+  padding: 0;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: visible;
+}
+
+/* ::backdrop è lo sfondo che il browser disegna dietro un dialog modale:
+   non è un elemento che si può inserire, esiste solo come pseudo-elemento. */
+dialog::backdrop {
+  background: rgb(10 14 22 / 82%);
+  backdrop-filter: blur(2px);
+}
+
+figure {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+img {
+  /* La carta si adatta allo schermo mantenendo le proporzioni reali 63×88.
+     Su telefono in verticale comanda la larghezza, su PC l'altezza. */
+  max-width: min(92vw, 30rem);
+  max-height: 82vh;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 55%);
+  background: #ffffff10;
+}
+
+figcaption {
+  color: #fff;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.95rem;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 70%);
+  max-width: 92vw;
+}
+
+.chiudi {
+  position: fixed;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  /* Bersaglio da 44px: la misura minima raccomandata per il tocco. */
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: none;
+  background: rgb(255 255 255 / 15%);
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chiudi:hover {
+  background: rgb(255 255 255 / 28%);
+}

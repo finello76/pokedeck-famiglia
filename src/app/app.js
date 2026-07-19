@@ -20,6 +20,7 @@ import { registraServiceWorker } from './registra-sw.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
 import '../ui/contatore-energie/contatore-energie.js';
+import '../ui/visore-carta/visore-carta.js';
 
 const moduloRicerca = document.querySelector('#modulo-ricerca');
 const moduloEnergie = document.querySelector('#modulo-energie');
@@ -30,6 +31,7 @@ const contatore = document.querySelector('#contatore-energie');
 const riepilogo = document.querySelector('#riepilogo-collezione');
 const statoScambio = document.querySelector('#stato-scambio');
 const fileImport = document.querySelector('#file-import');
+const visore = document.querySelector('#visore');
 
 /**
  * I nomi delle carte vengono da un dataset esterno: mai interpolati grezzi.
@@ -169,6 +171,12 @@ moduloEnergie.addEventListener('submit', async (evento) => {
 
   await aggiungiCopie(SET_ENERGIE_GENERICHE, tipo, quante);
   await aggiornaCollezione();
+});
+
+// Le schede annunciano il click da qualunque punto della pagina: un solo
+// ascoltatore sul document invece di uno per scheda.
+document.addEventListener('carta-scelta', (evento) => {
+  visore.mostra(evento.detail.carta, evento.detail.nomeSet);
 });
 
 griglia.addEventListener('quantita-cambiata', async (evento) => {
