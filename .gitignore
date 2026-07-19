@@ -1,0 +1,8 @@
+# Nessuna dipendenza a runtime: se compare node_modules, qualcosa è andato storto.
+node_modules/
+
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
