@@ -1,0 +1,34 @@
+{
+  "set": [
+    {
+      "id": "sv03.5",
+      "nome": "151",
+      "totale": 165,
+      "carte": 207
+    },
+    {
+      "id": "swsh10",
+      "nome": "Lucentezza Siderale",
+      "totale": 189,
+      "carte": 216
+    },
+    {
+      "id": "swsh12.5",
+      "nome": "Zenit Regale",
+      "totale": 159,
+      "carte": 160
+    },
+    {
+      "id": "sv08",
+      "nome": "Scintille Folgoranti",
+      "totale": 191,
+      "carte": 252
+    },
+    {
+      "id": "me01",
+      "nome": "Megaevoluzione",
+      "totale": 132,
+      "carte": 188
+    }
+  ]
+}
