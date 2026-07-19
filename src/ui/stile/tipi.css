@@ -1,0 +1,53 @@
+/* Colori dei tipi Pokémon.
+
+   I nomi dei tipi arrivano da TCGdex in ITALIANO ("Erba", "Lotta", "Oscurità"),
+   quindi le classi sono in italiano: nessuna traduzione a runtime.
+
+   Le tinte sono scelte a mano ispirandosi alle convenzioni del gioco, non
+   estratte da asset ufficiali. Ogni tipo definisce --tipo-colore (pieno) e
+   --tipo-tenue (sfondo), così un componente può usarle senza sapere quale
+   tipo sta mostrando. */
+
+[data-tipo] {
+  --tipo-colore: #8b93a7;
+  --tipo-tenue: #eceef4;
+}
+
+[data-tipo='Erba']     { --tipo-colore: #4a9d52; --tipo-tenue: #e6f3e7; }
+[data-tipo='Fuoco']    { --tipo-colore: #d8482b; --tipo-tenue: #fbe8e3; }
+[data-tipo='Acqua']    { --tipo-colore: #2b7fd8; --tipo-tenue: #e3eefb; }
+[data-tipo='Lampo']    { --tipo-colore: #d6a800; --tipo-tenue: #fbf3d9; }
+[data-tipo='Psico']    { --tipo-colore: #9b4bc4; --tipo-tenue: #f2e6f9; }
+[data-tipo='Lotta']    { --tipo-colore: #b4552b; --tipo-tenue: #f7e9e2; }
+[data-tipo='Oscurità'] { --tipo-colore: #3d4354; --tipo-tenue: #e6e8ee; }
+[data-tipo='Metallo']  { --tipo-colore: #6b7a8d; --tipo-tenue: #e9edf1; }
+[data-tipo='Fata']     { --tipo-colore: #d4488f; --tipo-tenue: #fbe4f0; }
+[data-tipo='Drago']    { --tipo-colore: #94812c; --tipo-tenue: #f5f1de; }
+[data-tipo='Incolore'] { --tipo-colore: #8b93a7; --tipo-tenue: #eceef4; }
+
+@media (prefers-color-scheme: dark) {
+  [data-tipo] { --tipo-tenue: #262d3d; }
+  [data-tipo='Erba']     { --tipo-colore: #6bc274; }
+  [data-tipo='Fuoco']    { --tipo-colore: #f0745a; }
+  [data-tipo='Acqua']    { --tipo-colore: #5ea6f0; }
+  [data-tipo='Lampo']    { --tipo-colore: #f0cc3d; }
+  [data-tipo='Psico']    { --tipo-colore: #c07de6; }
+  [data-tipo='Lotta']    { --tipo-colore: #dd8158; }
+  [data-tipo='Oscurità'] { --tipo-colore: #99a2b8; }
+  [data-tipo='Metallo']  { --tipo-colore: #9aabbd; }
+  [data-tipo='Fata']     { --tipo-colore: #ef7bb5; }
+  [data-tipo='Drago']    { --tipo-colore: #cbb650; }
+  [data-tipo='Incolore'] { --tipo-colore: #a7aec0; }
+}
+
+/* Pastiglia con il nome del tipo o del costo di un attacco. */
+.pastiglia-tipo {
+  display: inline-block;
+  background: var(--tipo-tenue);
+  color: var(--tipo-colore);
+  border: 1px solid var(--tipo-colore);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}

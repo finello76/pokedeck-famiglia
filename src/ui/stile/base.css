@@ -1,0 +1,178 @@
+/* Fondamenta visive: palette, tipografia, layout di pagina.
+   I colori dei tipi Pokémon stanno in tipi.css. */
+
+:root {
+  /* Palette ispirata al mondo Pokémon, non copiata da asset ufficiali. */
+  --colore-fondo: #f4f6fb;
+  --colore-superficie: #ffffff;
+  --colore-testo: #1c2333;
+  --colore-testo-tenue: #5b6478;
+  --colore-bordo: #dfe3ee;
+  --colore-primario: #2a5fd6;
+  --colore-primario-scuro: #1e46a0;
+  --colore-attenzione: #c2410c;
+
+  --raggio: 14px;
+  --raggio-piccolo: 8px;
+  --ombra: 0 1px 2px rgb(28 35 51 / 8%), 0 4px 14px rgb(28 35 51 / 6%);
+  --spazio: 1rem;
+
+  --larghezza-massima: 60rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --colore-fondo: #12161f;
+    --colore-superficie: #1b2130;
+    --colore-testo: #e9edf7;
+    --colore-testo-tenue: #a2abc0;
+    --colore-bordo: #2c3446;
+    --colore-primario: #7aa2ff;
+    --colore-primario-scuro: #a8c2ff;
+    --ombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 14px rgb(0 0 0 / 25%);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--colore-fondo);
+  color: var(--colore-testo);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  /* Mobile-first: si tiene in mano mentre si sfogliano le carte fisiche. */
+  font-size: 16px;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0 0 0.5em;
+}
+
+.intestazione {
+  background: var(--colore-superficie);
+  border-bottom: 1px solid var(--colore-bordo);
+  padding: var(--spazio);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.intestazione h1 {
+  font-size: 1.25rem;
+  margin: 0;
+  max-width: var(--larghezza-massima);
+  margin-inline: auto;
+}
+
+.intestazione .sottotitolo {
+  color: var(--colore-testo-tenue);
+  font-size: 0.85rem;
+  max-width: var(--larghezza-massima);
+  margin: 0.15rem auto 0;
+}
+
+main {
+  max-width: var(--larghezza-massima);
+  margin-inline: auto;
+  padding: var(--spazio);
+}
+
+.pannello {
+  background: var(--colore-superficie);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio);
+  box-shadow: var(--ombra);
+  padding: var(--spazio);
+  margin-bottom: var(--spazio);
+}
+
+/* --- Moduli --- */
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--colore-testo-tenue);
+  margin-bottom: 0.25rem;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  border-radius: var(--raggio-piccolo);
+  border: 1px solid var(--colore-bordo);
+  padding: 0.6rem 0.7rem;
+  background: var(--colore-superficie);
+  color: var(--colore-testo);
+  /* 16px minimo evita lo zoom automatico di Safari iOS sul focus. */
+  font-size: 16px;
+  width: 100%;
+}
+
+button {
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--colore-primario-scuro);
+  border-color: var(--colore-primario-scuro);
+}
+
+@media (prefers-color-scheme: dark) {
+  button {
+    color: #10151f;
+  }
+}
+
+.riga-modulo {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+/* Su schermi larghi i campi stanno in riga. Sotto, uno per riga: più comodo
+   da telefono con la carta in mano. */
+@media (min-width: 30rem) {
+  .riga-modulo {
+    grid-template-columns: 2fr 1fr auto;
+    align-items: end;
+  }
+}
+
+/* Dichiara i risultati come contenitore: <scheda-carta> si adatta alla
+   larghezza di QUESTO elemento, non a quella della finestra. È la differenza
+   fra container query e media query, e qui serve perché la stessa scheda
+   comparirà anche in colonne strette nella vista collezione. */
+#risultati {
+  container-type: inline-size;
+}
+
+.aiuto {
+  color: var(--colore-testo-tenue);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.errore {
+  color: var(--colore-attenzione);
+  font-weight: 600;
+}
+
+.stato {
+  color: var(--colore-testo-tenue);
+  font-style: italic;
+}

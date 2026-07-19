@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PokéDeck Famiglia</title>
+    <meta name="description" content="Catalogo della collezione Pokémon TCG e generatore di mazzi equilibrati per giocare in famiglia." />
+    <meta name="theme-color" content="#2a5fd6" />
+
+    <!-- Tutti i path sono RELATIVI: l'app deve funzionare da una sottocartella
+         di GitHub Pages (/PokeDeckFamiglia/) oltre che dalla radice. -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="risorse/icona.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="risorse/icona.svg" />
+    <link rel="stylesheet" href="src/ui/stile/base.css" />
+    <link rel="stylesheet" href="src/ui/stile/tipi.css" />
+  </head>
+  <body>
+    <header class="intestazione">
+      <h1>PokéDeck Famiglia</h1>
+      <p class="sottotitolo">Catalogo della collezione — v1 in costruzione</p>
+    </header>
+
+    <main>
+      <section class="pannello">
+        <h2>Cerca una carta</h2>
+        <p class="aiuto">
+          Sulla carta fisica, in basso, trovi qualcosa come <strong>118/191</strong>:
+          il primo numero è la carta, il secondo il totale del set.
+        </p>
+
+        <form id="modulo-ricerca" class="riga-modulo">
+          <div>
+            <label for="campo-numero">Numero della carta</label>
+            <input id="campo-numero" name="numero" inputmode="numeric" placeholder="118" required />
+          </div>
+          <div>
+            <label for="campo-totale">Totale del set</label>
+            <input id="campo-totale" name="totale" inputmode="numeric" placeholder="191" required />
+          </div>
+          <div>
+            <button type="submit">Cerca</button>
+          </div>
+        </form>
+
+        <p id="stato-ricerca" class="stato" hidden></p>
+      </section>
+
+      <section id="risultati" aria-live="polite"></section>
+
+      <section class="pannello">
+        <h2>Set nella collezione</h2>
+        <ul id="elenco-set" class="stato">
+          <li>Caricamento…</li>
+        </ul>
+      </section>
+    </main>
+
+    <script type="module" src="src/app/app.js"></script>
+  </body>
+</html>

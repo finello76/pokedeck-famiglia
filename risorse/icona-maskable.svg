@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PokéDeck Famiglia">
+  <!-- Variante "maskable": Android ritaglia l'icona con forme diverse (cerchio,
+       goccia, quadrato stondato) e può tagliare fino al 20% per lato. Il disegno
+       sta quindi dentro la "safe zone" centrale, più piccolo che in icona.svg. -->
+  <rect width="512" height="512" fill="#2a5fd6" />
+
+  <g transform="translate(256 258) scale(0.72)">
+    <rect x="-108" y="-140" width="196" height="274" rx="22"
+          fill="#1e46a0" transform="rotate(-14)" />
+    <rect x="-98" y="-140" width="196" height="274" rx="22"
+          fill="#4a7ff0" transform="rotate(-6)" />
+    <rect x="-94" y="-142" width="196" height="274" rx="22"
+          fill="#ffffff" />
+    <path d="M14 -96 L-28 8 H6 L-16 92 L48 -20 H12 Z"
+          fill="#d6a800" stroke="#a37f00" stroke-width="6" stroke-linejoin="round" />
+  </g>
+</svg>

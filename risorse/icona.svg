@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PokéDeck Famiglia">
+  <!-- Forma astratta: tre carte impilate con una scintilla.
+       Volutamente NON una Poké Ball e nessun asset ufficiale: solo geometrie
+       proprie, come da vincoli del progetto. -->
+  <rect width="512" height="512" rx="112" fill="#2a5fd6" />
+
+  <g transform="translate(256 262)">
+    <!-- carte dietro, ruotate -->
+    <rect x="-108" y="-140" width="196" height="274" rx="22"
+          fill="#1e46a0" transform="rotate(-14)" />
+    <rect x="-98" y="-140" width="196" height="274" rx="22"
+          fill="#4a7ff0" transform="rotate(-6)" />
+    <!-- carta in primo piano -->
+    <rect x="-94" y="-142" width="196" height="274" rx="22"
+          fill="#ffffff" />
+    <!-- scintilla -->
+    <path d="M14 -96 L-28 8 H6 L-16 92 L48 -20 H12 Z"
+          fill="#d6a800" stroke="#a37f00" stroke-width="6" stroke-linejoin="round" />
+  </g>
+</svg>

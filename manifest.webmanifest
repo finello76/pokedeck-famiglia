@@ -1,0 +1,26 @@
+{
+  "name": "PokéDeck Famiglia",
+  "short_name": "PokéDeck",
+  "description": "Catalogo della collezione Pokémon TCG e generatore di mazzi equilibrati per giocare in famiglia.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f6fb",
+  "theme_color": "#2a5fd6",
+  "icons": [
+    {
+      "src": "risorse/icona.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "risorse/icona-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
