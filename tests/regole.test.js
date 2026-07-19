@@ -132,6 +132,62 @@ test('la difficolta\' semplificata aggiunge le regole per chi impara', () => {
   assert.ok(facile.regole.some((r) => r.codice === 'senza-abilita'));
 });
 
+test('la panchina ridotta vale solo per i mazzi piccoli', () => {
+  const piccolo = pianifica(collezioneSana, { taglia: 15, numeroMazzi: 1 });
+  const grande = pianifica(collezioneSana, { taglia: 30, numeroMazzi: 1 });
+  assert.ok(piccolo.regole.some((r) => r.codice === 'panchina-ridotta'));
+  assert.ok(!grande.regole.some((r) => r.codice === 'panchina-ridotta'));
+});
+
+test('poche basi nel mazzo attivano il mulligan morbido', () => {
+  // Due soli Base su un mazzo da ~14: sotto il minimo consigliato (4).
+  const voci = [pk('Pikachu', 'Lampo', 'Base', null, 2), en('Lampo', 12)];
+  const p = pianifica(voci, { taglia: 15, numeroMazzi: 1 });
+  const regola = p.regole.find((r) => r.codice === 'mulligan-morbido');
+  assert.ok(regola, 'la regola deve attivarsi');
+  assert.match(regola.motivazione, /\d+ Base su \d+/);
+});
+
+test('con poche energie la prima ritirata del turno e\' gratuita', () => {
+  const voci = [pk('Pikachu', 'Lampo', 'Base', null, 8), en('Lampo', 5)];
+  const p = pianifica(voci, { taglia: 15, numeroMazzi: 2 });
+  assert.ok(p.regole.some((r) => r.codice === 'ritirata-agevolata'));
+
+  // Con i proxy Energia la scarsità si risolve stampando: la regola sparisce.
+  const conProxy = pianifica(voci, { taglia: 15, numeroMazzi: 2, proxyEnergia: true });
+  assert.ok(!conProxy.regole.some((r) => r.codice === 'ritirata-agevolata'));
+});
+
+test('senza allenatori si attiva scarta-e-pesca', () => {
+  const p = pianifica(collezioneSana, { taglia: 30, numeroMazzi: 1 });
+  const regola = p.regole.find((r) => r.codice === 'scarta-e-pesca');
+  assert.ok(regola, 'zero Allenatori in collezione: la regola serve');
+  assert.match(regola.motivazione, /0 carte Allenatore/);
+});
+
+test('mazzi di taglia diversa compensano il piu\' corto', () => {
+  // Collezione asimmetrica: il secondo mazzo resta molto corto.
+  const voci = [
+    pk('Pikachu', 'Lampo', 'Base', null, 5),
+    pk('Voltorb', 'Lampo', 'Base', null, 2),
+    en('Lampo', 9),
+  ];
+  const p = pianifica(voci, { taglia: 15, numeroMazzi: 2 });
+  const totali = p.mazzi.map((m) => m.totale);
+  if (Math.max(...totali) - Math.min(...totali) >= 2) {
+    assert.ok(p.regole.some((r) => r.codice === 'mazzo-corto-compensato'));
+  } else {
+    assert.ok(!p.regole.some((r) => r.codice === 'mazzo-corto-compensato'));
+  }
+});
+
+test('il primo turno senza attacchi esiste solo in modalita\' semplificata', () => {
+  const facile = pianifica(collezioneSana, { taglia: 20, numeroMazzi: 1, semplificata: true });
+  const normale = pianifica(collezioneSana, { taglia: 30, numeroMazzi: 1 });
+  assert.ok(facile.regole.some((r) => r.codice === 'primo-turno-morbido'));
+  assert.ok(!normale.regole.some((r) => r.codice === 'primo-turno-morbido'));
+});
+
 test('la valutazione non inventa regole fuori catalogo', () => {
   const analisi = analizza(collezioneSana);
   const { regole } = valutaRegole({

@@ -69,6 +69,7 @@ const GUSCIO = [
   './src/engine/proporzioni.js',
   './src/engine/generazione.js',
   './src/engine/regole.js',
+  './src/engine/regole-catalogo.js',
   './src/engine/pianifica.js',
   './src/engine/proxy.js',
   './src/engine/alternative.js',
