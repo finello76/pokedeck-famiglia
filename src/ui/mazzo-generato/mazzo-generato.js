@@ -46,11 +46,14 @@ export class MazzoGenerato extends HTMLElement {
         .map((c) => {
           const dati = c.carta ?? c;
           const deroga = this.#conDeroga.has(dati.nome);
+          const proxy = Boolean(c.proxy);
+          const classi = [deroga && 'deroga', proxy && 'proxy'].filter(Boolean).join(' ');
           return `
-            <li${deroga ? ' class="deroga"' : ''}>
+            <li${classi ? ` class="${classi}"` : ''}>
               <span class="quante">${c.quantita}×</span>
               <span class="nome">${escapeHtml(dati.nome)}</span>
               <span class="dettaglio">${escapeHtml(dati.stadio ?? '')}</span>
+              ${proxy ? `<span class="marchio marchio-proxy" title="${escapeHtml(c.motivo ?? 'Carta stampata: non è nella collezione')}">da stampare</span>` : ''}
               ${deroga ? '<span class="marchio" title="Si gioca come Pokémon Base">come Base</span>' : ''}
             </li>`;
         })
@@ -92,17 +95,37 @@ export class MazzoGenerato extends HTMLElement {
    * @returns {string}
    */
   #htmlCarosello(m) {
-    const conImmagine = m.carte.filter((c) => (c.carta ?? c).immagine);
-    if (!conImmagine.length) return '';
+    // I proxy compaiono anche senza illustrazione: nel carosello si deve
+    // vedere il mazzo INTERO, comprese le carte che andranno stampate.
+    const daMostrare = m.carte.filter((c) => (c.carta ?? c).immagine || c.proxy);
+    if (!daMostrare.length) return '';
 
-    const figure = conImmagine
+    const figure = daMostrare
       .map((c) => {
         const dati = c.carta ?? c;
         const deroga = this.#conDeroga.has(dati.nome);
+        const proxy = Boolean(c.proxy);
+
+        if (!dati.immagine) {
+          // Proxy senza scansione (le Energie generiche): un riquadro col
+          // colore del tipo al posto della foto. Non è un pulsante: non c'è
+          // niente da ingrandire.
+          return `
+            <span class="miniatura segnaposto-mini proxy" role="listitem"
+                  data-tipo="${escapeHtml(dati.tipi?.[0] ?? 'Incolore')}"
+                  title="${escapeHtml(c.motivo ?? dati.nome)}">
+              <span class="nome-mini">${escapeHtml(dati.nome)}</span>
+              ${c.quantita > 1 ? `<span class="quante-mini">×${c.quantita}</span>` : ''}
+            </span>`;
+        }
+
+        const classi = ['miniatura', deroga && 'deroga', proxy && 'proxy']
+          .filter(Boolean)
+          .join(' ');
         return `
-          <button type="button" class="miniatura${deroga ? ' deroga' : ''}"
+          <button type="button" class="${classi}"
                   data-nome="${escapeHtml(dati.nome)}"
-                  title="${escapeHtml(dati.nome)}">
+                  title="${escapeHtml(dati.nome)}${proxy ? ' (da stampare)' : ''}">
             <img src="${dati.immagine}/low.webp" alt="${escapeHtml(dati.nome)}" loading="lazy" />
             ${c.quantita > 1 ? `<span class="quante-mini">×${c.quantita}</span>` : ''}
           </button>`;

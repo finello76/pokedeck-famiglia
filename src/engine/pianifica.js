@@ -21,8 +21,9 @@
  * @module engine/pianifica
  */
 
-import { generaMazzi } from './generazione.js';
+import { generaMazzi, rilevaCarenze } from './generazione.js';
 import { valutaRegole } from './regole.js';
+import { calcolaProxy, integraProxy } from './proxy.js';
 
 /**
  * Costruisce mazzi e foglio regole.
@@ -33,8 +34,11 @@ import { valutaRegole } from './regole.js';
  * @param {number} [opzioni.numeroMazzi=2]
  * @param {boolean} [opzioni.semplificata=false] difficoltà per chi impara
  * @param {boolean} [opzioni.proxyEnergia=false] se si stamperanno energie proxy
+ * @param {boolean} [opzioni.proxyPokemon=false] se si stamperanno le
+ *   pre-evoluzioni mancanti
  * @param {boolean} [opzioni.ammettiEsotici=false]
- * @returns {{mazzi: object[], regole: object[], permessi: object, carenze: object[], analisi: object}}
+ * @returns {{mazzi: object[], regole: object[], permessi: object, carenze: object[],
+ *   analisi: object, proxy: object[], proxyScartati: object[]}}
  * @example
  * const { mazzi, regole } = pianifica(collezione, { taglia: 15, numeroMazzi: 2 });
  * // regole → solo quelle attivate, ciascuna con testo e motivazione stampabili
@@ -44,6 +48,7 @@ export function pianifica(voci, opzioni) {
     numeroMazzi: 2,
     semplificata: false,
     proxyEnergia: false,
+    proxyPokemon: false,
     ammettiEsotici: false,
     ...opzioni,
   };
@@ -57,15 +62,33 @@ export function pianifica(voci, opzioni) {
     opzioni: configurazione,
   });
 
+  // Coi proxy Pokémon attivi gli orfani vanno selezionati comunque: la loro
+  // pre-evoluzione verrà stampata. È una deroga TECNICA per il generatore, non
+  // una regola della casa: se poi tutti gli orfani risultano risolti dai
+  // proxy, la regola non comparirà sul foglio.
+  if (configurazione.proxyPokemon) permessi.evoluzioniComeBase = true;
+
   // Passata 2: si rigenera con le deroghe concesse dalle regole.
   const definitivo = generaMazzi(voci, { ...configurazione, permessi });
+
+  // I proxy si calcolano sui mazzi definitivi e si inseriscono nelle liste;
+  // poi le carenze si RIMISURANO, perché un buco tappato da un proxy non è più
+  // un buco e non deve attivare regole della casa.
+  const { proxy, scartati } = calcolaProxy(
+    { mazzi: definitivo.mazzi, carenze: definitivo.carenze },
+    configurazione,
+  );
+  integraProxy(definitivo.mazzi, proxy, configurazione.taglia);
+  const carenze = proxy.length
+    ? rilevaCarenze(definitivo.mazzi, configurazione.taglia, definitivo.analisi, permessi)
+    : definitivo.carenze;
 
   // Le regole si rivalutano sui mazzi definitivi: il foglio deve spiegare
   // questi mazzi, non quelli della prima passata.
   const { regole } = valutaRegole({
     analisi: definitivo.analisi,
     mazzi: definitivo.mazzi,
-    carenze: definitivo.carenze,
+    carenze,
     opzioni: configurazione,
   });
 
@@ -73,8 +96,10 @@ export function pianifica(voci, opzioni) {
     mazzi: definitivo.mazzi,
     regole,
     permessi,
-    carenze: definitivo.carenze,
+    carenze,
     analisi: definitivo.analisi,
+    proxy,
+    proxyScartati: scartati,
   };
 }
 

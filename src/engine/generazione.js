@@ -280,6 +280,10 @@ export function generaMazzi(voci, opzioni) {
  * a decidere quale regola della casa attivare, e il foglio stampato a spiegarne
  * il perché.
  *
+ * Esportata perché `pianifica()` deve rimisurare DOPO l'inserimento dei proxy:
+ * un orfano con la pre-evoluzione stampata non è più orfano, e il foglio
+ * regole non deve parlarne.
+ *
  * @param {Mazzo[]} mazzi
  * @param {number} taglia
  * @param {object} analisi
@@ -289,7 +293,7 @@ export function generaMazzi(voci, opzioni) {
  *   perché una regola la risolve, o quella regola sparirebbe dal foglio
  * @returns {Array<{codice: string, mazzo?: string, dati: object}>}
  */
-function rilevaCarenze(mazzi, taglia, analisi, permessi = {}) {
+export function rilevaCarenze(mazzi, taglia, analisi, permessi = {}) {
   const carenze = [];
 
   for (const mazzo of mazzi) {

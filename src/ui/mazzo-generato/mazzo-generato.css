@@ -80,6 +80,29 @@ mazzo-generato {
   border-color: var(--colore-attenzione, #c2410c);
 }
 
+/* I proxy (carte da stampare) usano il tratteggio, mai usato per le carte
+   vere: si distinguono a colpo d'occhio anche in bianco e nero. */
+.miniatura.proxy {
+  border: 2px dashed var(--colore-proxy, #7c3aed);
+}
+
+/* Proxy senza scansione (Energie generiche): riquadro col colore del tipo. */
+.segnaposto-mini {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 63 / 88;
+  background: var(--tipo-tenue, #eceef4);
+  color: var(--tipo-colore, #555);
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.3rem;
+}
+
+.segnaposto-mini .nome-mini {
+  overflow-wrap: anywhere;
+}
+
 .quante-mini {
   position: absolute;
   inset-block-end: 0.2rem;
@@ -165,4 +188,14 @@ mazzo-generato {
   font-weight: 700;
   white-space: nowrap;
   flex: none;
+}
+
+/* Il contrassegno dei proxy ha un colore suo: "da stampare" e "come Base"
+   sono avvisi diversi e non devono confondersi. */
+.marchio-proxy {
+  background: var(--colore-proxy, #7c3aed);
+}
+
+.proxy .nome {
+  font-style: italic;
 }

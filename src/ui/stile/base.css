@@ -11,6 +11,9 @@
   --colore-primario: #2a5fd6;
   --colore-primario-scuro: #1e46a0;
   --colore-attenzione: #c2410c;
+  /* Contrassegno delle carte proxy (da stampare): un colore mai usato per
+     altro, così non si confonde con gli avvisi. */
+  --colore-proxy: #7c3aed;
 
   --raggio: 14px;
   --raggio-piccolo: 8px;
@@ -29,6 +32,7 @@
     --colore-bordo: #2c3446;
     --colore-primario: #7aa2ff;
     --colore-primario-scuro: #a8c2ff;
+    --colore-proxy: #a78bfa;
     --ombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 14px rgb(0 0 0 / 25%);
   }
 }

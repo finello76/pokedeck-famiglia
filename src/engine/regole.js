@@ -50,10 +50,9 @@ const CATALOGO = [
      * caso dominante di questo progetto: senza questa regola quelle carte non
      * entrano in nessun mazzo.
      */
-    condizione: ({ analisi, carenze }) => {
+    condizione: ({ analisi, carenze, opzioni }) => {
       const orfani = analisi.orfani ?? [];
       if (orfani.length === 0) return null;
-      const nomi = [...new Set(orfani.map((o) => o.voce.carta.nome))];
 
       // Quali stadi hanno davvero ottenuto la deroga nei mazzi. Alla prima
       // passata l'elenco è vuoto, perché gli orfani sono ancora esclusi: il
@@ -61,6 +60,14 @@ const CATALOGO = [
       const neiMazzi = carenze
         .filter((c) => c.codice === 'orfani-nel-mazzo')
         .flatMap((c) => c.dati.orfani);
+
+      // Coi proxy Pokémon le pre-evoluzioni note vengono stampate e le carenze
+      // rimisurate: se nessun orfano è rimasto nei mazzi, la regola non serve.
+      // Resta necessaria per gli orfani irrisolvibili (pre-evoluzione
+      // sconosciuta, o quota proxy superata).
+      if (opzioni.proxyPokemon && neiMazzi.length === 0) return null;
+
+      const nomi = [...new Set(orfani.map((o) => o.voce.carta.nome))];
       const conLivello2 = neiMazzi.filter((o) => o.stadio === 'Livello 2');
 
       // Un Livello 2 è costruito per stare in cima a una catena di tre carte:
@@ -125,6 +132,9 @@ const CATALOGO = [
      * equilibri fra le carte, non solo la loro compatibilità.
      */
     condizione: ({ analisi, opzioni }) => {
+      // Con le Energie proxy la scarsità si risolve stampando, non alterando i
+      // costi: la regola non serve.
+      if (opzioni.proxyEnergia) return null;
       const energie = analisi.energie.totaleBase;
       const servono = opzioni.taglia * opzioni.numeroMazzi * 0.25;
       if (energie >= servono) return null;
@@ -211,6 +221,9 @@ const CATALOGO = [
      * energie può impantanarsi: due Pokémon che non riescono ad attaccare.
      */
     condizione: ({ opzioni, analisi }) => {
+      // Le Energie proxy eliminano il rischio di stallo da energie mancanti;
+      // resta il tempo massimo solo se richiesto dalla difficoltà.
+      if (!opzioni.semplificata && opzioni.proxyEnergia) return null;
       if (!opzioni.semplificata && analisi.energie.totaleBase >= opzioni.taglia) return null;
       return {
         testo:

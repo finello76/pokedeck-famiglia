@@ -144,11 +144,24 @@
   object-fit: cover;
 }
 
+/* Segnaposto per i proxy senza scansione (le Energie generiche): il colore
+   del tipo arriva da tipi.css attraverso data-tipo sulla cella. */
+.carta-proxy[data-tipo] {
+  border-top: 4mm solid var(--tipo-colore, #8b93a7);
+}
+
 .carta-proxy .segnaposto-proxy {
+  display: grid;
+  gap: 3mm;
+  justify-items: center;
   text-align: center;
   padding: 4mm;
   font-size: 10pt;
   color: #333;
+}
+
+.carta-proxy .nome-proxy {
+  font-size: 13pt;
 }
 
 @media print {

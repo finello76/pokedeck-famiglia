@@ -11,6 +11,7 @@ import { elencoCompleto, statistiche } from '../data/collezione.js';
 import { pianifica, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
+import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
 import '../ui/procedura-guidata/procedura-guidata.js';
 import '../ui/mazzo-generato/mazzo-generato.js';
 
@@ -55,6 +56,9 @@ async function genera(risposte) {
 
   pianoCorrente = pianifica(voci, opzioni);
   pianoCorrente.opzioni = opzioni;
+  // Il motore dei proxy conosce solo i nomi: le scansioni le cerca il livello
+  // applicativo nel dataset, prima di disegnare.
+  await arricchisciProxy(pianoCorrente);
   disegnaPiano(pianoCorrente, opzioni);
 }
 
@@ -105,6 +109,9 @@ function disegnaPiano(piano, opzioni) {
   }
   risultato.append(elenco);
   risultato.append(fogliaRegole(piano.regole));
+
+  const proxy = foglioProxy(piano);
+  if (proxy) risultato.append(proxy);
 
   intestazione.querySelector('#bottone-stampa').addEventListener('click', () => window.print());
   intestazione.querySelector('#bottone-nuovo').addEventListener('click', () => ricomincia());
