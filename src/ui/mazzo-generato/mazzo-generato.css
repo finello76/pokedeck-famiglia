@@ -196,7 +196,10 @@ mazzo-generato {
 .gruppo li {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  /* Su schermo stretto contrassegni e pulsante vanno a capo sotto il nome,
+     invece di schiacciarlo a una lettera per riga. */
+  flex-wrap: wrap;
+  gap: 0.15rem 0.5rem;
   padding: 0.22rem 0;
   border-block-end: 1px dotted var(--colore-bordo);
   font-size: 0.92rem;
@@ -209,7 +212,9 @@ mazzo-generato {
 }
 
 .nome {
-  flex: 1 1 auto;
+  /* La base di 7rem è la larghezza sotto cui il nome preferisce mandare a
+     capo i contrassegni piuttosto che spezzarsi. */
+  flex: 1 1 7rem;
   min-inline-size: 0;
   overflow-wrap: anywhere;
 }

@@ -114,15 +114,23 @@
 }
 
 /* --- Carte proxy da ritagliare ---
-   Fuori dalla media query perché servono anche in anteprima a schermo. */
+   La griglia esiste SOLO su carta: a schermo una fila di celle da 63 mm
+   allargava la pagina su telefono e caricava le scansioni ad alta risoluzione
+   senza motivo. A schermo resta l'elenco testuale dei proxy. */
 
 .foglio-proxy {
-  display: grid;
-  /* Misura reale di una carta Pokémon: 63×88 mm. Non si scala, altrimenti nel
-     mazzo si riconoscerebbero al tatto. */
-  grid-template-columns: repeat(3, 63mm);
-  gap: 0;
-  justify-content: center;
+  display: none;
+}
+
+@media print {
+  .foglio-proxy {
+    display: grid;
+    /* Misura reale di una carta Pokémon: 63×88 mm. Non si scala, altrimenti
+       nel mazzo si riconoscerebbero al tatto. */
+    grid-template-columns: repeat(3, 63mm);
+    gap: 0;
+    justify-content: center;
+  }
 }
 
 .carta-proxy {

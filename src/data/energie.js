@@ -37,6 +37,8 @@ const PAROLA_A_TIPO = {
   // italiano, NON coincidenti: qui sta il valore di questa tabella
   psiche: 'Psico',
   combattimento: 'Lotta',
+  // nei set XY il tipo Fata si chiamava "Folletto"
+  folletto: 'Fata',
   // I nomi canonici dei tipi devono mappare su se stessi: le energie base
   // generiche create dall'app (collezione.js) si chiamano "Energia Lotta" e
   // "Energia Psico", non "Energia Combattimento". Senza queste due righe

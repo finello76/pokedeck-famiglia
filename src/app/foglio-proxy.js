@@ -9,8 +9,26 @@
  * @module app/foglio-proxy
  */
 
-import { cercaPerNome, urlImmagine } from '../data/dataset.js';
+import { cercaPerNome, caricaSet, urlImmagine } from '../data/dataset.js';
 import { normalizzaNome } from '../engine/nomi.js';
+import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
+
+/**
+ * Set noti per contenere le Energie base con la scansione, in ordine di
+ * preferenza (grafica moderna prima). Si caricano solo se servono davvero:
+ * sono file piccoli e il service worker li tiene poi in cache.
+ *
+ * Serve un elenco esplicito perché il nome NON basta: la carta di tipo Psico
+ * si chiama "Energia Psiche" e quella di tipo Lotta "Energia Combattimento",
+ * quindi il confronto va fatto sul TIPO, dentro set che le contengono.
+ *
+ * I due set insieme coprono nove tipi: Zenit Regale ha gli otto moderni,
+ * Evoluzioni aggiunge la Fata (che lì si chiama "Energia Folletto"). Il
+ * **Drago non è coperto**: in tutto il dataset italiano non esiste una carta
+ * Energia Drago base, quindi quel proxy uscirà sempre come segnaposto
+ * testuale. Non è un difetto da correggere qui: manca la carta, non il codice.
+ */
+const SET_ENERGIE = ['swsh12.5', 'xy12'];
 
 /**
  * Cerca nel dataset la scansione delle carte proxy e la aggancia alle voci.
@@ -31,6 +49,14 @@ export async function arricchisciProxy(piano) {
     for (const voce of mazzo.carte) {
       if (!voce.proxy || voce.carta.immagine) continue;
 
+      if (voce.carta.categoria === 'Energia') {
+        const trovata = await cartaEnergia(voce.carta.tipi?.[0]);
+        // Si prende solo la scansione: nome e tipo restano quelli del proxy
+        // ("Energia Psico"), che sono i termini usati in tutta l'app.
+        if (trovata) voce.carta = { ...voce.carta, immagine: trovata.immagine };
+        continue;
+      }
+
       const trovate = await cercaPerNome(voce.carta.nome);
       const esatta = trovate.find(
         (t) =>
@@ -43,6 +69,24 @@ export async function arricchisciProxy(piano) {
       }
     }
   }
+}
+
+/**
+ * La carta Energia base di un certo tipo, pescata dai set che la contengono.
+ *
+ * @param {string} tipo tipo canonico, es. `'Psico'`
+ * @returns {Promise<object|null>}
+ */
+async function cartaEnergia(tipo) {
+  if (!tipo) return null;
+  for (const idSet of SET_ENERGIE) {
+    const set = await caricaSet(idSet).catch(() => null);
+    const trovata = set?.carte.find(
+      (c) => eEnergiaBase(c) && tipoEnergia(c) === tipo && c.immagine,
+    );
+    if (trovata) return trovata;
+  }
+  return null;
 }
 
 /**
@@ -69,10 +113,11 @@ export function foglioProxy(piano) {
   sezione.innerHTML = `
     <h2>Carte da stampare (proxy)</h2>
     <p class="aiuto no-stampa">
-      Queste carte non sono nella collezione: stampale, ritagliale lungo il
-      tratteggio (misura reale 63×88 mm) e infilale nel mazzo indicato, magari
-      dentro una bustina davanti a una carta qualsiasi. Valgono come la carta
-      vera. Solo per giocare in famiglia.
+      Queste carte non sono nella collezione. Compaiono <strong>solo sul foglio
+      stampato</strong> (pulsante "Stampa mazzi e regole"), a misura reale
+      63×88 mm con le linee di ritaglio: ritagliale e infilale nel mazzo
+      indicato, magari dentro una bustina davanti a una carta qualsiasi.
+      Valgono come la carta vera. Solo per giocare in famiglia.
     </p>
     <ul class="motivi-proxy no-stampa">
       ${voci
@@ -106,9 +151,13 @@ function cella(voce) {
   const { carta } = voce;
   const src = urlImmagine(carta, 'stampa');
   if (src) {
+    // NIENTE loading="lazy": la griglia sta in un contenitore display:none
+    // (si vede solo in stampa) e un'immagine pigra lì dentro non si carica
+    // mai — il foglio uscirebbe dalla stampante con le celle vuote. Sono
+    // pochi file e il service worker li tiene in cache dopo il primo giro.
     return `
       <div class="carta-proxy">
-        <img src="${src}" alt="Proxy di ${escapeHtml(carta.nome)}" loading="lazy" />
+        <img src="${src}" alt="Proxy di ${escapeHtml(carta.nome)}" />
       </div>`;
   }
   return `
