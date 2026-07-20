@@ -49,7 +49,23 @@ node tools/scarica-set.mjs           # scarica solo i set mancanti (riprendibile
 node tools/scarica-set.mjs --forza   # riscarica tutto: >21.000 richieste, ~10 minuti
 ```
 
-Serve solo quando escono set nuovi: i set già presenti vengono saltati.
+Serve solo quando escono set nuovi: i set già presenti vengono saltati. Dopo aver
+scaricato set nuovi, rigenerare anche l'indice delle evoluzioni:
+
+```bash
+node tools/genera-indice-evoluzioni.mjs   # ricostruisce data/evoluzioni.json
+```
+
+Recupera i collegamenti `evolveDa` che le singole stampe non dichiarano (il 41% delle
+evoluzioni): senza, il motore tratta da orfane carte di cui possiedi la pre-evoluzione.
+
+**Numero di build.** `version.json` mostra in fondo alla pagina un numero che cresce a
+ogni commit, per capire se GitHub Pages ha pubblicato la versione nuova. Lo aggiorna da
+solo il hook `pre-commit`; per attivarlo in un clone nuovo, una volta sola:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 Node è installato via **nvm** e non è nel PATH delle shell non interattive. Anteporre:
 

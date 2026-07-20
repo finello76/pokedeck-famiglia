@@ -1,0 +1,19 @@
+#!/bin/sh
+# Aggiorna il numero di build prima di ogni commit e lo include nel commit.
+#
+# Attivazione (una volta per clone):
+#     git config core.hooksPath .githooks
+#
+# Node è installato via nvm e non è nel PATH delle shell non interattive: si
+# aggiunge qui, come per gli altri comandi Node del progetto. Se il percorso
+# non esiste (altra macchina), si prova comunque `node` dal PATH.
+NODE_DIR="$HOME/.nvm/versions/node/v24.18.0/bin"
+[ -d "$NODE_DIR" ] && PATH="$NODE_DIR:$PATH"
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node non trovato, salto l'aggiornamento della versione" >&2
+  exit 0
+fi
+
+node tools/timbra-versione.mjs || exit 0
+git add version.json

@@ -18,6 +18,7 @@ import {
 import { scaricaFile, importa } from '../data/scambio.js';
 import { registraServiceWorker } from './registra-sw.js';
 import { avviaViste } from './viste.js';
+import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
@@ -234,3 +235,5 @@ aggiornaCollezione().catch((errore) => {
 });
 
 registraServiceWorker();
+
+mostraVersione(document.querySelector('#versione'));

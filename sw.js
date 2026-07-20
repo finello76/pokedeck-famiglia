@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v9';
+const VERSIONE = 'v10';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -44,6 +44,7 @@ const GUSCIO = [
   './risorse/icona-maskable.svg',
   './src/app/app.js',
   './src/app/registra-sw.js',
+  './src/app/versione.js',
   './src/data/dataset.js',
   './src/data/deposito.js',
   './src/data/collezione.js',
@@ -135,6 +136,15 @@ self.addEventListener('fetch', (evento) => {
 
   if (url.origin !== location.origin) return;
 
+  // version.json va preso SEMPRE dalla rete: è il file che dice "sei
+  // aggiornato?", e servirlo dalla cache mostrerebbe eternamente il numero
+  // vecchio, cioè l'esatto contrario del suo scopo. Offline si ripiega sulla
+  // copia salvata, così almeno mostra l'ultima nota invece di sparire.
+  if (url.pathname.endsWith('version.json')) {
+    evento.respondWith(reteThenCache(richiesta));
+    return;
+  }
+
   // I file dei singoli set: non precaricati, salvati alla prima lettura.
   // L'indice invece sta nel guscio e passa da cachePrima().
   if (url.pathname.includes('/data/set/') && !url.pathname.endsWith('indice.json')) {
@@ -144,6 +154,25 @@ self.addEventListener('fetch', (evento) => {
 
   evento.respondWith(cachePrima(richiesta));
 });
+
+/**
+ * Network-first: prima la rete, la cache solo come riserva offline. Usata per
+ * `version.json`, che deve riflettere il deploy corrente.
+ * @param {Request} richiesta
+ * @returns {Promise<Response>}
+ */
+async function reteThenCache(richiesta) {
+  const cache = await caches.open(CACHE_GUSCIO);
+  try {
+    const risposta = await fetch(richiesta, { cache: 'no-store' });
+    if (risposta.ok) cache.put(richiesta, risposta.clone());
+    return risposta;
+  } catch (errore) {
+    const salvata = await cache.match(richiesta, { ignoreSearch: true });
+    if (salvata) return salvata;
+    throw errore;
+  }
+}
 
 /**
  * Cache-first sul guscio, con la rete come riserva.

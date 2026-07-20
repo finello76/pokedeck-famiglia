@@ -85,6 +85,22 @@ h3 {
   margin-inline: auto;
 }
 
+/* Numero di build, discreto a fine pagina: serve a capire se GitHub Pages ha
+   pubblicato la versione nuova. Non fixed, per non coprire la barra azioni. */
+.pie-versione {
+  max-width: var(--larghezza-massima);
+  margin: 0 auto;
+  padding: 0.5rem var(--spazio) 1.5rem;
+  text-align: center;
+}
+
+.pie-versione span {
+  font-size: 0.72rem;
+  color: var(--colore-testo-tenue);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .intestazione .sottotitolo {
   color: var(--colore-testo-tenue);
   font-size: 0.85rem;
