@@ -24,6 +24,23 @@ const zonaWizard = document.querySelector('#zona-wizard');
 /** @type {object|null} ultimo piano mostrato */
 let pianoCorrente = null;
 
+/** @type {object|null} risposte del wizard, per poter rigenerare senza rifarlo */
+let ultimeRisposte = null;
+
+/**
+ * Un seme nuovo per ogni generazione.
+ *
+ * Il motore è deterministico apposta (mazzi salvati riproducibili, test
+ * stabili): senza un seme diverso a ogni giro produrrebbe sempre gli stessi
+ * mazzi dalla stessa collezione. Il caso lo introduce qui il livello
+ * applicativo, così il motore resta puro.
+ *
+ * @returns {number}
+ */
+function nuovoSeme() {
+  return Math.floor(Math.random() * 2 ** 31);
+}
+
 /**
  * Prepara il wizard con i dati della collezione, così può saltare le domande
  * che non hanno senso (i proxy Pokémon senza evoluzioni orfane).
@@ -45,8 +62,9 @@ export async function preparaWizard() {
  * @param {object} risposte
  * @returns {Promise<void>}
  */
-async function genera(risposte) {
-  const opzioni = opzioniDaRisposte(risposte);
+async function genera(risposte, seme = nuovoSeme()) {
+  const opzioni = { ...opzioniDaRisposte(risposte), seme };
+  ultimeRisposte = risposte;
   const voci = await elencoCompleto();
 
   if (voci.length === 0) {
@@ -94,6 +112,7 @@ function disegnaPiano(piano, opzioni) {
     <div class="azioni">
       <button type="button" id="bottone-stampa">Stampa mazzi e regole</button>
       <button type="button" id="bottone-salva" class="secondario">Salva questi mazzi</button>
+      ${ultimeRisposte ? '<button type="button" id="bottone-rigenera" class="secondario">Rigenera diversi</button>' : ''}
       <button type="button" id="bottone-nuovo" class="secondario">Ricomincia</button>
     </div>
     <p id="stato-mazzi" class="stato" hidden></p>
@@ -116,6 +135,17 @@ function disegnaPiano(piano, opzioni) {
 
   intestazione.querySelector('#bottone-stampa').addEventListener('click', () => window.print());
   intestazione.querySelector('#bottone-nuovo').addEventListener('click', () => ricomincia());
+
+  // Rigenera con le stesse risposte ma un seme nuovo: stessa collezione, mazzi
+  // diversi. Senza questo pulsante la varietà del motore non si vedrebbe,
+  // perché rifare il wizard per intero scoraggia dal riprovare.
+  intestazione.querySelector('#bottone-rigenera')?.addEventListener('click', () => {
+    genera(ultimeRisposte).catch((errore) => {
+      const stato = intestazione.querySelector('#stato-mazzi');
+      stato.textContent = `Rigenerazione fallita: ${errore.message}`;
+      stato.hidden = false;
+    });
+  });
   intestazione.querySelector('#bottone-salva').addEventListener('click', async () => {
     const stato = intestazione.querySelector('#stato-mazzi');
     try {

@@ -17,6 +17,8 @@ import { classifica, eBase } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
 import { composizione, fettaPerMazzo, minimoBasi, piramide } from './proporzioni.js';
+import { Casuale } from './casuale.js';
+import { costruisciGruppi, ordinaGruppi, pezziDaPrendere } from './scelta-linee.js';
 
 /** Limite standard del TCG, che non vale per le Energie base. */
 const MAX_COPIE = 4;
@@ -103,63 +105,6 @@ export function scegliTipi(analisi, numeroMazzi) {
 }
 
 /**
- * Ordina i Pokémon disponibili per quanto convengono a un mazzo.
- *
- * @param {Array<{carta: object, disponibili: number}>} candidati
- * @param {string[]} tipi tipi del mazzo
- * @param {Set<string>} nomiInMazzo nomi già presenti, per completare le linee
- * @returns {Array<{carta: object, disponibili: number}>}
- */
-function ordinaPokemon(candidati, tipi, nomiInMazzo, permessi = {}, orfaniGia = 0) {
-  const punteggio = ({ carta }) => {
-    let p = 0;
-
-    // Un'evoluzione senza la sua pre-evoluzione nel mazzo NON SI PUÒ GIOCARE:
-    // resta in mano tutta la partita. La penalità deve quindi superare
-    // qualunque bonus, altrimenti un orfano del tipo giusto batte una carta
-    // giocabile di tipo sbagliato — ed è meglio un mazzo sporco di tipi che un
-    // mazzo pieno di carte morte. Le regole della casa potranno riabilitarli
-    // più avanti, ma è una decisione del motore delle regole, non di questo.
-    //
-    // Il controllo si basa sullo STADIO, non sulla presenza di `evolveDa`: il
-    // 41% delle evoluzioni del dataset non dichiara da cosa evolve, e fidandosi
-    // di quel campo un Livello 2 come Krookodile passerebbe per giocabile.
-    const livello = classifica(carta).livello ?? 0;
-    const preEvoluzionePresente =
-      Boolean(carta.evolveDa) && nomiInMazzo.has(normalizzaNome(carta.evolveDa));
-    const orfana = livello > 0 && !preEvoluzionePresente;
-
-    if (orfana && !permessi.evoluzioniComeBase) {
-      p -= 250;
-    } else if (orfana) {
-      // Con la deroga attiva la carta è giocabile, ma non è gratis:
-      //
-      // 1. si preferisce il Livello 1 al Livello 2. Un Livello 2 è costruito
-      //    per stare in cima a una catena di tre carte, e giocarlo subito come
-      //    Base lo rende molto più forte di un Base vero;
-      // 2. la penalità cresce con le deroghe già presenti nel mazzo, così non
-      //    si concentrano tutte in uno solo. Senza, un mazzo si prendeva tre
-      //    carte potenti e l'altro una: la partita era decisa dalla pesca.
-      p -= 15 * livello + 35 * orfaniGia;
-    }
-
-    if (tipi.some((t) => (carta.tipi ?? []).includes(t))) p += 100;
-    if (eBase(carta) || (orfana && permessi.evoluzioniComeBase)) p += 50;
-    // Completa una linea già presente: molto più utile di una carta isolata.
-    if (carta.evolveDa && nomiInMazzo.has(normalizzaNome(carta.evolveDa))) p += 40;
-    p += Math.min(20, (carta.ps ?? 0) / 10);
-    const danno = Math.max(0, ...(carta.attacchi ?? []).map((a) => Number(a.danno) || 0));
-    const costo = Math.min(
-      ...(carta.attacchi ?? []).map((a) => a.costo?.length || 9),
-      9,
-    );
-    p += Math.min(25, danno / 10) - costo * 2; // premia il danno a buon mercato
-    return p;
-  };
-  return [...candidati].sort((a, b) => punteggio(b) - punteggio(a));
-}
-
-/**
  * Genera i mazzi.
  *
  * @param {Array<{carta: object, quantita: number}>} voci collezione
@@ -170,13 +115,19 @@ function ordinaPokemon(candidati, tipi, nomiInMazzo, permessi = {}, orfaniGia = 
  * @param {object} [opzioni.permessi] deroghe concesse dalle regole della casa
  *   (`evoluzioniComeBase`, `energiaUniversale`): arrivano dalla seconda passata
  *   orchestrata da `pianifica()`
+ * @param {number} [opzioni.seme=1] seme del caso. Con lo stesso seme e la stessa
+ *   collezione i mazzi sono identici; cambiandolo si ottengono mazzi diversi
+ *   pur restando sensati. Il default fisso tiene i test riproducibili
  * @returns {{mazzi: Mazzo[], carenze: object[], analisi: object}}
  *   `carenze` alimenta il motore delle regole della casa
  * @example
  * const { mazzi } = generaMazzi(collezione, { taglia: 15, numeroMazzi: 2 });
+ * // mazzi diversi a ogni giro:
+ * generaMazzi(collezione, { taglia: 15, seme: Date.now() });
  */
 export function generaMazzi(voci, opzioni) {
-  const { taglia, numeroMazzi = 2, ammettiEsotici = false, permessi = {} } = opzioni;
+  const { taglia, numeroMazzi = 2, ammettiEsotici = false, permessi = {}, seme = 1 } = opzioni;
+  const casuale = new Casuale(seme);
   const analisi = analizza(voci, { ammettiEsotici });
   const dispensa = new Dispensa(voci);
 
@@ -200,7 +151,12 @@ export function generaMazzi(voci, opzioni) {
 
   const forma = piramide(taglia);
 
-  // --- Pokémon, a turni alternati ---
+  // --- Pokémon: si sceglie una LINEA per volta, a turni alternati ---
+  //
+  // L'unità di scelta è il gruppo (una carta giocabile dalla mano con le sue
+  // evoluzioni), non la singola carta. Scegliendo carta per carta ogni Base
+  // ancora disponibile batteva qualunque evoluzione, e la quota Pokémon si
+  // riempiva di sole Basi: i mazzi non evolvevano mai. Vedi scelta-linee.js.
   for (let giro = 0; giro < taglia; giro++) {
     let qualcosaAggiunto = false;
     for (const mazzo of mazzi) {
@@ -217,21 +173,27 @@ export function generaMazzi(voci, opzioni) {
       const candidati = dispensa.cerca(
         (c) => c.categoria === 'Pokémon' && classifica(c).livello !== null,
       );
-      const ordinati = ordinaPokemon(candidati, mazzo.tipi, nomi, permessi, orfaniGia);
-      if (!ordinati.length) continue;
-
-      const scelta = ordinati[0].carta;
-      const livello = classifica(scelta).livello ?? 0;
-      const desiderate = Math.min(
-        forma[livello] ?? 1,
-        quota.pokemon - mazzo.composizione.pokemon,
+      const gruppi = ordinaGruppi(
+        costruisciGruppi(candidati, permessi),
+        mazzo.tipi,
+        permessi,
+        orfaniGia,
+        nomi,
       );
-      const prese = dispensa.preleva(scelta, desiderate);
-      const messe = aggiungi(mazzo, scelta, prese);
-      // Ciò che il tetto delle 4 copie ha respinto torna disponibile.
-      if (prese > messe) dispensa.restituisci(scelta, prese - messe);
-      mazzo.composizione.pokemon += messe;
-      if (messe > 0) qualcosaAggiunto = true;
+      // Non sempre il migliore: fra scelte quasi equivalenti si estrae, ed è
+      // ciò che rende diversi due giri di generazione.
+      const scelto = casuale.scegli(gruppi);
+      if (!scelto) continue;
+
+      const spazio = quota.pokemon - mazzo.composizione.pokemon;
+      for (const { carta, quante } of pezziDaPrendere(scelto, forma, spazio)) {
+        const prese = dispensa.preleva(carta, quante);
+        const messe = aggiungi(mazzo, carta, prese);
+        // Ciò che il tetto delle 4 copie ha respinto torna disponibile.
+        if (prese > messe) dispensa.restituisci(carta, prese - messe);
+        mazzo.composizione.pokemon += messe;
+        if (messe > 0) qualcosaAggiunto = true;
+      }
     }
     if (!qualcosaAggiunto) break;
   }
@@ -241,7 +203,7 @@ export function generaMazzi(voci, opzioni) {
     const suoTipo = (c) => eEnergiaBase(c) && mazzo.tipi.includes(tipoEnergia(c));
     for (const criterio of [suoTipo, (c) => c.categoria === 'Energia']) {
       while (mazzo.composizione.energie < quota.energie) {
-        const disponibili = dispensa.cerca(criterio);
+        const disponibili = casuale.mescola(dispensa.cerca(criterio));
         if (!disponibili.length) break;
         const scelta = disponibili[0].carta;
         const prese = dispensa.preleva(scelta, quota.energie - mazzo.composizione.energie);
@@ -258,7 +220,9 @@ export function generaMazzi(voci, opzioni) {
     let qualcosaAggiunto = false;
     for (const mazzo of mazzi) {
       if (mazzo.composizione.allenatori >= quota.allenatori) continue;
-      const disponibili = dispensa.cerca((c) => c.categoria === 'Allenatore');
+      // Mescolati: gli Allenatori non hanno un criterio di merito come i
+      // Pokémon, quindi senza il caso uscirebbero sempre gli stessi nomi.
+      const disponibili = casuale.mescola(dispensa.cerca((c) => c.categoria === 'Allenatore'));
       if (!disponibili.length) continue;
       const scelta = disponibili[0].carta;
       const prese = dispensa.preleva(scelta, 1);

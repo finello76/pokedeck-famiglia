@@ -165,9 +165,27 @@ test('preferisce carte giocabili a evoluzioni orfane', () => {
   assert.ok(nomi.includes('Pancham'), 'il Base giocabile deve entrare');
 });
 
-test('segnala gli orfani finiti nel mazzo, con nome e cosa manca', () => {
+test('senza deroga gli orfani restano fuori, e il mazzo risulta incompleto', () => {
+  // Un'evoluzione senza la sua pre-evoluzione non si puo' giocare: resta in
+  // mano tutta la partita. Meglio un mazzo corto, che il foglio segnala, che un
+  // mazzo pieno di carte morte. A riabilitarli sara' la regola della casa,
+  // nella seconda passata di pianifica().
   const voci = [pk('Luxio', 'Lampo', 'Livello 1', 'Shinx', 4), en('Lampo', 8)];
-  const { carenze } = generaMazzi(voci, { taglia: 10, numeroMazzi: 1 });
+  const { mazzi, carenze } = generaMazzi(voci, { taglia: 10, numeroMazzi: 1 });
+  assert.ok(!mazzi[0].carte.some((c) => c.carta.nome === 'Luxio'));
+  assert.ok(carenze.some((c) => c.codice === 'mazzo-incompleto'));
+});
+
+test('con la deroga gli orfani entrano e sono segnalati con nome e cosa manca', () => {
+  // E' cio' che rende applicabile la regola "le evoluzioni si giocano come
+  // Base": senza l'elenco, chi ha il mazzo in mano non sa a quali carte si
+  // riferisce.
+  const voci = [pk('Luxio', 'Lampo', 'Livello 1', 'Shinx', 4), en('Lampo', 8)];
+  const { carenze } = generaMazzi(voci, {
+    taglia: 10,
+    numeroMazzi: 1,
+    permessi: { evoluzioniComeBase: true },
+  });
   const orfani = carenze.find((c) => c.codice === 'orfani-nel-mazzo');
   assert.ok(orfani, 'la regola della casa deve sapere quali carte riabilitare');
   assert.equal(orfani.dati.orfani[0].nome, 'Luxio');

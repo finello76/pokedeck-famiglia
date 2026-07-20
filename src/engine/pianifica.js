@@ -37,6 +37,9 @@ import { calcolaProxy, integraProxy } from './proxy.js';
  * @param {boolean} [opzioni.proxyPokemon=false] se si stamperanno le
  *   pre-evoluzioni mancanti
  * @param {boolean} [opzioni.ammettiEsotici=false]
+ * @param {number} [opzioni.seme=1] seme del caso: cambiarlo produce mazzi
+ *   diversi dalla stessa collezione. Le due passate usano lo stesso seme, o la
+ *   seconda non ricostruirebbe i mazzi su cui si sono decise le regole
  * @returns {{mazzi: object[], regole: object[], permessi: object, carenze: object[],
  *   analisi: object, proxy: object[], proxyScartati: object[]}}
  * @example
@@ -50,6 +53,7 @@ export function pianifica(voci, opzioni) {
     proxyEnergia: false,
     proxyPokemon: false,
     ammettiEsotici: false,
+    seme: 1,
     ...opzioni,
   };
 

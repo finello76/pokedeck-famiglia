@@ -73,6 +73,8 @@ const GUSCIO = [
   './src/engine/pianifica.js',
   './src/engine/proxy.js',
   './src/engine/alternative.js',
+  './src/engine/casuale.js',
+  './src/engine/scelta-linee.js',
   './src/app/foglio-proxy.js',
   './src/app/sostituzione.js',
   './src/ui/procedura-guidata/procedura-guidata.js',
