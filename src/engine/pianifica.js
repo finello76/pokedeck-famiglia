@@ -54,6 +54,10 @@ export function pianifica(voci, opzioni) {
     proxyPokemon: false,
     ammettiEsotici: false,
     seme: 1,
+    // Indice nome→pre-evoluzione: serve ai proxy Pokémon per stampare l'intera
+    // catena mancante, non solo l'anello immediato. Lo passa il livello
+    // applicativo, che ha accesso al dataset; il motore resta puro.
+    indiceEvoluzioni: {},
     ...opzioni,
   };
 

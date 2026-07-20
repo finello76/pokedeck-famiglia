@@ -25,8 +25,12 @@ const FINTI = {
     carte: [
       { numero: '007', nome: 'Sette Alfa', categoria: 'Pokémon' },
       { numero: 'TG01', nome: 'Codice Alfa', categoria: 'Pokémon' },
+      // Evoluzione con evolveDa MANCANTE: il dataset è così nel 41% dei casi.
+      { numero: '020', nome: 'Ivyfinta', categoria: 'Pokémon', stadio: 'Livello 1' },
     ],
   },
+  // L'indice delle evoluzioni: il completamento lo legge da qui.
+  'evoluzioni.json': { ivyfinta: 'Bulbafinta' },
   'beta.json': {
     id: 'beta',
     nome: 'Set Beta',
@@ -100,4 +104,26 @@ test("l'URL dell'immagine cambia con l'uso", () => {
   assert.equal(dataset.urlImmagine(carta), 'https://esempio/it/x/1/low.webp');
   assert.equal(dataset.urlImmagine(carta, 'stampa'), 'https://esempio/it/x/1/high.png');
   assert.equal(dataset.urlImmagine({ immagine: null }), null);
+});
+
+test("trovaCarta completa l'evolveDa mancante dall'indice", async () => {
+  // È la correzione del difetto: senza, l'evoluzione risultava orfana anche
+  // possedendo la sua Base, e il motore la escludeva o stampava un proxy inutile.
+  const carta = await dataset.trovaCarta('alfa', '020');
+  assert.equal(carta.evolveDa, 'Bulbafinta', 'evolveDa recuperato dall\'indice');
+});
+
+test('preEvoluzioneDi risponde per nome, con e senza corrispondenza', async () => {
+  assert.equal(await dataset.preEvoluzioneDi('Ivyfinta'), 'Bulbafinta');
+  assert.equal(await dataset.preEvoluzioneDi('Sconosciuto'), null);
+});
+
+test('completaEvoluzione non tocca chi ha già evolveDa o non è Pokémon', async () => {
+  const conEvoluzione = { nome: 'X', categoria: 'Pokémon', evolveDa: 'Y' };
+  assert.strictEqual(await dataset.completaEvoluzione(conEvoluzione), conEvoluzione);
+
+  const energia = { nome: 'Energia', categoria: 'Energia' };
+  assert.strictEqual(await dataset.completaEvoluzione(energia), energia);
+
+  assert.equal(await dataset.completaEvoluzione(null), null);
 });

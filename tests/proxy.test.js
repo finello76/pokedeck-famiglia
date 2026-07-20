@@ -209,3 +209,78 @@ test('proxyEnergia riconosce i tipi anche quando il nome non coincide', () => {
   const proxy = proxyEnergia(mazzi, 8);
   assert.equal(proxy.length, 0, 'le 4 Energie Combattimento coprono il fabbisogno (8/4=2)');
 });
+
+test('un Livello 2 orfano fa stampare l\'intera catena, non solo un anello', () => {
+  // È il difetto visto sui mazzi veri: possedendo solo Pawmot (Livello 2) si
+  // stampava Pawmo (Livello 1), che restava a sua volta orfano — un proxy che
+  // non serviva a niente. Con l'indice si risale fino alla Base.
+  const mazzi = [
+    {
+      nome: 'Mazzo 1',
+      tipi: ['Lampo'],
+      totale: 4,
+      composizione: { pokemon: 2, energie: 2, allenatori: 0 },
+      carte: [{ carta: pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo').carta, quantita: 2 }],
+    },
+  ];
+  const carenze = [
+    {
+      codice: 'orfani-nel-mazzo',
+      mazzo: 'Mazzo 1',
+      dati: { orfani: [{ nome: 'Pawmot', manca: 'Pawmo', stadio: 'Livello 2' }] },
+    },
+  ];
+  const indice = { pawmo: 'Pawmi' }; // Pawmo evolve da Pawmi (la Base)
+  const { proxy } = proxyPokemon(mazzi, carenze, 15, indice);
+  const nomi = proxy.map((p) => p.nome);
+  assert.deepEqual(nomi, ['Pawmo', 'Pawmi'], 'stampa sia il Livello 1 sia la Base');
+});
+
+test('la catena proxy non ristampa ciò che è già nel mazzo', () => {
+  // Se la Base c'è ma manca solo il Livello 1, si stampa solo quello.
+  const mazzi = [
+    {
+      nome: 'Mazzo 1',
+      tipi: ['Lampo'],
+      totale: 4,
+      composizione: { pokemon: 3, energie: 1, allenatori: 0 },
+      carte: [
+        { carta: pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo').carta, quantita: 1 },
+        { carta: pk('Pawmi', 'Lampo', 'Base').carta, quantita: 2 },
+      ],
+    },
+  ];
+  const carenze = [
+    {
+      codice: 'orfani-nel-mazzo',
+      mazzo: 'Mazzo 1',
+      dati: { orfani: [{ nome: 'Pawmot', manca: 'Pawmo', stadio: 'Livello 2' }] },
+    },
+  ];
+  const { proxy } = proxyPokemon(mazzi, carenze, 15, { pawmo: 'Pawmi' });
+  assert.deepEqual(proxy.map((p) => p.nome), ['Pawmo'], 'Pawmi è già nel mazzo');
+});
+
+test('la catena si stampa intera o niente, se la quota non basta', () => {
+  // Mezza catena non rende giocabile l'orfano: occuperebbe la quota per nulla.
+  const mazzi = [
+    {
+      nome: 'Mazzo 1',
+      tipi: ['Lampo'],
+      totale: 2,
+      composizione: { pokemon: 2, energie: 0, allenatori: 0 },
+      carte: [{ carta: pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo').carta, quantita: 2 }],
+    },
+  ];
+  const carenze = [
+    {
+      codice: 'orfani-nel-mazzo',
+      mazzo: 'Mazzo 1',
+      dati: { orfani: [{ nome: 'Pawmot', manca: 'Pawmo', stadio: 'Livello 2' }] },
+    },
+  ];
+  // taglia 10 → tetto floor(10*0.15)=1, ma la catena richiede 2 carte
+  const { proxy, scartati } = proxyPokemon(mazzi, carenze, 10, { pawmo: 'Pawmi' });
+  assert.equal(proxy.length, 0, 'niente proxy: la catena intera non ci sta');
+  assert.ok(scartati.some((s) => s.ragione === 'quota proxy superata'));
+});

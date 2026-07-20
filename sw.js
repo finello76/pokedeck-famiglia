@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v8';
+const VERSIONE = 'v9';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -88,6 +88,9 @@ const GUSCIO = [
   './src/ui/stile/stampa.css',
   // Solo l'indice: i file dei singoli set arrivano su richiesta.
   './data/set/indice.json',
+  // L'indice delle evoluzioni: 22 KB, ma serve a ogni generazione di mazzi
+  // (recupera i collegamenti che le singole stampe non dichiarano).
+  './data/evoluzioni.json',
 ];
 
 self.addEventListener('install', (evento) => {

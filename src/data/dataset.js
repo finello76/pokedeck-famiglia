@@ -30,6 +30,16 @@ const cacheSet = new Map();
 let cacheIndice = null;
 
 /**
+ * Indice delle evoluzioni: nome normalizzato → nome della pre-evoluzione.
+ * Prodotto da `tools/genera-indice-evoluzioni.mjs`. Vedi `preEvoluzioneDi()`.
+ * @type {Record<string, string>|null}
+ */
+let cacheEvoluzioni = null;
+
+/** @type {Promise<void>|null} caricamento in corso, per non lanciarne due */
+let caricamentoEvoluzioni = null;
+
+/**
  * Scarica un JSON dalla cartella dei dati.
  * @param {string} nomeFile
  * @returns {Promise<any>}
@@ -92,6 +102,95 @@ function stessoNumero(a, b) {
 }
 
 /**
+ * Carica l'indice delle evoluzioni, una volta sola.
+ *
+ * È un file piccolo (~22 KB) e sta nel guscio del service worker: a differenza
+ * dei set, serve praticamente sempre.
+ *
+ * @returns {Promise<void>}
+ */
+async function assicuraEvoluzioni() {
+  if (cacheEvoluzioni) return;
+  // Due chiamate ravvicinate devono condividere la stessa fetch, non farne due.
+  caricamentoEvoluzioni ??= fetch(new URL('../../data/evoluzioni.json', import.meta.url))
+    .then((r) => (r.ok ? r.json() : {}))
+    // Senza l'indice l'app funziona lo stesso, solo con più orfani: è un
+    // miglioramento dei dati, non un requisito.
+    .catch(() => ({}))
+    .then((indice) => {
+      cacheEvoluzioni = indice;
+    });
+  await caricamentoEvoluzioni;
+}
+
+/**
+ * Riduce un nome alla forma con cui si confronta.
+ * Stessa regola di `engine/nomi.js`, ripetuta qui perché `src/data/` non deve
+ * dipendere dal motore: il flusso dei dati va da data verso engine, non indietro.
+ *
+ * @param {string} nome
+ * @returns {string}
+ */
+function normalizza(nome) {
+  return String(nome ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/-/g, ' ')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Da quale Pokémon evolve una specie, secondo l'indice.
+ *
+ * @param {string} nome nome della carta
+ * @returns {Promise<string|null>}
+ * @example
+ * await preEvoluzioneDi('Ivysaur'); // 'Bulbasaur'
+ */
+export async function preEvoluzioneDi(nome) {
+  await assicuraEvoluzioni();
+  return cacheEvoluzioni[normalizza(nome)] ?? null;
+}
+
+/**
+ * L'indice completo delle evoluzioni (nome normalizzato → pre-evoluzione).
+ *
+ * Lo usa il motore dei proxy per risalire l'intera catena mancante. Si passa
+ * al motore invece di lasciarglielo leggere: `src/engine/` non tocca la rete.
+ *
+ * @returns {Promise<Record<string, string>>}
+ */
+export async function indiceEvoluzioni() {
+  await assicuraEvoluzioni();
+  return cacheEvoluzioni;
+}
+
+/**
+ * Completa il campo `evolveDa` di una carta usando l'indice.
+ *
+ * **Il 41% delle carte evoluzione non dichiara da cosa evolve**, ma è
+ * un'incoerenza fra stampe: la stessa specie lo dichiara in un set e lo tace in
+ * un altro. Su quelle mancanti, il 90% si recupera guardando un'altra stampa.
+ *
+ * Senza questo completamento il motore non collega l'Ivysaur che possiedi al
+ * tuo Bulbasaur: lo tratta da orfano, lo esclude dal mazzo o lo gioca "come
+ * Base", e propone di stampare una pre-evoluzione che hai già nella scatola.
+ *
+ * Non modifica la carta ricevuta: la cache dei set deve restare fedele al file.
+ *
+ * @param {object|null} carta
+ * @returns {Promise<object|null>} la carta, con `evolveDa` valorizzato se si è
+ *   trovato; la stessa identica carta se non c'era niente da aggiungere
+ */
+export async function completaEvoluzione(carta) {
+  if (!carta || carta.categoria !== 'Pokémon' || carta.evolveDa) return carta;
+  const preEvoluzione = await preEvoluzioneDi(carta.nome);
+  return preEvoluzione ? { ...carta, evolveDa: preEvoluzione } : carta;
+}
+
+/**
  * Trova una carta da set + numero di collezione: la coppia stampata sulla carta.
  *
  * Il numero può essere scritto con o senza zeri iniziali: `84`, `'84'` e `'084'`
@@ -107,7 +206,11 @@ function stessoNumero(a, b) {
 export async function trovaCarta(idSet, numero) {
   const set = await caricaSet(idSet);
   const cercato = String(numero);
-  return set.carte.find((c) => stessoNumero(c.numero, cercato)) ?? null;
+  const trovata = set.carte.find((c) => stessoNumero(c.numero, cercato)) ?? null;
+  // Il collegamento evolutivo si completa qui, all'unico punto da cui tutte le
+  // carte entrano nell'app: così motore, catalogo e proxy vedono tutti lo
+  // stesso dato, senza doversene ricordare ciascuno per conto proprio.
+  return completaEvoluzione(trovata);
 }
 
 /**
@@ -177,7 +280,10 @@ export async function cercaPerNome(testo, idSet = []) {
   for (const [id, set] of cacheSet) {
     for (const carta of set.carte) {
       if (carta.nome.toLowerCase().includes(ago)) {
-        trovate.push({ set: info.get(id) ?? { id, nome: set.nome }, carta });
+        trovate.push({
+          set: info.get(id) ?? { id, nome: set.nome },
+          carta: await completaEvoluzione(carta),
+        });
       }
     }
   }

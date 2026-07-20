@@ -86,18 +86,50 @@ export function proxyEnergia(mazzi, taglia) {
 }
 
 /**
+ * Risale l'intera catena delle pre-evoluzioni mancanti a un orfano.
+ *
+ * Un Livello 2 orfano non ha bisogno di UNA carta ma di DUE: il Livello 1 e la
+ * Base. Stampare solo l'anello immediato lascia il proxy a sua volta orfano —
+ * si stampa una carta che resta ingiocabile. Con l'indice delle evoluzioni si
+ * risale fino alla Base, o fin dove i nomi sono noti.
+ *
+ * @param {string} manca nome della pre-evoluzione immediata (dalla carenza)
+ * @param {Record<string, string>} indiceEvoluzioni nome normalizzato → da cosa evolve
+ * @returns {string[]} i nomi da stampare, dal più evoluto alla Base
+ */
+function catenaMancante(manca, indiceEvoluzioni) {
+  const catena = [];
+  let corrente = manca;
+  const visti = new Set();
+  // Tetto di sicurezza: nessuna linea supera i tre stadi, ma l'indice è un dato
+  // esterno e un ciclo (A←B, B←A) manderebbe il loop all'infinito.
+  while (corrente && catena.length < 3) {
+    const chiave = normalizzaNome(corrente);
+    if (visti.has(chiave)) break;
+    visti.add(chiave);
+    catena.push(corrente);
+    corrente = indiceEvoluzioni?.[chiave] ?? null;
+  }
+  return catena;
+}
+
+/**
  * Pre-evoluzioni proxy necessarie a completare le linee evolutive.
  *
  * Alternativa alla regola "le evoluzioni si giocano come Base": invece di
- * cambiare le regole si stampa la carta mancante, e si gioca normalmente.
+ * cambiare le regole si stampa la carta mancante, e si gioca normalmente. Con
+ * l'indice delle evoluzioni si stampa l'INTERA catena fino alla Base, non solo
+ * il primo anello, altrimenti il proxy resterebbe a sua volta orfano.
  *
  * @param {object[]} mazzi
  * @param {object[]} carenze
  * @param {number} taglia
+ * @param {Record<string, string>} [indiceEvoluzioni] nome→pre-evoluzione, per
+ *   risalire la catena oltre l'anello immediato
  * @returns {{proxy: Proxy[], scartati: object[]}} `scartati` sono le carte che
  *   avrebbero avuto bisogno di un proxy ma eccedono la quota
  */
-export function proxyPokemon(mazzi, carenze, taglia) {
+export function proxyPokemon(mazzi, carenze, taglia, indiceEvoluzioni = {}) {
   const proxy = [];
   const scartati = [];
   const tetto = Math.max(1, Math.floor(taglia * QUOTA_PROXY_POKEMON));
@@ -107,31 +139,48 @@ export function proxyPokemon(mazzi, carenze, taglia) {
       .filter((c) => c.codice === 'orfani-nel-mazzo' && c.mazzo === mazzo.nome)
       .flatMap((c) => c.dati.orfani);
 
+    // Nomi già nel mazzo: se una pre-evoluzione della catena è già lì, non la si
+    // ristampa. Cresce man mano, così due orfani della stessa linea non
+    // producono doppioni.
+    const presenti = new Set(mazzo.carte.map((c) => normalizzaNome(c.carta.nome)));
     let usati = 0;
-    const giaPrevisti = new Set();
+
     for (const orfano of orfani) {
-      // Senza il nome della pre-evoluzione non si può stampare nulla: il 41%
-      // delle evoluzioni del dataset non dichiara da cosa evolve.
+      // Senza il nome della pre-evoluzione non si può stampare nulla.
       if (!orfano.manca) {
         scartati.push({ ...orfano, mazzo: mazzo.nome, ragione: 'pre-evoluzione sconosciuta' });
         continue;
       }
-      // Due evoluzioni diverse dalla stessa pre-evoluzione: un proxy basta.
-      if (giaPrevisti.has(normalizzaNome(orfano.manca))) continue;
-      if (usati >= tetto) {
+
+      const catena = catenaMancante(orfano.manca, indiceEvoluzioni).filter(
+        (nome) => !presenti.has(normalizzaNome(nome)),
+      );
+      if (!catena.length) continue; // tutto già presente o già stampato
+
+      // La catena si stampa intera o niente: mezzo proxy non rende giocabile
+      // l'orfano, occuperebbe solo la quota.
+      if (usati + catena.length > tetto) {
         scartati.push({ ...orfano, mazzo: mazzo.nome, ragione: 'quota proxy superata' });
         continue;
       }
 
-      proxy.push({
-        genere: 'pokemon',
-        nome: orfano.manca,
-        mazzo: mazzo.nome,
-        quantita: 1,
-        motivo: `Serve per giocare ${orfano.nome} (${orfano.stadio ?? 'evoluzione'}).`,
+      catena.forEach((nome, i) => {
+        const perChi = i === 0 ? orfano.nome : catena[i - 1];
+        proxy.push({
+          genere: 'pokemon',
+          nome,
+          // La pre-evoluzione del proxy stesso, presa dall'indice: serve a
+          // inserisciPokemon per costruire una carta con `evolveDa`, così la
+          // lista non la contrassegna come "come Base" quando la sua Base è
+          // anch'essa nel mazzo (magari come proxy).
+          evolveDa: indiceEvoluzioni?.[normalizzaNome(nome)] ?? null,
+          mazzo: mazzo.nome,
+          quantita: 1,
+          motivo: `Serve per giocare ${perChi}${i === 0 && orfano.stadio ? ` (${orfano.stadio})` : ''}.`,
+        });
+        presenti.add(normalizzaNome(nome));
+        usati += 1;
       });
-      giaPrevisti.add(normalizzaNome(orfano.manca));
-      usati += 1;
     }
   }
 
@@ -142,7 +191,7 @@ export function proxyPokemon(mazzi, carenze, taglia) {
  * Tutti i proxy richiesti dalle opzioni scelte.
  *
  * @param {object} piano risultato di `pianifica()`
- * @param {object} opzioni `{taglia, proxyEnergia, proxyPokemon}`
+ * @param {object} opzioni `{taglia, proxyEnergia, proxyPokemon, indiceEvoluzioni}`
  * @returns {{proxy: Proxy[], scartati: object[]}}
  * @example
  * const { proxy } = calcolaProxy(piano, { taglia: 15, proxyEnergia: true });
@@ -155,7 +204,12 @@ export function calcolaProxy(piano, opzioni) {
     proxy.push(...proxyEnergia(piano.mazzi, opzioni.taglia));
   }
   if (opzioni.proxyPokemon) {
-    const esito = proxyPokemon(piano.mazzi, piano.carenze, opzioni.taglia);
+    const esito = proxyPokemon(
+      piano.mazzi,
+      piano.carenze,
+      opzioni.taglia,
+      opzioni.indiceEvoluzioni,
+    );
     proxy.push(...esito.proxy);
     scartati = esito.scartati;
   }
@@ -261,6 +315,9 @@ function inserisciPokemon(mazzo, p, taglia) {
       categoria: 'Pokémon',
       stadio: SCALA[livelloPre],
       tipi: evoluzione?.tipi ?? [],
+      // Se noto (proxy di catena), così la carta non risulta a sua volta
+      // orfana quando la sua pre-evoluzione è anch'essa nel mazzo.
+      evolveDa: p.evolveDa ?? null,
     },
     quantita: p.quantita,
     proxy: true,

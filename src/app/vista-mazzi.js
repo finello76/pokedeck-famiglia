@@ -8,6 +8,7 @@
  */
 
 import { elencoCompleto, statistiche } from '../data/collezione.js';
+import { indiceEvoluzioni } from '../data/dataset.js';
 import { pianifica, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
@@ -63,7 +64,6 @@ export async function preparaWizard() {
  * @returns {Promise<void>}
  */
 async function genera(risposte, seme = nuovoSeme()) {
-  const opzioni = { ...opzioniDaRisposte(risposte), seme };
   ultimeRisposte = risposte;
   const voci = await elencoCompleto();
 
@@ -73,6 +73,10 @@ async function genera(risposte, seme = nuovoSeme()) {
     return;
   }
 
+  // L'indice serve al motore dei proxy per stampare l'intera catena di
+  // pre-evoluzioni mancanti, non solo l'anello immediato: senza, un Livello 2
+  // orfano riceveva un proxy che restava a sua volta orfano.
+  const opzioni = { ...opzioniDaRisposte(risposte), seme, indiceEvoluzioni: await indiceEvoluzioni() };
   pianoCorrente = pianifica(voci, opzioni);
   pianoCorrente.opzioni = opzioni;
   // Il motore dei proxy conosce solo i nomi: le scansioni le cerca il livello
