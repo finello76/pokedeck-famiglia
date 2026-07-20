@@ -17,8 +17,7 @@ import { classifica } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
 
-/** Limite standard del TCG, come in generazione.js. */
-const MAX_COPIE = 4;
+import { MAX_COPIE } from './formati.js';
 
 /**
  * Le copie della collezione non ancora impegnate nei mazzi del piano.

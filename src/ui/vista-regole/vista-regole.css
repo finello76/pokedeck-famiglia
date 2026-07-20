@@ -1,0 +1,292 @@
+/* Stile di <vista-regole>.
+
+   Niente Shadow DOM: è testo lungo da leggere, e deve ereditare la tipografia
+   della pagina. Il foglio va incluso da index.html. */
+
+vista-regole {
+  display: block;
+}
+
+/* --- Schede dei formati --- */
+
+.schede-formato {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 42rem) {
+  /* Chiuse stanno in due colonne; quella aperta prende tutta la riga, perché
+     il dettaglio è troppo alto per starci accanto a un'altra scheda. */
+  .schede-formato {
+    grid-template-columns: 1fr 1fr;
+  }
+  .scheda-formato.aperta {
+    grid-column: 1 / -1;
+  }
+}
+
+.scheda-formato {
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio);
+  background: var(--colore-fondo);
+  overflow: hidden;
+}
+
+.scheda-formato.aperta {
+  border-color: var(--colore-primario);
+}
+
+/* Il formato ufficiale si distingue: è l'unico che vale davvero fuori di casa. */
+.scheda-formato[data-ufficiale='si'] {
+  border-left: 4px solid var(--colore-primario);
+}
+
+.testa-formato {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--colore-testo);
+  border: none;
+  border-radius: 0;
+  padding: 0.8rem;
+  cursor: pointer;
+}
+
+.testa-formato:hover {
+  background: var(--tipo-tenue, #eef2fb);
+  color: var(--colore-testo);
+}
+
+.nome-formato {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.bollino {
+  justify-self: start;
+  background: var(--colore-primario);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.02rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bollino {
+    color: #10151f;
+  }
+}
+
+.per-chi {
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+  font-weight: 400;
+}
+
+.numeri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--colore-testo-tenue);
+  font-weight: 400;
+}
+
+.numeri b {
+  color: var(--colore-testo);
+  font-variant-numeric: tabular-nums;
+}
+
+.dettaglio-formato {
+  padding: 0 0.8rem 0.8rem;
+  border-top: 1px solid var(--colore-bordo);
+}
+
+.dettaglio-formato h4 {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-testo-tenue);
+  margin: 0.8rem 0 0.35rem;
+}
+
+.dettaglio-formato ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.dettaglio-formato li {
+  margin-bottom: 0.25rem;
+}
+
+/* Verde e rosso sarebbero illeggibili per chi non distingue i due colori:
+   il segno lo dà il marcatore, non la tinta. */
+.si-puo {
+  list-style: '✓  ';
+}
+
+.non-si-puo {
+  list-style: '✕  ';
+}
+
+.numeri-formato {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.9rem;
+  font-size: 0.88rem;
+}
+
+.numeri-formato caption {
+  text-align: left;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-testo-tenue);
+  padding-bottom: 0.35rem;
+}
+
+.numeri-formato th,
+.numeri-formato td {
+  text-align: left;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted var(--colore-bordo);
+}
+
+.numeri-formato th {
+  font-weight: 500;
+  color: var(--colore-testo-tenue);
+}
+
+.numeri-formato td {
+  font-variant-numeric: tabular-nums;
+}
+
+.uguale,
+.diverso {
+  font-size: 0.78rem;
+  font-variant-numeric: normal;
+}
+
+.uguale {
+  color: var(--colore-testo-tenue);
+}
+
+.diverso {
+  color: var(--colore-attenzione);
+}
+
+.nota-formato {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.8rem;
+  background: var(--colore-superficie);
+  border-left: 3px solid var(--colore-primario);
+  border-radius: var(--raggio-piccolo);
+  font-size: 0.87rem;
+}
+
+/* --- Regolamento --- */
+
+.indice-regole {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: 1fr;
+  margin-bottom: 1.2rem;
+}
+
+@media (min-width: 34rem) {
+  .indice-regole {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.voce-indice {
+  display: grid;
+  gap: 0.1rem;
+  text-align: left;
+  background: var(--colore-fondo);
+  color: var(--colore-testo);
+  border: 1px solid var(--colore-bordo);
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+
+.voce-indice:hover {
+  border-color: var(--colore-primario);
+  background: var(--tipo-tenue, #eef2fb);
+  color: var(--colore-testo);
+}
+
+.titolo-indice {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.sommario-indice {
+  font-size: 0.78rem;
+  color: var(--colore-testo-tenue);
+  font-weight: 400;
+}
+
+.sezione-regole {
+  border-top: 1px solid var(--colore-bordo);
+  padding-top: 1rem;
+  margin-top: 1rem;
+  /* Lo scorrimento dall'indice non deve incastrare il titolo sotto
+     l'intestazione fissa, che è alta 80px: 4.5rem (72px) lo lasciavano
+     nascosto per 8px. 6rem tiene un margine anche se l'intestazione cresce di
+     una riga su schermi molto stretti. */
+  scroll-margin-top: 6rem;
+}
+
+.sezione-regole > h3 {
+  font-size: 1.1rem;
+  color: var(--colore-primario);
+}
+
+.voce-regola {
+  margin-bottom: 1rem;
+}
+
+.voce-regola h4 {
+  font-size: 0.95rem;
+  margin: 0 0 0.3rem;
+}
+
+.voce-regola p {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+}
+
+.voce-regola ul {
+  margin: 0 0 0.5rem;
+  padding-left: 1.2rem;
+  font-size: 0.92rem;
+}
+
+.voce-regola li {
+  margin-bottom: 0.3rem;
+}
+
+/* L'errore che si fa più spesso: si stacca dal testo perché è la parte che
+   evita le discussioni a metà partita. */
+.attenzione {
+  background: var(--tipo-tenue, #fff6e8);
+  border-left: 3px solid var(--colore-attenzione);
+  border-radius: var(--raggio-piccolo);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.87rem !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .attenzione {
+    background: #2a2118;
+  }
+}

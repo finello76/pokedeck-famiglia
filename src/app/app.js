@@ -23,6 +23,7 @@ import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
 import '../ui/contatore-energie/contatore-energie.js';
 import '../ui/visore-carta/visore-carta.js';
+import '../ui/vista-regole/vista-regole.js';
 
 const moduloRicerca = document.querySelector('#modulo-ricerca');
 const moduloEnergie = document.querySelector('#modulo-energie');

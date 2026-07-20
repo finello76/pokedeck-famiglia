@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="src/ui/griglia-collezione/griglia-collezione.css" />
     <link rel="stylesheet" href="src/ui/procedura-guidata/procedura-guidata.css" />
     <link rel="stylesheet" href="src/ui/mazzo-generato/mazzo-generato.css" />
+    <link rel="stylesheet" href="src/ui/vista-regole/vista-regole.css" />
     <link rel="stylesheet" href="src/ui/stile/stampa.css" />
   </head>
   <body>
@@ -28,6 +29,7 @@
     <nav class="barra-viste" aria-label="Sezioni">
       <button type="button" data-vai="catalogo">Catalogo</button>
       <button type="button" data-vai="mazzi">Crea mazzi</button>
+      <button type="button" data-vai="regole">Regole</button>
     </nav>
 
     <main>
@@ -121,6 +123,10 @@
         <section id="risultato-mazzi" hidden></section>
 
         <section class="pannello no-stampa" id="mazzi-salvati"></section>
+      </div>
+
+      <div data-vista="regole" hidden>
+        <vista-regole id="regole"></vista-regole>
       </div>
     </main>
 

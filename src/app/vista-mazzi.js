@@ -100,6 +100,9 @@ function disegnaPiano(piano, opzioni) {
     <p class="aiuto">
       ${piano.mazzi.length} mazzi da ${opzioni.taglia} carte.
       Pesca le carte elencate dalla tua collezione.
+      <button type="button" class="collegamento" id="vai-formato">
+        Come si gioca con ${opzioni.taglia} carte?
+      </button>
     </p>
     ${spiegazioneLineeEvolutive(piano)}
     ${
@@ -134,6 +137,13 @@ function disegnaPiano(piano, opzioni) {
   if (proxy) risultato.append(proxy);
 
   intestazione.querySelector('#bottone-stampa').addEventListener('click', () => window.print());
+
+  // Porta alla scheda del formato di QUESTI mazzi, già aperta: chi ha appena
+  // generato mazzi da 20 vuole le regole di quel formato, non l'elenco di tutti.
+  intestazione.querySelector('#vai-formato').addEventListener('click', () => {
+    document.querySelector('#regole')?.apriFormato(opzioni.taglia);
+    location.hash = 'regole';
+  });
   intestazione.querySelector('#bottone-nuovo').addEventListener('click', () => ricomincia());
 
   // Rigenera con le stesse risposte ma un seme nuovo: stessa collezione, mazzi

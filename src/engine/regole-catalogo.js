@@ -10,10 +10,17 @@
  * di quali attivare sta in `regole.js`. Separati perché crescono per motivi
  * diversi: qui si aggiungono regole, là si cambia il meccanismo.
  *
+ * I numeri che definiscono una partita (mano, Premi, panchina) NON si scrivono
+ * qui: arrivano da `formati.js`, che è la loro fonte unica. Ripeterli
+ * porterebbe il foglio stampato a contraddire la scheda del formato consultata
+ * nell'app.
+ *
  * Modulo puro.
  *
  * @module engine/regole-catalogo
  */
+
+import { formatoPer, alteraNumeriUfficiali, UFFICIALE } from './formati.js';
 
 /**
  * @typedef {object} Regola
@@ -155,16 +162,18 @@ export const CATALOGO = [
      * un mazzo da 15 lascerebbero pochissime carte da pescare.
      */
     condizione: ({ opzioni }) => {
-      if (opzioni.taglia > 20) return null;
-      const mano = 5;
-      const premi = opzioni.taglia <= 15 ? 2 : 3;
+      const formato = formatoPer(opzioni.taglia);
+      // Il formato da 30 in su usa già i numeri veri: non c'è niente da dire.
+      if (!alteraNumeriUfficiali(formato)) return null;
+      const impegnate = UFFICIALE.manoIniziale + UFFICIALE.premi;
       return {
         testo:
-          `Ogni giocatore pesca ${mano} carte iniziali invece di 7, e mette da parte ` +
-          `${premi} carte Premio invece di 6. Vince chi prende tutte le carte Premio.`,
+          `Ogni giocatore pesca ${formato.manoIniziale} carte iniziali invece di ` +
+          `${UFFICIALE.manoIniziale}, e mette da parte ${formato.premi} carte Premio ` +
+          `invece di ${UFFICIALE.premi}. Vince chi prende tutte le carte Premio.`,
         motivazione:
           `Con un mazzo da ${opzioni.taglia} carte, la mano e i Premi ufficiali ne ` +
-          `impegnerebbero 13 su ${opzioni.taglia}: resterebbe quasi nulla da pescare.`,
+          `impegnerebbero ${impegnate} su ${opzioni.taglia}: resterebbe quasi nulla da pescare.`,
       };
     },
   },
@@ -262,20 +271,23 @@ export const CATALOGO = [
   {
     codice: 'panchina-ridotta',
     origine: 'misura',
-    titolo: 'Panchina da 3 Pokémon',
+    titolo: 'Panchina ridotta',
     /**
      * La panchina ufficiale (5) è tarata su mazzi da 60: in un mazzo da 15-20
      * finirebbe in panchina mezzo mazzo, e non resterebbe niente da pescare.
      */
     condizione: ({ opzioni }) => {
-      if (opzioni.taglia > 20) return null;
+      const formato = formatoPer(opzioni.taglia);
+      if (formato.panchina >= UFFICIALE.panchina) return null;
       return {
         testo:
-          'La panchina può contenere al massimo 3 Pokémon invece di 5. Se la ' +
-          'panchina è piena, non si possono mettere in gioco altri Pokémon.',
+          `La panchina può contenere al massimo ${formato.panchina} Pokémon invece di ` +
+          `${UFFICIALE.panchina}. Se la panchina è piena, non si possono mettere in ` +
+          'gioco altri Pokémon.',
         motivazione:
-          `Con mazzi da ${opzioni.taglia} carte una panchina da 5 impegnerebbe ` +
-          'un terzo del mazzo: dopo la preparazione non resterebbe quasi nulla da pescare.',
+          `Con mazzi da ${opzioni.taglia} carte una panchina da ${UFFICIALE.panchina} ` +
+          'impegnerebbe un terzo del mazzo: dopo la preparazione non resterebbe quasi ' +
+          'nulla da pescare.',
       };
     },
   },

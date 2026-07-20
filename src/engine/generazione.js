@@ -19,9 +19,9 @@ import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
 import { composizione, fettaPerMazzo, minimoBasi, piramide } from './proporzioni.js';
 import { Casuale } from './casuale.js';
 import { costruisciGruppi, ordinaGruppi, pezziDaPrendere } from './scelta-linee.js';
-
-/** Limite standard del TCG, che non vale per le Energie base. */
-const MAX_COPIE = 4;
+// Il limite di copie sta in formati.js insieme agli altri numeri che
+// definiscono una partita: uno solo, letto da tutti.
+import { MAX_COPIE } from './formati.js';
 
 /**
  * @typedef {object} Mazzo
