@@ -16,7 +16,10 @@
 | [`src/engine/proxy.js`](../../src/engine/proxy.js) | ridotto alle sole Energie |
 | [`src/engine/pianifica.js`](../../src/engine/pianifica.js) | non aggiunge più proxy a mazzo finito |
 | [`src/ui/procedura-guidata/`](../../src/ui/procedura-guidata/procedura-guidata.js) | la domanda sul budget di stampa |
-| [`tests/linee.test.js`](../../tests/linee.test.js) | 8 test del modello nuovo |
+| [`src/engine/riallinea.js`](../../src/engine/riallinea.js) | **nuovo** — ricalcola le stampe dopo una sostituzione a mano |
+| [`src/engine/mazzo.js`](../../src/engine/mazzo.js) | **nuovo** — metti/togli una carta, in un posto solo |
+| [`tools/genera-indice-evoluzioni.mjs`](../../tools/genera-indice-evoluzioni.mjs) | segnala le pre-evoluzioni che sono fossili |
+| [`tests/linee.test.js`](../../tests/linee.test.js) · [`tests/riallinea.test.js`](../../tests/riallinea.test.js) | 14 test del modello nuovo |
 
 ---
 
@@ -225,3 +228,94 @@ Il bilanciamento vero e proprio — punteggio per mazzo e scambi iterativi fra m
 ragionamento è la linea, uno scambio fra mazzi dovrà spostare **linee intere**, non
 carte singole: altrimenti si torna al punto di partenza, con mazzi che si rompono
 un gradino per volta.
+
+---
+
+## 9. Poscritto: tre difetti che solo l'uso vero fa uscire
+
+I test passavano tutti. Poi il mazzo è finito davanti a chi ci gioca, e in
+mezz'ora sono usciti tre difetti che nessuna fixture aveva mostrato.
+
+### «Dragapult c'è sempre»
+
+Vero, e la causa non era dove sembrava. Il generatore sceglieva il *tipo* del
+mazzo in modo deterministico — i due migliori — e Dragapult era l'unico Livello 2
+Psico della collezione: fissato il tipo, la carta era obbligata.
+
+I punteggi dei tipi però erano vicinissimi:
+
+```
+Lampo 4,6 · Psico 4,2 · Lotta 3,9 · Acqua 3,7 · Erba 3,7 · Fuoco 3,0
+```
+
+Prendere sempre il massimo di una classifica così stretta è arbitrario quanto
+tirare a caso, ma senza il vantaggio della varietà. Ora si estrae fra i tipi
+entro il 75% del migliore, e "Rigenera diversi" restituisce davvero mazzi
+diversi: Quaquaval, Machamp, Krookodile, Corviknight, Garganacl.
+
+> **Lezione trasferibile.** Quando l'output è sempre uguale, guarda a monte:
+> spesso la varietà è già stata uccisa da una decisione precedente, e aggiungere
+> caso a valle non serve a niente.
+
+### «Se cambio la carta, le stampe non si aggiornano»
+
+Anche questo vero, ed era un'omissione di progetto: le carte da stampare esistono
+**per** una carta precisa, ma niente teneva insieme le due cose dopo una modifica
+a mano. Tolto Dragapult, i suoi Dreepy e Drakloak restavano nel mazzo: fotocopie
+per giocare una carta che non c'era più.
+
+[`src/engine/riallinea.js`](../../src/engine/riallinea.js) ricalcola: toglie le
+stampe rimaste senza padrone, stampa quelle che servono alla carta entrata, e
+riporta il mazzo alla sua taglia pescando dalle carte vere ancora libere.
+
+Nota di riuso: non ricostruisce niente da capo, chiama `enumeraLinee()` passando
+come "posseduti" **le carte del mazzo**. Un gradino senza carta è, per
+definizione, un gradino da stampare. Lo stesso codice risponde a due domande
+diverse a seconda di cosa gli dai in pasto — ed è il segno che l'astrazione era
+quella giusta.
+
+### «3× Vecchio Helixfossile da stampare»
+
+Il difetto più istruttivo, perché nasce dai dati e non dal codice. Omanyte
+dichiara `evolveDa: "Vecchio Helixfossile"` — che **non è un Pokémon**: è una
+carta Allenatore, il fossile da cui Omanyte si mette in gioco. Il motore, che
+ragiona per catene di nomi, l'ha trattato come un gradino qualsiasi e ha stampato
+tre copie di una carta che nel gioco non esiste in quella forma. Peggio: quelle
+tre copie hanno consumato il budget destinato alle linee vere.
+
+Nessuna regola interna al motore poteva accorgersene: dal suo punto di vista
+"Vecchio Helixfossile" è una stringa come "Machop". La conoscenza sta nel
+dataset, quindi la risposta è stata prodotta lì — `tools/genera-indice-evoluzioni.mjs`
+ora confronta ogni pre-evoluzione con l'elenco di tutti i nomi di Pokémon visti,
+e scrive a parte quelle che non lo sono:
+
+```json
+{"da": {"omanyte": "Vecchio Helixfossile", …},
+ "nonPokemon": ["Vecchio Helixfossile", "Vecchia Ambra Antica", …]}
+```
+
+Sono dieci in tutto il dataset. Il motore riceve l'elenco e ferma lì la catena:
+Omanyte torna a essere una carta che si gioca solo con la regola della casa.
+
+**Il formato del file è cambiato**, e questo in una PWA ha una conseguenza: il
+service worker può servire ancora la versione vecchia dalla cache. Per questo
+`dataset.js` accetta entrambe le forme:
+
+```js
+const nuovo = indice && typeof indice.da === 'object';
+cacheEvoluzioni = nuovo ? indice.da : indice ?? {};
+```
+
+Chi viene da un backend è abituato a poter cambiare formato e schema insieme.
+Con una PWA no: il vecchio file è già sul dispositivo dell'utente, e il codice
+nuovo deve saperci convivere almeno per un giro. È lo stesso problema delle
+migrazioni di database, con la differenza che qui **non controlli quando** la
+migrazione avviene.
+
+### Esercizio
+
+**5. Il fossile come proxy giusto.** Oggi Omanyte si gioca solo grazie alla
+regola della casa. In teoria il motore potrebbe stampare il *Vecchio
+Helixfossile* — che è una carta come le altre, solo di categoria Allenatore — e
+far giocare Omanyte con le regole vere. Cosa dovrebbe cambiare in `linee.js` e in
+`richiestaPerLinea()`? E il gradino "Allenatore" conterebbe nella piramide?

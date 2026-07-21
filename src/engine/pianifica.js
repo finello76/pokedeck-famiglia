@@ -65,6 +65,9 @@ export function pianifica(voci, opzioni) {
     // catena mancante, non solo l'anello immediato. Lo passa il livello
     // applicativo, che ha accesso al dataset; il motore resta puro.
     indiceEvoluzioni: {},
+    // I fossili: pre-evoluzioni che sono carte Allenatore e non si stampano
+    // come Pokémon. Anche questo elenco arriva dal livello applicativo.
+    nonPokemon: new Set(),
     ...opzioni,
   };
 

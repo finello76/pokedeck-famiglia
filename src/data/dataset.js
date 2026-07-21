@@ -40,6 +40,14 @@ let cacheEvoluzioni = null;
 let caricamentoEvoluzioni = null;
 
 /**
+ * Nomi normalizzati di pre-evoluzioni che **non sono Pokémon**: i fossili.
+ * Omanyte evolve da *Vecchio Helixfossile*, una carta Allenatore. Senza questo
+ * elenco il motore la stampa come se fosse un Pokémon Base.
+ * @type {Set<string>|null}
+ */
+let cacheNonPokemon = null;
+
+/**
  * Scarica un JSON dalla cartella dei dati.
  * @param {string} nomeFile
  * @returns {Promise<any>}
@@ -118,7 +126,12 @@ async function assicuraEvoluzioni() {
     // miglioramento dei dati, non un requisito.
     .catch(() => ({}))
     .then((indice) => {
-      cacheEvoluzioni = indice;
+      // Il file ha due forme: quella nuova `{da, nonPokemon}` e quella vecchia,
+      // una mappa piatta. La vecchia può ancora arrivare dalla cache del
+      // service worker dopo un aggiornamento, e non deve rompere l'app.
+      const nuovo = indice && typeof indice.da === 'object';
+      cacheEvoluzioni = nuovo ? indice.da : indice ?? {};
+      cacheNonPokemon = new Set((nuovo ? indice.nonPokemon ?? [] : []).map(normalizza));
     });
   await caricamentoEvoluzioni;
 }
@@ -165,6 +178,20 @@ export async function preEvoluzioneDi(nome) {
 export async function indiceEvoluzioni() {
   await assicuraEvoluzioni();
   return cacheEvoluzioni;
+}
+
+/**
+ * I nomi di pre-evoluzione che non sono Pokémon ma carte Allenatore: i fossili.
+ *
+ * Il motore li usa per **non** trattarli come gradini di una linea evolutiva.
+ * Omanyte non ha una Base da stampare: ha bisogno del suo fossile, che è una
+ * carta di tipo diverso e un'altra meccanica di gioco.
+ *
+ * @returns {Promise<Set<string>>} nomi normalizzati
+ */
+export async function preEvoluzioniNonPokemon() {
+  await assicuraEvoluzioni();
+  return cacheNonPokemon ?? new Set();
 }
 
 /**

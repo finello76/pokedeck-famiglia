@@ -29,8 +29,12 @@ const FINTI = {
       { numero: '020', nome: 'Ivyfinta', categoria: 'Pokémon', stadio: 'Livello 1' },
     ],
   },
-  // L'indice delle evoluzioni: il completamento lo legge da qui.
-  'evoluzioni.json': { ivyfinta: 'Bulbafinta' },
+  // L'indice delle evoluzioni: il completamento lo legge da qui. `nonPokemon`
+  // sono le pre-evoluzioni che in realtà sono carte Allenatore (i fossili).
+  'evoluzioni.json': {
+    da: { ivyfinta: 'Bulbafinta', omafinta: 'Vecchio Fossilfinto' },
+    nonPokemon: ['Vecchio Fossilfinto'],
+  },
   'beta.json': {
     id: 'beta',
     nome: 'Set Beta',
@@ -116,6 +120,16 @@ test("trovaCarta completa l'evolveDa mancante dall'indice", async () => {
 test('preEvoluzioneDi risponde per nome, con e senza corrispondenza', async () => {
   assert.equal(await dataset.preEvoluzioneDi('Ivyfinta'), 'Bulbafinta');
   assert.equal(await dataset.preEvoluzioneDi('Sconosciuto'), null);
+});
+
+test('i fossili si distinguono dalle vere pre-evoluzioni', async () => {
+  // Omanyte "evolve" da Vecchio Helixfossile, che è una carta Allenatore: il
+  // motore non deve stamparla come se fosse un Pokémon Base.
+  const fossili = await dataset.preEvoluzioniNonPokemon();
+  assert.ok(fossili.has('vecchio fossilfinto'), 'il nome è normalizzato');
+  assert.ok(!fossili.has('bulbafinta'), 'una Base vera non ci finisce dentro');
+  assert.equal(await dataset.preEvoluzioneDi('Omafinta'), 'Vecchio Fossilfinto',
+    'il collegamento resta: serve a sapere che quella carta ti occorre');
 });
 
 test('completaEvoluzione non tocca chi ha già evolveDa o non è Pokémon', async () => {

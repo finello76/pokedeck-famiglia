@@ -10,7 +10,10 @@
  */
 
 import { elencoCompleto } from '../data/collezione.js';
+import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
+import { arricchisciProxy } from './foglio-proxy.js';
 import { disponibilitaResidua, alternativePer, applicaSostituzione } from '../engine/alternative.js';
+import { riallineaLinee } from '../engine/riallinea.js';
 import { rivaluta } from '../engine/pianifica.js';
 import { normalizzaNome } from '../engine/nomi.js';
 
@@ -99,16 +102,32 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
   });
 
   for (const bottone of dialogo.querySelectorAll('[data-proposta]')) {
-    bottone.addEventListener('click', () => {
+    bottone.addEventListener('click', async () => {
       const scelta = proposte[Number(bottone.dataset.proposta)];
       const scambiate = applicaSostituzione(mazzo, voce, scelta.carta, scelta.disponibili);
       chiudi();
-      if (scambiate > 0) {
-        // Il foglio regole descrive i mazzi correnti: togliere o aggiungere
-        // una carta può cambiare carenze e regole della casa.
-        rivaluta(piano);
-        alTermine();
-      }
+      if (scambiate === 0) return;
+
+      // Le carte stampate esistono per una carta precisa: cambiata quella,
+      // vanno ricalcolate. Altrimenti restano nel mazzo le pre-evoluzioni di
+      // un Pokémon che non c'è più, e la carta entrata resta senza le sue.
+      // La disponibilità si rilegge DOPO lo scambio: la carta appena uscita
+      // dal mazzo è di nuovo libera, e può servire a riempire i buchi.
+      riallineaLinee(mazzo, {
+        dispensa: disponibilitaResidua(await elencoCompleto(), piano.mazzi),
+        indiceEvoluzioni: await indiceEvoluzioni(),
+        nonPokemon: await preEvoluzioniNonPokemon(),
+        budgetProxy: piano.opzioni?.proxyPokemon ? piano.opzioni.budgetProxy ?? 0 : 0,
+        taglia: piano.opzioni?.taglia,
+      });
+      // Le stampe nuove sono solo nomi: la scansione la cerca il livello
+      // applicativo, come alla prima generazione.
+      await arricchisciProxy(piano);
+
+      // Il foglio regole descrive i mazzi correnti: togliere o aggiungere una
+      // carta può cambiare carenze e regole della casa.
+      rivaluta(piano);
+      alTermine();
     });
   }
 

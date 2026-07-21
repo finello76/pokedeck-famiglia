@@ -8,7 +8,7 @@
  */
 
 import { elencoCompleto, statistiche } from '../data/collezione.js';
-import { indiceEvoluzioni } from '../data/dataset.js';
+import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
 import { pianifica, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
@@ -73,10 +73,16 @@ async function genera(risposte, seme = nuovoSeme()) {
     return;
   }
 
-  // L'indice serve al motore dei proxy per stampare l'intera catena di
-  // pre-evoluzioni mancanti, non solo l'anello immediato: senza, un Livello 2
-  // orfano riceveva un proxy che restava a sua volta orfano.
-  const opzioni = { ...opzioniDaRisposte(risposte), seme, indiceEvoluzioni: await indiceEvoluzioni() };
+  // L'indice serve al motore per ricostruire le linee evolutive intere, fino
+  // alla Base che non possiedi; l'elenco dei fossili gli evita di stampare
+  // come Pokémon una carta Allenatore (Omanyte "evolve" da Vecchio
+  // Helixfossile). Il motore resta puro: i dati glieli passa l'app.
+  const opzioni = {
+    ...opzioniDaRisposte(risposte),
+    seme,
+    indiceEvoluzioni: await indiceEvoluzioni(),
+    nonPokemon: await preEvoluzioniNonPokemon(),
+  };
   pianoCorrente = pianifica(voci, opzioni);
   pianoCorrente.opzioni = opzioni;
   // Il motore dei proxy conosce solo i nomi: le scansioni le cerca il livello

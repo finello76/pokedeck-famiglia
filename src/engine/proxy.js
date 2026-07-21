@@ -17,6 +17,7 @@
  */
 
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
+import { aggiungiAlMazzo, togliDalMazzo } from './mazzo.js';
 
 /**
  * @typedef {object} Proxy
@@ -123,48 +124,27 @@ export function integraProxy(mazzi, proxy, taglia) {
 }
 
 /**
- * Toglie una copia da una voce del mazzo, eliminando la voce se si svuota.
- * @param {object} mazzo
- * @param {object} voce
- * @param {'pokemon'|'energie'|'allenatori'} categoria
- */
-function togliCopia(mazzo, voce, categoria) {
-  voce.quantita -= 1;
-  mazzo.totale -= 1;
-  mazzo.composizione[categoria] -= 1;
-  if (voce.quantita <= 0) {
-    mazzo.carte.splice(mazzo.carte.indexOf(voce), 1);
-  }
-}
-
-/**
  * Energia proxy: entra al posto delle energie del tipo sbagliato.
  * @param {object} mazzo
  * @param {Proxy} p
  * @param {number} taglia
  */
 function inserisciEnergia(mazzo, p, taglia) {
-  const voce = {
-    carta: { nome: p.nome, categoria: 'Energia', tipoEnergia: 'Base', tipi: [p.tipo] },
-    quantita: p.quantita,
-    proxy: true,
-    motivo: p.motivo,
-  };
-  mazzo.carte.push(voce);
-  mazzo.totale += p.quantita;
-  mazzo.composizione.energie += p.quantita;
+  const carta = { nome: p.nome, categoria: 'Energia', tipoEnergia: 'Base', tipi: [p.tipo] };
+  aggiungiAlMazzo(mazzo, carta, p.quantita, { proxy: true, motivo: p.motivo });
+  const voce = mazzo.carte.find((c) => c.proxy && c.carta === carta);
 
   while (mazzo.totale > taglia) {
     const fuoriTipo = mazzo.carte.find(
       (c) => !c.proxy && eEnergiaBase(c.carta) && tipoEnergia(c.carta) !== p.tipo,
     );
     if (fuoriTipo) {
-      togliCopia(mazzo, fuoriTipo, 'energie');
+      togliDalMazzo(mazzo, fuoriTipo);
       continue;
     }
     // Niente più da togliere: si riduce il proxy stesso, mai le altre carte.
     // Le Energie erano un RIMPIAZZO, non un'aggiunta oltre la taglia.
-    togliCopia(mazzo, voce, 'energie');
+    togliDalMazzo(mazzo, voce);
     if (voce.quantita <= 0) break;
   }
 }

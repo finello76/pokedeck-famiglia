@@ -55,9 +55,10 @@ const MAX_GRADINI = 3;
  *
  * @param {object} carta
  * @param {Record<string, string>} indice nome normalizzato → pre-evoluzione
+ * @param {Set<string>} nonPokemon nomi che non sono Pokémon: i fossili
  * @returns {string[]} nomi dalla cima al Base, cima inclusa
  */
-function catenaVersoIlBasso(carta, indice) {
+function catenaVersoIlBasso(carta, indice, nonPokemon) {
   const catena = [carta.nome];
   const visti = new Set([normalizzaNome(carta.nome)]);
   let precedente = carta.evolveDa ?? indice[normalizzaNome(carta.nome)] ?? null;
@@ -66,6 +67,10 @@ function catenaVersoIlBasso(carta, indice) {
   // all'infinito, e nessuna linea vera supera i tre gradini.
   while (precedente && catena.length < MAX_GRADINI) {
     const chiave = normalizzaNome(precedente);
+    // Omanyte "evolve" da *Vecchio Helixfossile*, che è una carta Allenatore:
+    // la catena finisce qui. Trattarlo da gradino significa stamparlo come
+    // Pokémon Base — carte che nel gioco non esistono, ed è successo davvero.
+    if (nonPokemon.has(chiave)) break;
     if (visti.has(chiave)) break;
     visti.add(chiave);
     catena.push(precedente);
@@ -85,13 +90,15 @@ function catenaVersoIlBasso(carta, indice) {
  *
  * @param {Array<{carta: object, disponibili: number}>} candidati dalla dispensa
  * @param {Record<string, string>} [indiceEvoluzioni] nome normalizzato → pre-evoluzione
+ * @param {Set<string>} [nonPokemon] nomi normalizzati di pre-evoluzioni che sono
+ *   carte Allenatore (i fossili): la catena si ferma prima di loro
  * @returns {Linea[]} non ordinate: ci pensa `ordinaLinee()`
  * @example
  * // possedendo il solo Machamp, con l'indice completo:
  * enumeraLinee([{ carta: machamp, disponibili: 1 }], indice);
  * // → [{ gradini: [Machop(null), Machoke(null), Machamp(carta)], daStampare: 2 }]
  */
-export function enumeraLinee(candidati, indiceEvoluzioni = {}) {
+export function enumeraLinee(candidati, indiceEvoluzioni = {}, nonPokemon = new Set()) {
   /** @type {Map<string, object>} nome normalizzato → carta posseduta */
   const posseduti = new Map();
   for (const { carta } of candidati) {
@@ -107,7 +114,7 @@ export function enumeraLinee(candidati, indiceEvoluzioni = {}) {
   for (const { carta } of candidati) {
     if (classifica(carta).livello === null) continue; // stadio ignoto: non si sa come giocarlo
 
-    const catena = catenaVersoIlBasso(carta, indiceEvoluzioni);
+    const catena = catenaVersoIlBasso(carta, indiceEvoluzioni, nonPokemon);
     // Una linea è identificata dalla catena di nomi: due stampe della stessa
     // specie non devono produrre due linee identiche.
     const firma = catena.map(normalizzaNome).join('>');

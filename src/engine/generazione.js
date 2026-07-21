@@ -14,15 +14,12 @@
 import { analizza } from './analisi.js';
 import { Dispensa } from './dispensa.js';
 import { classifica, SCALA } from './stadi.js';
-import { normalizzaNome } from './nomi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
 import { composizione, fettaPerMazzo, piramide } from './proporzioni.js';
 import { Casuale } from './casuale.js';
+import { aggiungiAlMazzo } from './mazzo.js';
 import { rilevaCarenze } from './carenze.js';
 import { enumeraLinee, ordinaLinee, richiestaPerLinea, firmaLinea } from './linee.js';
-// Il limite di copie sta in formati.js insieme agli altri numeri che
-// definiscono una partita: uno solo, letto da tutti.
-import { MAX_COPIE } from './formati.js';
 
 /**
  * @typedef {object} Mazzo
@@ -32,39 +29,6 @@ import { MAX_COPIE } from './formati.js';
  * @property {number} totale carte effettive
  * @property {object} composizione quante Pokémon/Energie/Allenatori contiene
  */
-
-/**
- * Aggiunge copie a un mazzo rispettando il limite delle 4 copie.
- *
- * Le Energie base sono esenti: è la regola ufficiale, ed è anche l'unica ragione
- * per cui un mazzo con poche carte diverse riesce comunque a stare in piedi.
- *
- * @param {Mazzo} mazzo
- * @param {object} carta
- * @param {number} quante
- * @param {object} [extra] campi della voce, es. `{proxy: true, motivo}`. Una
- *   voce proxy resta distinta da quella vera anche a parità di nome: nella
- *   lista stampata "2× Machop" e "1× Machop da stampare" sono due righe, ed è
- *   ciò che serve a chi deve ritagliare
- * @returns {number} copie effettivamente aggiunte
- */
-function aggiungi(mazzo, carta, quante, extra = {}) {
-  const chiave = (c, proxy) =>
-    `${proxy ? 'proxy' : c.idSet ?? '?'}:${c.numero ?? normalizzaNome(c.nome)}`;
-  const cercata = chiave(carta, extra.proxy);
-  const esistente = mazzo.carte.find((c) => chiave(c.carta, c.proxy) === cercata);
-
-  const gia = esistente?.quantita ?? 0;
-  const tetto = eEnergiaBase(carta) ? Infinity : MAX_COPIE;
-  const aggiungibili = Math.max(0, Math.min(quante, tetto - gia));
-  if (aggiungibili === 0) return 0;
-
-  if (esistente) esistente.quantita += aggiungibili;
-  else mazzo.carte.push({ carta, quantita: aggiungibili, ...extra });
-
-  mazzo.totale += aggiungibili;
-  return aggiungibili;
-}
 
 /**
  * La carta da stampare per un gradino che manca alla collezione.
@@ -97,11 +61,19 @@ function cartaDaStampare(gradino, cima) {
  * giocare**: un tipo con 5 Pokémon e 1 Energia produce un mazzo che non attacca.
  * Il punteggio pesa quindi le due cose insieme, penalizzando lo squilibrio.
  *
+ * Fra i tipi **quasi equivalenti** si estrae, invece di prendere sempre i
+ * migliori. Sulla collezione di prova i punteggi sono vicinissimi (Lampo 4,6 ·
+ * Psico 4,2 · Lotta 3,9 · Acqua 3,7), ma scegliendo sempre il massimo uscivano
+ * ogni volta gli stessi due tipi — e con essi le stesse linee evolutive, perché
+ * di Livello 2 giocabili per tipo ce n'è quasi sempre uno solo. "Rigenera
+ * diversi" restituiva mazzi identici.
+ *
  * @param {object} analisi risultato di `analizza()`
  * @param {number} numeroMazzi
+ * @param {Casuale} [casuale] senza, la scelta resta deterministica (il migliore)
  * @returns {string[][]} un elenco di tipi per mazzo
  */
-export function scegliTipi(analisi, numeroMazzi) {
+export function scegliTipi(analisi, numeroMazzi, casuale = null) {
   const candidati = analisi.tipiPromettenti
     .map((t) => ({
       tipo: t.tipo,
@@ -116,21 +88,45 @@ export function scegliTipi(analisi, numeroMazzi) {
 
   const utilizzabili = candidati.filter((c) => c.punteggio > 0);
   const scelte = [];
+  // I tipi già assegnati escono dal mazzetto: due mazzi dello stesso tipo si
+  // contendono le stesse carte e finiscono per somigliarsi.
+  let disponibili = [...utilizzabili];
 
   for (let i = 0; i < numeroMazzi; i++) {
-    if (utilizzabili.length >= numeroMazzi) {
-      scelte.push([utilizzabili[i].tipo]);
-    } else if (utilizzabili.length > 0) {
-      // Meno tipi giocabili che mazzi: si condivide il migliore. I mazzi
-      // saranno simili, ma giocabili — che conta di più della varietà.
-      scelte.push([utilizzabili[i % utilizzabili.length].tipo]);
-    } else {
+    if (!utilizzabili.length) {
       // Nessun tipo si regge da solo: si va sul più numeroso e si conterà
       // sulle regole della casa per le energie.
       scelte.push(candidati.length ? [candidati[0].tipo] : []);
+      continue;
     }
+    // Meno tipi giocabili che mazzi: si ricomincia il giro. I mazzi saranno
+    // simili, ma giocabili — che conta di più della varietà.
+    if (!disponibili.length) disponibili = [...utilizzabili];
+
+    scelte.push([estraiTipo(disponibili, casuale).tipo]);
   }
   return scelte;
+}
+
+/**
+ * Estrae un tipo fra quelli quasi equivalenti al migliore, e lo toglie dal
+ * mazzetto.
+ *
+ * La soglia è **relativa**, non a punti fissi: i punteggi dei tipi stanno fra 3
+ * e 5, dove una differenza di mezzo punto è tanta. Una tolleranza assoluta
+ * ammetterebbe tutto o niente a seconda della collezione.
+ *
+ * @param {Array<{tipo: string, punteggio: number}>} disponibili ordinati per
+ *   punteggio decrescente. **Viene modificato**: il tipo estratto esce
+ * @param {Casuale|null} casuale
+ * @returns {{tipo: string, punteggio: number}}
+ */
+function estraiTipo(disponibili, casuale) {
+  const soglia = disponibili[0].punteggio * 0.75;
+  const ammessi = disponibili.filter((c) => c.punteggio >= soglia);
+  const scelto = casuale ? ammessi[casuale.intero(ammessi.length)] : ammessi[0];
+  disponibili.splice(disponibili.indexOf(scelto), 1);
+  return scelto;
 }
 
 /**
@@ -151,6 +147,8 @@ export function scegliTipi(analisi, numeroMazzi) {
  * @param {Record<string, string>} [opzioni.indiceEvoluzioni] nome normalizzato →
  *   pre-evoluzione. Serve a ricostruire i gradini che non possiedi: senza,
  *   un'evoluzione resta una carta isolata. Lo passa il livello applicativo
+ * @param {Set<string>} [opzioni.nonPokemon] nomi normalizzati di pre-evoluzioni
+ *   che sono carte Allenatore (i fossili): non si stampano come Pokémon
  * @param {number} [opzioni.seme=1] seme del caso. Con lo stesso seme e la stessa
  *   collezione i mazzi sono identici; cambiandolo si ottengono mazzi diversi
  *   pur restando sensati. Il default fisso tiene i test riproducibili
@@ -170,6 +168,7 @@ export function generaMazzi(voci, opzioni) {
     seme = 1,
     budgetProxy = 0,
     indiceEvoluzioni = {},
+    nonPokemon = new Set(),
   } = opzioni;
   // Il budget è per mazzo, ma non ha senso che superi la quota Pokémon: un
   // mazzo interamente stampato non è più il tuo mazzo.
@@ -189,7 +188,7 @@ export function generaMazzi(voci, opzioni) {
   // stampa non avrebbe dove spendersi.
   fetta.pokemon += budgetPerMazzo;
   const quota = composizione(taglia, fetta);
-  const tipiPerMazzo = scegliTipi(analisi, numeroMazzi);
+  const tipiPerMazzo = scegliTipi(analisi, numeroMazzi, casuale);
 
   /** @type {Mazzo[]} */
   const mazzi = Array.from({ length: numeroMazzi }, (_, i) => ({
@@ -222,7 +221,7 @@ export function generaMazzi(voci, opzioni) {
         (c) => c.categoria === 'Pokémon' && classifica(c).livello !== null,
       );
       const budget = budgetPerMazzo - mazzo.stampate;
-      const linee = ordinaLinee(enumeraLinee(candidati, indiceEvoluzioni), mazzo.tipi, {
+      const linee = ordinaLinee(enumeraLinee(candidati, indiceEvoluzioni, nonPokemon), mazzo.tipi, {
         budget,
         evoluzioniComeBase: Boolean(permessi.evoluzioniComeBase),
         famiglieInMazzo: mazzo.famiglie,
@@ -253,7 +252,7 @@ export function generaMazzi(voci, opzioni) {
         let messe = 0;
         if (gradino.carta) {
           const prese = dispensa.preleva(gradino.carta, quante);
-          messe = aggiungi(mazzo, gradino.carta, prese);
+          messe = aggiungiAlMazzo(mazzo, gradino.carta, prese);
           // Ciò che il tetto delle 4 copie ha respinto torna disponibile.
           if (prese > messe) dispensa.restituisci(gradino.carta, prese - messe);
         }
@@ -265,7 +264,7 @@ export function generaMazzi(voci, opzioni) {
         const mancanti = messe === 0 ? quante : 0;
         const daStampare = Math.min(mancanti, budgetPerMazzo - mazzo.stampate);
         if (daStampare > 0) {
-          const stampate = aggiungi(mazzo, cartaDaStampare(gradino, scelta.cima), daStampare, {
+          const stampate = aggiungiAlMazzo(mazzo, cartaDaStampare(gradino, scelta.cima), daStampare, {
             proxy: true,
             motivo: `Serve per giocare ${scelta.cima.nome}${
               scelta.cima.stadio ? ` (${scelta.cima.stadio})` : ''
@@ -275,7 +274,6 @@ export function generaMazzi(voci, opzioni) {
           messe += stampate;
         }
 
-        mazzo.composizione.pokemon += messe;
         // Gradino rimasto scoperto: né copie vere né budget per stamparlo. Ciò
         // che gli sta sopra non si potrebbe evolvere, quindi la linea si ferma
         // qui invece di infilare nel mazzo carte morte.
@@ -300,10 +298,9 @@ export function generaMazzi(voci, opzioni) {
         if (!disponibili.length) break;
         const scelta = disponibili[0].carta;
         const prese = dispensa.preleva(scelta, quota.energie - mazzo.composizione.energie);
-        const messe = aggiungi(mazzo, scelta, prese);
+        const messe = aggiungiAlMazzo(mazzo, scelta, prese);
         if (prese > messe) dispensa.restituisci(scelta, prese - messe);
         if (messe === 0) break;
-        mazzo.composizione.energie += messe;
       }
     }
   }
@@ -319,9 +316,8 @@ export function generaMazzi(voci, opzioni) {
       if (!disponibili.length) continue;
       const scelta = disponibili[0].carta;
       const prese = dispensa.preleva(scelta, 1);
-      const messe = aggiungi(mazzo, scelta, prese);
+      const messe = aggiungiAlMazzo(mazzo, scelta, prese);
       if (prese > messe) dispensa.restituisci(scelta, prese - messe);
-      mazzo.composizione.allenatori += messe;
       if (messe > 0) qualcosaAggiunto = true;
     }
     if (!qualcosaAggiunto) break;

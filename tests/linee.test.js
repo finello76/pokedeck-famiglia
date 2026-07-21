@@ -116,3 +116,15 @@ test('se la linea non ci sta tutta non si prende niente', () => {
   assert.deepEqual(richiestaPerLinea(linea, [3, 2, 1], 2, 4), [], 'due slot non bastano per tre gradini');
   assert.deepEqual(richiestaPerLinea(linea, [3, 2, 1], 10, 1), [], 'un solo credito di stampa non basta');
 });
+
+test('un fossile non è un gradino: non si stampa come Pokémon', () => {
+  // Omanyte "evolve" da *Vecchio Helixfossile*, che è una carta Allenatore.
+  // Trattarlo da Base produceva "3× Vecchio Helixfossile da stampare".
+  const omanyte = pk('Omanyte', 'Livello 1', 'Vecchio Helixfossile', 'Acqua');
+  const [linea] = enumeraLinee(disp(omanyte), {}, new Set(['vecchio helixfossile']));
+
+  assert.equal(linea.profondita, 1, 'la catena si ferma prima del fossile');
+  assert.equal(linea.daStampare, 0, 'non c\'è niente da stampare');
+  assert.ok(linea.radiceOrfana, 'resta giocabile solo con la regola della casa');
+  assert.equal(ordinaLinee([linea], ['Acqua'], { budget: 10 }).length, 0);
+});

@@ -58,6 +58,9 @@ node tools/genera-indice-evoluzioni.mjs   # ricostruisce data/evoluzioni.json
 
 Recupera i collegamenti `evolveDa` che le singole stampe non dichiarano (il 41% delle
 evoluzioni): senza, il motore tratta da orfane carte di cui possiedi la pre-evoluzione.
+Il file ha forma `{da: {...}, nonPokemon: [...]}`: `nonPokemon` sono le pre-evoluzioni
+che in realtà sono carte Allenatore (i fossili — Omanyte "evolve" da *Vecchio
+Helixfossile*), che il motore non deve stampare come Pokémon.
 
 **Numero di build.** `version.json` mostra in fondo alla pagina un numero che cresce a
 ogni commit, per capire se GitHub Pages ha pubblicato la versione nuova. Lo aggiorna da

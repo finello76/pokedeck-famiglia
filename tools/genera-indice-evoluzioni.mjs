@@ -49,6 +49,8 @@ const file = readdirSync(CARTELLA_SET)
 
 /** @type {Map<string, string>} nome normalizzato → nome della pre-evoluzione */
 const evoluzioni = new Map();
+/** Tutti i nomi di Pokémon visti, normalizzati: serve a riconoscere i fossili. */
+const speciePokemon = new Set();
 /** Conflitti: la stessa specie con due pre-evoluzioni diverse. */
 const conflitti = [];
 let carteLette = 0;
@@ -56,6 +58,7 @@ let carteLette = 0;
 for (const nomeFile of file) {
   const set = JSON.parse(readFileSync(join(CARTELLA_SET, nomeFile), 'utf8'));
   for (const carta of set.carte ?? []) {
+    if (carta.categoria === 'Pokémon') speciePokemon.add(normalizza(carta.nome));
     if (carta.categoria !== 'Pokémon' || !carta.evolveDa) continue;
     carteLette++;
 
@@ -73,13 +76,26 @@ for (const nomeFile of file) {
 
 // Ordinato per nome: così il file è stabile fra due esecuzioni e il diff in
 // git mostra solo le specie davvero cambiate.
-const indice = Object.fromEntries([...evoluzioni.entries()].sort(([a], [b]) => a.localeCompare(b)));
+const da = Object.fromEntries([...evoluzioni.entries()].sort(([a], [b]) => a.localeCompare(b)));
 
+// I fossili: Omanyte "evolve" da *Vecchio Helixfossile*, che è una carta
+// Allenatore, non un Pokémon. Chi legge l'indice deve poterlo sapere, o finisce
+// per stampare un fossile come se fosse un Pokémon Base — è successo davvero.
+// Il nome si riconosce solo qui, dove si vedono tutte le categorie del dataset.
+const nonPokemon = [
+  ...new Set(
+    [...evoluzioni.values()].filter((nome) => !speciePokemon.has(normalizza(nome))),
+  ),
+].sort((a, b) => a.localeCompare(b));
+
+const indice = { da, nonPokemon };
 writeFileSync(USCITA, `${JSON.stringify(indice, null, 0)}\n`);
 
 const peso = (JSON.stringify(indice).length / 1024).toFixed(1);
 console.log(`Letti ${file.length} set, ${carteLette} carte con evolveDa dichiarato.`);
-console.log(`Scritte ${Object.keys(indice).length} specie in ${USCITA} (${peso} KB).`);
+console.log(`Scritte ${Object.keys(da).length} specie in ${USCITA} (${peso} KB).`);
+console.log(`Pre-evoluzioni che non sono Pokémon (fossili e simili): ${nonPokemon.length}`);
+for (const n of nonPokemon) console.log('  ', n);
 if (conflitti.length) {
   console.log(`\n${conflitti.length} nomi con pre-evoluzioni discordanti (tenuta la prima):`);
   for (const c of conflitti.slice(0, 10)) console.log('  ', c);
