@@ -21,7 +21,8 @@
  * @module engine/pianifica
  */
 
-import { generaMazzi, rilevaCarenze } from './generazione.js';
+import { generaMazzi } from './generazione.js';
+import { rilevaCarenze } from './carenze.js';
 import { valutaRegole } from './regole.js';
 import { calcolaProxy, integraProxy } from './proxy.js';
 
@@ -36,6 +37,9 @@ import { calcolaProxy, integraProxy } from './proxy.js';
  * @param {boolean} [opzioni.proxyEnergia=false] se si stamperanno energie proxy
  * @param {boolean} [opzioni.proxyPokemon=false] se si stamperanno le
  *   pre-evoluzioni mancanti
+ * @param {number} [opzioni.budgetProxy=4] quante carte Pokémon si può stampare
+ *   per mazzo. Conta solo con `proxyPokemon` attivo, e decide quante linee
+ *   evolutive complete il motore riesce a costruire
  * @param {boolean} [opzioni.ammettiEsotici=false]
  * @param {number} [opzioni.seme=1] seme del caso: cambiarlo produce mazzi
  *   diversi dalla stessa collezione. Le due passate usano lo stesso seme, o la
@@ -52,6 +56,9 @@ export function pianifica(voci, opzioni) {
     semplificata: false,
     proxyEnergia: false,
     proxyPokemon: false,
+    // Quattro carte bastano per due linee complete da tre gradini: è la
+    // quantità che fa la differenza fra un mazzo che evolve e uno che no.
+    budgetProxy: 4,
     ammettiEsotici: false,
     seme: 1,
     // Indice nome→pre-evoluzione: serve ai proxy Pokémon per stampare l'intera
@@ -70,26 +77,45 @@ export function pianifica(voci, opzioni) {
     opzioni: configurazione,
   });
 
-  // Coi proxy Pokémon attivi gli orfani vanno selezionati comunque: la loro
-  // pre-evoluzione verrà stampata. È una deroga TECNICA per il generatore, non
-  // una regola della casa: se poi tutti gli orfani risultano risolti dai
-  // proxy, la regola non comparirà sul foglio.
-  if (configurazione.proxyPokemon) permessi.evoluzioniComeBase = true;
+  // Passata 2: si rigenera con le deroghe concesse dalle regole e col budget
+  // di stampa. I proxy Pokémon NON si aggiungono qui: nascono dentro il
+  // generatore, che sceglie le linee sapendo già quanto può stampare. Aggiunti
+  // dopo, come si faceva prima, arrivavano a mazzo pieno di Base e potevano
+  // solo rattoppare gli orfani finiti dentro per caso.
+  const definitivo = generaMazzi(voci, {
+    ...configurazione,
+    permessi,
+    budgetProxy: configurazione.proxyPokemon ? configurazione.budgetProxy : 0,
+  });
 
-  // Passata 2: si rigenera con le deroghe concesse dalle regole.
-  const definitivo = generaMazzi(voci, { ...configurazione, permessi });
-
-  // I proxy si calcolano sui mazzi definitivi e si inseriscono nelle liste;
-  // poi le carenze si RIMISURANO, perché un buco tappato da un proxy non è più
-  // un buco e non deve attivare regole della casa.
-  const { proxy, scartati } = calcolaProxy(
+  // Restano da calcolare le sole Energie proxy, che non dipendono dalle linee
+  // evolutive; poi le carenze si RIMISURANO, perché un buco tappato da un
+  // proxy non è più un buco e non deve attivare regole della casa.
+  const { proxy: proxyEnergie } = calcolaProxy(
     { mazzi: definitivo.mazzi, carenze: definitivo.carenze },
-    configurazione,
+    { ...configurazione, proxyPokemon: false },
   );
-  integraProxy(definitivo.mazzi, proxy, configurazione.taglia);
-  const carenze = proxy.length
-    ? rilevaCarenze(definitivo.mazzi, configurazione.taglia, definitivo.analisi, permessi)
-    : definitivo.carenze;
+  integraProxy(definitivo.mazzi, proxyEnergie, configurazione.taglia);
+
+  // L'elenco completo di ciò che va stampato si legge dai mazzi: le carte
+  // Pokémon ce le ha messe il generatore, le Energie la riga qui sopra.
+  const proxy = definitivo.mazzi.flatMap((m) =>
+    m.carte.filter((c) => c.proxy).map((c) => ({
+      genere: c.carta.categoria === 'Energia' ? 'energia' : 'pokemon',
+      nome: c.carta.nome,
+      tipo: c.carta.tipi?.[0],
+      mazzo: m.nome,
+      quantita: c.quantita,
+      motivo: c.motivo,
+    })),
+  );
+
+  const carenze = rilevaCarenze(
+    definitivo.mazzi,
+    configurazione.taglia,
+    definitivo.analisi,
+    permessi,
+  );
 
   // Le regole si rivalutano sui mazzi definitivi: il foglio deve spiegare
   // questi mazzi, non quelli della prima passata.
@@ -107,7 +133,9 @@ export function pianifica(voci, opzioni) {
     carenze,
     analisi: definitivo.analisi,
     proxy,
-    proxyScartati: scartati,
+    // Nessuno scarto da segnalare: il generatore non prende mai una linea che
+    // non può completare, quindi non restano carte "in attesa di un proxy".
+    proxyScartati: [],
   };
 }
 

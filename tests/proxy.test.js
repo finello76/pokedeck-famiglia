@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { pianifica, carteConDeroga } from '../src/engine/pianifica.js';
-import { proxyEnergia, proxyPokemon, integraProxy, QUOTA_PROXY_POKEMON } from '../src/engine/proxy.js';
+import { proxyEnergia } from '../src/engine/proxy.js';
 
 const pk = (nome, tipo, stadio = 'Base', evolveDa = null, quantita = 1, numero = nome) => ({
   carta: {
@@ -101,11 +101,12 @@ test('i proxy Pokémon stampano la pre-evoluzione e sciolgono la deroga', () => 
   );
 });
 
-test('una pre-evoluzione sconosciuta non produce proxy e tiene viva la regola', () => {
+
+test('una pre-evoluzione sconosciuta non si stampa: resta la regola della casa', () => {
   // Il 41% delle evoluzioni del dataset non dichiara evolveDa: di quelle carte
-  // si sa che sono orfane ma non cosa stampare.
+  // si sa che sono orfane ma non cosa stampare. Nessun budget le ripara.
   const voci = [pk('Krookodile', 'Oscurità', 'Livello 2', null, 2), en('Oscurità', 10)];
-  const p = pianifica(voci, { taglia: 10, numeroMazzi: 1, proxyPokemon: true });
+  const p = pianifica(voci, { taglia: 10, numeroMazzi: 1, proxyPokemon: true, budgetProxy: 8 });
 
   assert.ok(
     !p.proxy.some((x) => x.genere === 'pokemon'),
@@ -115,73 +116,43 @@ test('una pre-evoluzione sconosciuta non produce proxy e tiene viva la regola', 
     p.regole.some((r) => r.codice === 'evoluzioni-come-base'),
     'la regola resta: è l\'unico modo di giocare quella carta',
   );
+});
+
+test('il budget di stampa decide quante linee complete entrano', () => {
+  // Due linee possibili, ciascuna da due carte da stampare (Base + Livello 1).
+  const voci = [
+    pk('Machamp', 'Lotta', 'Livello 2', 'Machoke', 1),
+    pk('Golem', 'Lotta', 'Livello 2', 'Graveler', 1),
+    en('Lotta', 20),
+  ];
+  const indiceEvoluzioni = { machoke: 'Machop', graveler: 'Geodude' };
+  const comuni = { taglia: 30, numeroMazzi: 1, proxyPokemon: true, indiceEvoluzioni };
+
+  const stretto = pianifica(voci, { ...comuni, budgetProxy: 2 });
+  const largo = pianifica(voci, { ...comuni, budgetProxy: 8 });
+
+  const cime = (p) =>
+    p.mazzi[0].carte.filter((c) => c.carta.stadio === 'Livello 2' && !c.proxy).length;
+  assert.equal(cime(stretto), 1, 'con 2 carte di budget si completa una linea sola');
+  assert.equal(cime(largo), 2, 'col budget largo entrano entrambe');
+});
+
+test('a budget zero non si stampa nessun Pokémon', () => {
+  const voci = [pk('Zweilous', 'Oscurità', 'Livello 1', 'Deino', 4), en('Oscurità', 10)];
+  const p = pianifica(voci, { taglia: 10, numeroMazzi: 1, proxyPokemon: true, budgetProxy: 0 });
   assert.ok(
-    p.proxyScartati.some((s) => s.ragione === 'pre-evoluzione sconosciuta'),
-    'lo scarto viene motivato',
+    p.mazzi[0].carte.every((c) => !c.proxy || c.carta.categoria === 'Energia'),
+    'nessun Pokémon stampato',
   );
 });
 
-test('la quota massima di proxy Pokémon viene rispettata', () => {
-  const mazzi = [
-    {
-      nome: 'Mazzo 1',
-      tipi: ['Erba'],
-      totale: 6,
-      composizione: { pokemon: 6, energie: 0, allenatori: 0 },
-      carte: [
-        { carta: pk('A2', 'Erba', 'Livello 1', 'A1').carta, quantita: 2 },
-        { carta: pk('B2', 'Erba', 'Livello 1', 'B1').carta, quantita: 2 },
-        { carta: pk('C2', 'Erba', 'Livello 1', 'C1').carta, quantita: 2 },
-      ],
-    },
-  ];
-  const carenze = [
-    {
-      codice: 'orfani-nel-mazzo',
-      mazzo: 'Mazzo 1',
-      dati: {
-        orfani: [
-          { nome: 'A2', manca: 'A1', stadio: 'Livello 1' },
-          { nome: 'B2', manca: 'B1', stadio: 'Livello 1' },
-          { nome: 'C2', manca: 'C1', stadio: 'Livello 1' },
-        ],
-      },
-    },
-  ];
-  const taglia = 15; // tetto: floor(15 * 0.15) = 2
-  const { proxy, scartati } = proxyPokemon(mazzi, carenze, taglia);
-  assert.equal(proxy.length, Math.floor(taglia * QUOTA_PROXY_POKEMON));
-  assert.ok(scartati.some((s) => s.ragione === 'quota proxy superata'));
-});
-
-test('integraProxy toglie i doppioni meno preziosi, mai le linee evolutive', () => {
-  const mazzo = {
-    nome: 'Mazzo 1',
-    tipi: ['Erba'],
-    totale: 6,
-    composizione: { pokemon: 4, energie: 0, allenatori: 2 },
-    carte: [
-      { carta: pk('Evo', 'Erba', 'Livello 1', 'Cucciolo').carta, quantita: 2 },
-      { carta: pk('Solitario', 'Erba', 'Base').carta, quantita: 2 },
-      al('Pozione', 2),
-    ],
-  };
-
-  integraProxy(
-    [mazzo],
-    [{ genere: 'pokemon', nome: 'Cucciolo', mazzo: 'Mazzo 1', quantita: 1, motivo: 'test' }],
-    6,
-  );
-
-  assert.ok(mazzo.carte.some((c) => c.proxy && c.carta.nome === 'Cucciolo'));
-  assert.equal(mazzo.totale, 6, 'la taglia non cambia');
-  const pozione = mazzo.carte.find((c) => c.carta.nome === 'Pozione');
-  assert.equal(pozione.quantita, 1, 'a fare spazio è il doppione di Allenatore');
-  assert.equal(
-    mazzo.carte.find((c) => c.carta.nome === 'Evo').quantita,
-    2,
-    'le carte della linea evolutiva non si toccano',
-  );
+test('non si stampa la seconda copia di una carta che hai già', () => {
+  // Il budget speso per raddoppiare una carta posseduta non rende giocabile
+  // niente di nuovo: meglio tenerlo per un'altra linea.
+  const voci = [pk('Zweilous', 'Oscurità', 'Livello 1', 'Deino', 1), en('Oscurità', 20)];
+  const p = pianifica(voci, { taglia: 30, numeroMazzi: 1, proxyPokemon: true, budgetProxy: 10 });
+  const zweilous = p.mazzi[0].carte.filter((c) => c.carta.nome === 'Zweilous');
+  assert.ok(zweilous.every((c) => !c.proxy), 'Zweilous non viene ristampato');
 });
 
 test('proxyEnergia riconosce i tipi anche quando il nome non coincide', () => {
@@ -196,91 +167,27 @@ test('proxyEnergia riconosce i tipi anche quando il nome non coincide', () => {
       carte: [
         { carta: pk('Machop', 'Lotta').carta, quantita: 4 },
         {
-          carta: {
-            nome: 'Energia Combattimento',
-            categoria: 'Energia',
-            tipoEnergia: 'Base',
-          },
+          carta: { nome: 'Energia Combattimento', categoria: 'Energia', tipoEnergia: 'Base' },
           quantita: 4,
         },
       ],
     },
   ];
-  const proxy = proxyEnergia(mazzi, 8);
-  assert.equal(proxy.length, 0, 'le 4 Energie Combattimento coprono il fabbisogno (8/4=2)');
+  assert.equal(proxyEnergia(mazzi, 8).length, 0, 'le 4 Energie coprono il fabbisogno (8/4=2)');
 });
 
-test('un Livello 2 orfano fa stampare l\'intera catena, non solo un anello', () => {
-  // È il difetto visto sui mazzi veri: possedendo solo Pawmot (Livello 2) si
-  // stampava Pawmo (Livello 1), che restava a sua volta orfano — un proxy che
-  // non serviva a niente. Con l'indice si risale fino alla Base.
-  const mazzi = [
-    {
-      nome: 'Mazzo 1',
-      tipi: ['Lampo'],
-      totale: 4,
-      composizione: { pokemon: 2, energie: 2, allenatori: 0 },
-      carte: [{ carta: pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo').carta, quantita: 2 }],
-    },
-  ];
-  const carenze = [
-    {
-      codice: 'orfani-nel-mazzo',
-      mazzo: 'Mazzo 1',
-      dati: { orfani: [{ nome: 'Pawmot', manca: 'Pawmo', stadio: 'Livello 2' }] },
-    },
-  ];
-  const indice = { pawmo: 'Pawmi' }; // Pawmo evolve da Pawmi (la Base)
-  const { proxy } = proxyPokemon(mazzi, carenze, 15, indice);
-  const nomi = proxy.map((p) => p.nome);
-  assert.deepEqual(nomi, ['Pawmo', 'Pawmi'], 'stampa sia il Livello 1 sia la Base');
-});
-
-test('la catena proxy non ristampa ciò che è già nel mazzo', () => {
-  // Se la Base c'è ma manca solo il Livello 1, si stampa solo quello.
-  const mazzi = [
-    {
-      nome: 'Mazzo 1',
-      tipi: ['Lampo'],
-      totale: 4,
-      composizione: { pokemon: 3, energie: 1, allenatori: 0 },
-      carte: [
-        { carta: pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo').carta, quantita: 1 },
-        { carta: pk('Pawmi', 'Lampo', 'Base').carta, quantita: 2 },
-      ],
-    },
-  ];
-  const carenze = [
-    {
-      codice: 'orfani-nel-mazzo',
-      mazzo: 'Mazzo 1',
-      dati: { orfani: [{ nome: 'Pawmot', manca: 'Pawmo', stadio: 'Livello 2' }] },
-    },
-  ];
-  const { proxy } = proxyPokemon(mazzi, carenze, 15, { pawmo: 'Pawmi' });
-  assert.deepEqual(proxy.map((p) => p.nome), ['Pawmo'], 'Pawmi è già nel mazzo');
-});
-
-test('la catena si stampa intera o niente, se la quota non basta', () => {
-  // Mezza catena non rende giocabile l'orfano: occuperebbe la quota per nulla.
-  const mazzi = [
-    {
-      nome: 'Mazzo 1',
-      tipi: ['Lampo'],
-      totale: 2,
-      composizione: { pokemon: 2, energie: 0, allenatori: 0 },
-      carte: [{ carta: pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo').carta, quantita: 2 }],
-    },
-  ];
-  const carenze = [
-    {
-      codice: 'orfani-nel-mazzo',
-      mazzo: 'Mazzo 1',
-      dati: { orfani: [{ nome: 'Pawmot', manca: 'Pawmo', stadio: 'Livello 2' }] },
-    },
-  ];
-  // taglia 10 → tetto floor(10*0.15)=1, ma la catena richiede 2 carte
-  const { proxy, scartati } = proxyPokemon(mazzi, carenze, 10, { pawmo: 'Pawmi' });
-  assert.equal(proxy.length, 0, 'niente proxy: la catena intera non ci sta');
-  assert.ok(scartati.some((s) => s.ragione === 'quota proxy superata'));
+test('un Livello 2 fa stampare l\'intera catena, non solo un anello', () => {
+  // Possedendo solo Pawmot (Livello 2) non basta stampare Pawmo: resterebbe a
+  // sua volta ingiocabile. Con l'indice si risale fino alla Base.
+  const voci = [pk('Pawmot', 'Lampo', 'Livello 2', 'Pawmo', 1), en('Lampo', 10)];
+  const p = pianifica(voci, {
+    taglia: 15,
+    numeroMazzi: 1,
+    proxyPokemon: true,
+    budgetProxy: 6,
+    indiceEvoluzioni: { pawmo: 'Pawmi' },
+  });
+  const stampati = p.mazzi[0].carte.filter((c) => c.proxy).map((c) => c.carta.nome);
+  assert.ok(stampati.includes('Pawmo'), 'il Livello 1');
+  assert.ok(stampati.includes('Pawmi'), 'e anche la Base');
 });

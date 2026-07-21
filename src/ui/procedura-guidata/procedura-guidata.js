@@ -53,15 +53,30 @@ const DOMANDE = [
     ],
   },
   {
-    chiave: 'proxyPokemon',
-    testo: 'Vuoi stampare le pre-evoluzioni mancanti?',
+    chiave: 'budgetProxy',
+    testo: 'Quante carte puoi stampare per far evolvere i mazzi?',
     aiuto:
-      'Le tue evoluzioni senza la carta da cui evolvono possono essere completate ' +
-      'con carte stampabili, invece che con una regola della casa.',
+      'Le tue evoluzioni hanno bisogno della carta da cui evolvono, e quasi ' +
+      'nessuna è in collezione. Più carte si stampano, più linee evolutive ' +
+      'complete entrano nei mazzi: è la differenza fra giocare con i Livello 2 ' +
+      'e giocare con soli Pokémon Base.',
     mostraSe: (contesto) => (contesto.orfani ?? 0) > 0,
     opzioni: [
-      { valore: false, etichetta: 'No, usa una regola', dettaglio: 'Le evoluzioni si giocheranno come Base' },
-      { valore: true, etichetta: 'Sì, stampo le mancanti', dettaglio: 'Linee evolutive vere e complete' },
+      {
+        valore: 0,
+        etichetta: 'Nessuna',
+        dettaglio: 'Solo carte vere: le evoluzioni si giocheranno come Base, con una regola della casa',
+      },
+      {
+        valore: 4,
+        etichetta: 'Poche',
+        dettaglio: 'Fino a 4 carte per mazzo: una linea evolutiva completa',
+      },
+      {
+        valore: 12,
+        etichetta: 'Quante servono',
+        dettaglio: 'Fino a 12 carte per mazzo: tre linee complete, mazzi che evolvono davvero',
+      },
     ],
   },
 ];
@@ -185,6 +200,10 @@ export function opzioniDaRisposte(risposte) {
     numeroMazzi: Number(risposte.numeroMazzi) || 2,
     semplificata: risposte.difficolta === 'bambini' || risposte.difficolta === 'facile',
     proxyEnergia: Boolean(risposte.proxyEnergia),
-    proxyPokemon: Boolean(risposte.proxyPokemon),
+    // Il motore ragiona su due cose distinte — se stampare e quanto — ma
+    // chiederle separatamente sarebbe una schermata in più per una domanda
+    // sola: "nessuna carta" è semplicemente budget zero.
+    proxyPokemon: Number(risposte.budgetProxy) > 0,
+    budgetProxy: Number(risposte.budgetProxy) || 0,
   };
 }

@@ -64,11 +64,13 @@ export const CATALOGO = [
         .filter((c) => c.codice === 'orfani-nel-mazzo')
         .flatMap((c) => c.dati.orfani);
 
-      // Coi proxy Pokémon le pre-evoluzioni note vengono stampate e le carenze
-      // rimisurate: se nessun orfano è rimasto nei mazzi, la regola non serve.
-      // Resta necessaria per gli orfani irrisolvibili (pre-evoluzione
-      // sconosciuta, o quota proxy superata).
-      if (opzioni.proxyPokemon && neiMazzi.length === 0) return null;
+      // Coi proxy Pokémon le pre-evoluzioni note vengono stampate: se nessun
+      // orfano è rimasto nei mazzi la regola non serve. Resta però necessaria
+      // per gli orfani che **nessuna stampa può riparare**, quelli di cui non
+      // si conosce il nome della pre-evoluzione: senza la regola il generatore
+      // non li sceglierebbe mai, e la loro carta resterebbe nella scatola.
+      const irrisolvibili = orfani.filter((o) => !o.manca);
+      if (opzioni.proxyPokemon && neiMazzi.length === 0 && irrisolvibili.length === 0) return null;
 
       const nomi = [...new Set(orfani.map((o) => o.voce.carta.nome))];
       const conLivello2 = neiMazzi.filter((o) => o.stadio === 'Livello 2');

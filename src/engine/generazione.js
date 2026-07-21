@@ -13,12 +13,13 @@
 
 import { analizza } from './analisi.js';
 import { Dispensa } from './dispensa.js';
-import { classifica, eBase } from './stadi.js';
+import { classifica, SCALA } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
-import { composizione, fettaPerMazzo, minimoBasi, piramide } from './proporzioni.js';
+import { composizione, fettaPerMazzo, piramide } from './proporzioni.js';
 import { Casuale } from './casuale.js';
-import { costruisciGruppi, ordinaGruppi, pezziDaPrendere } from './scelta-linee.js';
+import { rilevaCarenze } from './carenze.js';
+import { enumeraLinee, ordinaLinee, richiestaPerLinea, firmaLinea } from './linee.js';
 // Il limite di copie sta in formati.js insieme agli altri numeri che
 // definiscono una partita: uno solo, letto da tutti.
 import { MAX_COPIE } from './formati.js';
@@ -41,13 +42,17 @@ import { MAX_COPIE } from './formati.js';
  * @param {Mazzo} mazzo
  * @param {object} carta
  * @param {number} quante
+ * @param {object} [extra] campi della voce, es. `{proxy: true, motivo}`. Una
+ *   voce proxy resta distinta da quella vera anche a parità di nome: nella
+ *   lista stampata "2× Machop" e "1× Machop da stampare" sono due righe, ed è
+ *   ciò che serve a chi deve ritagliare
  * @returns {number} copie effettivamente aggiunte
  */
-function aggiungi(mazzo, carta, quante) {
-  const chiave = `${carta.idSet ?? '?'}:${carta.numero ?? normalizzaNome(carta.nome)}`;
-  const esistente = mazzo.carte.find(
-    (c) => `${c.carta.idSet ?? '?'}:${c.carta.numero ?? normalizzaNome(c.carta.nome)}` === chiave,
-  );
+function aggiungi(mazzo, carta, quante, extra = {}) {
+  const chiave = (c, proxy) =>
+    `${proxy ? 'proxy' : c.idSet ?? '?'}:${c.numero ?? normalizzaNome(c.nome)}`;
+  const cercata = chiave(carta, extra.proxy);
+  const esistente = mazzo.carte.find((c) => chiave(c.carta, c.proxy) === cercata);
 
   const gia = esistente?.quantita ?? 0;
   const tetto = eEnergiaBase(carta) ? Infinity : MAX_COPIE;
@@ -55,10 +60,34 @@ function aggiungi(mazzo, carta, quante) {
   if (aggiungibili === 0) return 0;
 
   if (esistente) esistente.quantita += aggiungibili;
-  else mazzo.carte.push({ carta, quantita: aggiungibili });
+  else mazzo.carte.push({ carta, quantita: aggiungibili, ...extra });
 
   mazzo.totale += aggiungibili;
   return aggiungibili;
+}
+
+/**
+ * La carta da stampare per un gradino che manca alla collezione.
+ *
+ * Del gradino si conosce solo il nome, letto dalla catena evolutiva: tipo e
+ * stadio si deducono dalla linea, perché il foglio di stampa e la lista del
+ * mazzo devono poter mostrare una carta sensata. L'illustrazione la cerca il
+ * livello applicativo, che ha accesso al dataset.
+ *
+ * @param {object} gradino
+ * @param {object} cima la carta posseduta in cima alla linea
+ * @returns {object} carta sintetica, senza `idSet`
+ */
+function cartaDaStampare(gradino, cima) {
+  return {
+    nome: gradino.nome,
+    categoria: 'Pokémon',
+    stadio: SCALA[gradino.livello] ?? SCALA[0],
+    // I tipi si ereditano dalla cima: nelle linee evolutive il tipo cambia di
+    // rado, ed è comunque meglio di nessun tipo per la colorazione della carta.
+    tipi: cima.tipi ?? [],
+    evolveDa: gradino.evolveDa,
+  };
 }
 
 /**
@@ -115,6 +144,13 @@ export function scegliTipi(analisi, numeroMazzi) {
  * @param {object} [opzioni.permessi] deroghe concesse dalle regole della casa
  *   (`evoluzioniComeBase`, `energiaUniversale`): arrivano dalla seconda passata
  *   orchestrata da `pianifica()`
+ * @param {number} [opzioni.budgetProxy=0] quante carte Pokémon si è disposti a
+ *   stampare per ciascun mazzo. È il vincolo che decide se le linee evolutive
+ *   entrano intere o restano fuori: a 0 il motore può usare solo linee già
+ *   complete in collezione. Lo sceglie chi gioca, dalla procedura guidata
+ * @param {Record<string, string>} [opzioni.indiceEvoluzioni] nome normalizzato →
+ *   pre-evoluzione. Serve a ricostruire i gradini che non possiedi: senza,
+ *   un'evoluzione resta una carta isolata. Lo passa il livello applicativo
  * @param {number} [opzioni.seme=1] seme del caso. Con lo stesso seme e la stessa
  *   collezione i mazzi sono identici; cambiandolo si ottengono mazzi diversi
  *   pur restando sensati. Il default fisso tiene i test riproducibili
@@ -126,7 +162,18 @@ export function scegliTipi(analisi, numeroMazzi) {
  * generaMazzi(collezione, { taglia: 15, seme: Date.now() });
  */
 export function generaMazzi(voci, opzioni) {
-  const { taglia, numeroMazzi = 2, ammettiEsotici = false, permessi = {}, seme = 1 } = opzioni;
+  const {
+    taglia,
+    numeroMazzi = 2,
+    ammettiEsotici = false,
+    permessi = {},
+    seme = 1,
+    budgetProxy = 0,
+    indiceEvoluzioni = {},
+  } = opzioni;
+  // Il budget è per mazzo, ma non ha senso che superi la quota Pokémon: un
+  // mazzo interamente stampato non è più il tuo mazzo.
+  const budgetPerMazzo = Math.max(0, Math.min(budgetProxy, Math.round(taglia / 2)));
   const casuale = new Casuale(seme);
   const analisi = analizza(voci, { ammettiEsotici });
   const dispensa = new Dispensa(voci);
@@ -137,6 +184,10 @@ export function generaMazzi(voci, opzioni) {
     allenatori: analisi.conteggi.allenatori,
   };
   const fetta = fettaPerMazzo(totali, numeroMazzi);
+  // Le carte stampabili allargano la scorta di Pokémon: senza contarle, una
+  // collezione con pochi Pokémon riceverebbe due soli slot e il budget di
+  // stampa non avrebbe dove spendersi.
+  fetta.pokemon += budgetPerMazzo;
   const quota = composizione(taglia, fetta);
   const tipiPerMazzo = scegliTipi(analisi, numeroMazzi);
 
@@ -147,56 +198,98 @@ export function generaMazzi(voci, opzioni) {
     carte: [],
     totale: 0,
     composizione: { pokemon: 0, energie: 0, allenatori: 0 },
+    // Contabilità di costruzione: quante carte si sono già stampate per questo
+    // mazzo e quali famiglie evolutive contiene. Restano allegate al mazzo
+    // perché servono a ogni giro del ciclo, non solo alla fine.
+    stampate: 0,
+    famiglie: new Set(),
   }));
 
   const forma = piramide(taglia);
 
-  // --- Pokémon: si sceglie una LINEA per volta, a turni alternati ---
+  // --- Pokémon: si sceglie una LINEA EVOLUTIVA per volta, a turni alternati ---
   //
-  // L'unità di scelta è il gruppo (una carta giocabile dalla mano con le sue
-  // evoluzioni), non la singola carta. Scegliendo carta per carta ogni Base
-  // ancora disponibile batteva qualunque evoluzione, e la quota Pokémon si
-  // riempiva di sole Basi: i mazzi non evolvevano mai. Vedi scelta-linee.js.
+  // L'unità di scelta è la linea intera, dal Base alla cima, coi gradini
+  // mancanti messi in conto come carte da stampare. Ragionando sulle sole
+  // carte possedute, una collezione senza linee complete — cioè quella vera —
+  // produceva solo mucchi di Base sciolte. Vedi linee.js.
   for (let giro = 0; giro < taglia; giro++) {
     let qualcosaAggiunto = false;
     for (const mazzo of mazzi) {
       if (mazzo.composizione.pokemon >= quota.pokemon) continue;
 
-      const nomi = new Set(mazzo.carte.map((c) => normalizzaNome(c.carta.nome)));
-      // Quante carte del mazzo si giocano già solo grazie a una deroga: serve a
-      // non concentrarle tutte nello stesso mazzo.
-      const orfaniGia = mazzo.carte.filter((c) => {
-        const liv = classifica(c.carta).livello ?? 0;
-        return liv > 0 && !(c.carta.evolveDa && nomi.has(normalizzaNome(c.carta.evolveDa)));
-      }).length;
-
       const candidati = dispensa.cerca(
         (c) => c.categoria === 'Pokémon' && classifica(c).livello !== null,
       );
-      const gruppi = ordinaGruppi(
-        costruisciGruppi(candidati, permessi),
-        mazzo.tipi,
-        permessi,
-        orfaniGia,
-        nomi,
-      );
-      // Non sempre il migliore: fra scelte quasi equivalenti si estrae, ed è
+      const budget = budgetPerMazzo - mazzo.stampate;
+      const linee = ordinaLinee(enumeraLinee(candidati, indiceEvoluzioni), mazzo.tipi, {
+        budget,
+        evoluzioniComeBase: Boolean(permessi.evoluzioniComeBase),
+        famiglieInMazzo: mazzo.famiglie,
+      });
+      // Non sempre la migliore: fra scelte quasi equivalenti si estrae, ed è
       // ciò che rende diversi due giri di generazione.
-      const scelto = casuale.scegli(gruppi);
-      if (!scelto) continue;
+      const preferita = casuale.scegli(linee);
+      if (!preferita) continue;
 
+      // La preferita può non entrarci tutta: negli ultimi slot del mazzo una
+      // linea da tre gradini non ci sta più, e si scorre verso linee più
+      // corte finché una entra intera.
       const spazio = quota.pokemon - mazzo.composizione.pokemon;
-      for (const { carta, quante } of pezziDaPrendere(scelto, forma, spazio)) {
-        const prese = dispensa.preleva(carta, quante);
-        const messe = aggiungi(mazzo, carta, prese);
-        // Ciò che il tetto delle 4 copie ha respinto torna disponibile.
-        if (prese > messe) dispensa.restituisci(carta, prese - messe);
-        mazzo.composizione.pokemon += messe;
-        if (messe > 0) qualcosaAggiunto = true;
+      let scelta = null;
+      let richiesta = [];
+      for (const linea of [preferita, ...linee.filter((l) => l !== preferita)]) {
+        richiesta = richiestaPerLinea(linea, forma, spazio, budget);
+        if (richiesta.length) {
+          scelta = linea;
+          break;
+        }
       }
+      if (!scelta) continue;
+
+      for (const { gradino, quante } of richiesta) {
+        // Le copie vere vengono sempre prima: si stampa solo ciò che la
+        // scatola non riesce a dare.
+        let messe = 0;
+        if (gradino.carta) {
+          const prese = dispensa.preleva(gradino.carta, quante);
+          messe = aggiungi(mazzo, gradino.carta, prese);
+          // Ciò che il tetto delle 4 copie ha respinto torna disponibile.
+          if (prese > messe) dispensa.restituisci(gradino.carta, prese - messe);
+        }
+
+        // Si stampa un gradino solo se la scatola non ne dà **nemmeno una**
+        // copia. Ristampare la seconda copia di una carta che hai già non
+        // rende giocabile niente che non lo sia: quel budget rende molto di
+        // più speso per un'altra linea.
+        const mancanti = messe === 0 ? quante : 0;
+        const daStampare = Math.min(mancanti, budgetPerMazzo - mazzo.stampate);
+        if (daStampare > 0) {
+          const stampate = aggiungi(mazzo, cartaDaStampare(gradino, scelta.cima), daStampare, {
+            proxy: true,
+            motivo: `Serve per giocare ${scelta.cima.nome}${
+              scelta.cima.stadio ? ` (${scelta.cima.stadio})` : ''
+            }.`,
+          });
+          mazzo.stampate += stampate;
+          messe += stampate;
+        }
+
+        mazzo.composizione.pokemon += messe;
+        // Gradino rimasto scoperto: né copie vere né budget per stamparlo. Ciò
+        // che gli sta sopra non si potrebbe evolvere, quindi la linea si ferma
+        // qui invece di infilare nel mazzo carte morte.
+        if (messe === 0) break;
+        qualcosaAggiunto = true;
+      }
+      mazzo.famiglie.add(firmaLinea(scelta));
     }
     if (!qualcosaAggiunto) break;
   }
+
+  // La contabilità di costruzione esce di scena: i mazzi vengono salvati come
+  // JSON, e un Set non sopravvive alla serializzazione.
+  for (const mazzo of mazzi) delete mazzo.famiglie;
 
   // --- Energie: prima quelle del tipo del mazzo ---
   for (const mazzo of mazzi) {
@@ -235,106 +328,4 @@ export function generaMazzi(voci, opzioni) {
   }
 
   return { mazzi, carenze: rilevaCarenze(mazzi, taglia, analisi, permessi), analisi };
-}
-
-/**
- * Che cosa non ha funzionato, in forma utilizzabile dal motore delle regole.
- *
- * Ogni carenza è un fatto misurato, non un giudizio: sarà il motore delle regole
- * a decidere quale regola della casa attivare, e il foglio stampato a spiegarne
- * il perché.
- *
- * Esportata perché `pianifica()` deve rimisurare DOPO l'inserimento dei proxy:
- * un orfano con la pre-evoluzione stampata non è più orfano, e il foglio
- * regole non deve parlarne.
- *
- * @param {Mazzo[]} mazzi
- * @param {number} taglia
- * @param {object} analisi
- * @param {object} [permessi] deroghe già concesse. Servono a **misurare
- *   diversamente**, non a nascondere: con le evoluzioni giocabili come Base il
- *   conteggio dei Base cambia davvero. Una carenza però non va mai soppressa
- *   perché una regola la risolve, o quella regola sparirebbe dal foglio
- * @returns {Array<{codice: string, mazzo?: string, dati: object}>}
- */
-export function rilevaCarenze(mazzi, taglia, analisi, permessi = {}) {
-  const carenze = [];
-
-  for (const mazzo of mazzi) {
-    if (mazzo.totale < taglia) {
-      carenze.push({
-        codice: 'mazzo-incompleto',
-        mazzo: mazzo.nome,
-        dati: { previste: taglia, effettive: mazzo.totale },
-      });
-    }
-    // Con la deroga attiva, le evoluzioni orfane si giocano dalla mano: a tutti
-    // gli effetti sono Base, e vanno contate come tali.
-    const basi = mazzo.carte
-      .filter(
-        (c) =>
-          eBase(c.carta) ||
-          (permessi.evoluzioniComeBase && (classifica(c.carta).livello ?? 0) > 0),
-      )
-      .reduce((s, c) => s + c.quantita, 0);
-    if (basi < minimoBasi(mazzo.totale || taglia)) {
-      carenze.push({
-        codice: 'poche-basi',
-        mazzo: mazzo.nome,
-        dati: { basi, consigliate: minimoBasi(mazzo.totale || taglia) },
-      });
-    }
-    const energie = mazzo.composizione.energie;
-    if (energie < Math.round((mazzo.totale || taglia) / 4)) {
-      carenze.push({
-        codice: 'poche-energie',
-        mazzo: mazzo.nome,
-        dati: { energie, tipi: mazzo.tipi },
-      });
-    }
-    // Evoluzioni finite nel mazzo senza la loro pre-evoluzione. Vanno elencate
-    // per nome: la regola "le Livello 1 selezionate si giocano come Base" deve
-    // poter dire QUALI carte, altrimenti sul foglio stampato è inapplicabile.
-    const nomiMazzo = new Set(mazzo.carte.map((c) => normalizzaNome(c.carta.nome)));
-    const orfaniQui = mazzo.carte
-      .filter((c) => {
-        const livello = classifica(c.carta).livello ?? 0;
-        if (livello === 0) return false;
-        return !c.carta.evolveDa || !nomiMazzo.has(normalizzaNome(c.carta.evolveDa));
-      })
-      .map((c) => ({
-        nome: c.carta.nome,
-        manca: c.carta.evolveDa ?? null,
-        stadio: c.carta.stadio,
-      }));
-    if (orfaniQui.length) {
-      carenze.push({ codice: 'orfani-nel-mazzo', mazzo: mazzo.nome, dati: { orfani: orfaniQui } });
-    }
-
-    // Energie di tipo diverso da quello del mazzo: senza una regola della casa
-    // sono carte che non si possono usare.
-    const fuoriTipo = mazzo.carte
-      .filter((c) => eEnergiaBase(c.carta) && !mazzo.tipi.includes(tipoEnergia(c.carta)))
-      .reduce((s, c) => s + c.quantita, 0);
-    // NON si sopprime quando la regola "energia universale" è già attiva: la
-    // carenza è un fatto misurato, e sopprimerla farebbe sparire dal foglio
-    // stampato proprio la regola che la risolve. Il giocatore si troverebbe
-    // energie fuori tipo e nessuna regola che le autorizza.
-    if (fuoriTipo > 0) {
-      carenze.push({
-        codice: 'energie-fuori-tipo',
-        mazzo: mazzo.nome,
-        dati: { fuoriTipo, tipi: mazzo.tipi },
-      });
-    }
-  }
-
-  if (analisi.orfani.length) {
-    carenze.push({
-      codice: 'orfani-in-collezione',
-      dati: { quanti: analisi.orfani.length, nomi: [...new Set(analisi.orfani.map((o) => o.manca))] },
-    });
-  }
-
-  return carenze;
 }
