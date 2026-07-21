@@ -88,7 +88,16 @@ tratterebbe i `.js` come CommonJS e i test non potrebbero importare i moduli. No
 dipendenze e non va mai eseguito `npm install`: la PWA non lo legge mai.
 
 Dopo aver aggiunto un set, aggiornare **anche l'elenco `GUSCIO` in `sw.js`**: altrimenti
-il set nuovo non viene precaricato e offline non esiste.
+il set nuovo non viene precaricato e offline non esiste. Lo stesso vale per ogni modulo
+nuovo sotto `src/`: `tests/guscio.test.js` verifica che l'elenco e i file coincidano nei
+due sensi. Non è pignoleria — un modulo *cancellato* rimasto nell'elenco ha bloccato in
+silenzio tre versioni di aggiornamenti su tutti i dispositivi già installati.
+
+**Pubblicare una versione nuova**: cambiare `VERSIONE` in `sw.js`. L'app non si aggiorna
+da sola: quando il service worker nuovo è pronto compare in fondo una barra con
+"Aggiorna", e solo allora si attiva e la pagina si ricarica. È l'unico modo di uscire da
+una versione vecchia su un telefono, dove la PWA installata non ha il pulsante di
+ricarica (vedi `docs/apprendimento/07-aggiornare-una-pwa.md`).
 
 ## Architettura — NIENTE MONOLITI
 

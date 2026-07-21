@@ -136,6 +136,17 @@
       <span id="versione" hidden></span>
     </footer>
 
+    <!--
+      Avviso di versione nuova. Su un telefono la PWA non ha il pulsante
+      "ricarica" e le sue schede non si chiudono mai: senza questa barra non ci
+      sarebbe alcun modo di passare alla versione appena pubblicata.
+    -->
+    <div id="barra-aggiornamento" class="barra-aggiornamento no-stampa" role="status" hidden>
+      <span>È disponibile una versione nuova dell'app.</span>
+      <button type="button" id="bottone-aggiorna">Aggiorna</button>
+      <button type="button" id="bottone-rimanda" class="secondario">Più tardi</button>
+    </div>
+
     <script type="module" src="src/app/app.js"></script>
   </body>
 </html>

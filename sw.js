@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v12';
+const VERSIONE = 'v13';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -75,7 +75,11 @@ const GUSCIO = [
   './src/engine/proxy.js',
   './src/engine/alternative.js',
   './src/engine/casuale.js',
-  './src/engine/scelta-linee.js',
+  './src/engine/linee.js',
+  './src/engine/carenze.js',
+  './src/engine/mazzo.js',
+  './src/engine/riallinea.js',
+  './src/engine/bilancia.js',
   './src/engine/formati.js',
   './src/ui/vista-regole/vista-regole.js',
   './src/ui/vista-regole/vista-regole.css',
@@ -98,12 +102,50 @@ self.addEventListener('install', (evento) => {
   evento.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_GUSCIO);
-      await cache.addAll(GUSCIO);
-      // Attiva subito la versione nuova invece di aspettare che tutte le schede
-      // aperte vengano chiuse: su un'app di famiglia è quello che si vuole.
-      await self.skipWaiting();
+      // `cache: 'reload'` scavalca la cache HTTP del browser. Senza, un file
+      // servito da GitHub Pages con `max-age=600` verrebbe ripreso dalla cache
+      // vecchia e finirebbe *dentro* quella nuova del service worker: si
+      // installerebbe una versione nuova piena di file vecchi.
+      // Uno per uno, non `cache.addAll()`. `addAll` è tutto-o-niente: basta un
+      // file rinominato o cancellato e l'installazione fallisce **in silenzio**,
+      // il service worker nuovo non entra mai in servizio e il vecchio resta al
+      // comando per sempre. È successo davvero — un modulo rimasto nell'elenco
+      // dopo essere stato cancellato ha bloccato tre versioni di aggiornamenti,
+      // e sul telefono non c'era modo di accorgersene.
+      const esiti = await Promise.allSettled(
+        GUSCIO.map(async (url) => {
+          const risposta = await fetch(new Request(url, { cache: 'reload' }));
+          if (!risposta.ok) throw new Error(`${url}: HTTP ${risposta.status}`);
+          return cache.put(url, risposta);
+        }),
+      );
+      const falliti = esiti.filter((e) => e.status === 'rejected');
+      if (falliti.length) {
+        // Non blocca l'installazione: quei file si prenderanno dalla rete alla
+        // prima richiesta. Ma va detto, o il buco resta invisibile.
+        console.warn(
+          `Guscio incompleto: ${falliti.length} file non precaricati.`,
+          falliti.map((e) => e.reason?.message),
+        );
+      }
+
+      // NON si attiva da sé. Il service worker nuovo resta in attesa finché la
+      // pagina non chiede di passare alla versione nuova (vedi il messaggio
+      // qui sotto): attivandosi subito servirebbe file nuovi a una pagina che
+      // ha già caricato i moduli vecchi, mescolando due versioni dell'app.
     })(),
   );
+});
+
+/**
+ * Passa il controllo alla versione nuova, su richiesta della pagina.
+ *
+ * Lo chiede l'utente toccando "Aggiorna" nella barra che compare in fondo: è
+ * l'unico momento in cui una ricarica non fa perdere niente, perché è stata
+ * decisa da chi sta usando l'app.
+ */
+self.addEventListener('message', (evento) => {
+  if (evento.data?.tipo === 'attiva-subito') self.skipWaiting();
 });
 
 self.addEventListener('activate', (evento) => {
