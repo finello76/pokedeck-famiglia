@@ -14,6 +14,7 @@ import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
 import { arricchisciProxy } from './foglio-proxy.js';
 import { disponibilitaResidua, alternativePer, applicaSostituzione } from '../engine/alternative.js';
 import { riallineaLinee } from '../engine/riallinea.js';
+import { squilibrio } from '../engine/bilancia.js';
 import { rivaluta } from '../engine/pianifica.js';
 import { normalizzaNome } from '../engine/nomi.js';
 
@@ -123,6 +124,10 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
       // Le stampe nuove sono solo nomi: la scansione la cerca il livello
       // applicativo, come alla prima generazione.
       await arricchisciProxy(piano);
+
+      // Anche l'equilibrio va rimisurato: una linea tolta a mano può aver reso
+      // i mazzi impari, e chi gioca deve poterlo sapere prima della partita.
+      piano.equilibrio = { ...squilibrio(piano.mazzi), scambi: [] };
 
       // Il foglio regole descrive i mazzi correnti: togliere o aggiungere una
       // carta può cambiare carenze e regole della casa.

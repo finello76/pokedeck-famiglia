@@ -9,7 +9,8 @@
 
 import { elencoCompleto, statistiche } from '../data/collezione.js';
 import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
-import { pianifica, carteConDeroga } from '../engine/pianifica.js';
+import { bilancia, squilibrio, squilibrati as mazziSquilibrati } from '../engine/bilancia.js';
+import { pianifica, rivaluta, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
@@ -88,7 +89,59 @@ async function genera(risposte, seme = nuovoSeme()) {
   // Il motore dei proxy conosce solo i nomi: le scansioni le cerca il livello
   // applicativo nel dataset, prima di disegnare.
   await arricchisciProxy(pianoCorrente);
+
+  // L'equilibrio si rimisura **dopo** l'arricchimento, e il riequilibrio si
+  // rifà con i dati completi: una carta da stampare arriva dal motore col solo
+  // nome, e solo qui acquista PS e attacchi veri. Misurata prima, la forza di
+  // un mazzo pieno di stampe risultava molto più bassa del vero — e il
+  // bilanciamento lavorava su numeri che non descrivevano quei mazzi.
+  const scambi = bilancia(pianoCorrente.mazzi, {
+    indiceEvoluzioni: opzioni.indiceEvoluzioni,
+    nonPokemon: opzioni.nonPokemon,
+  });
+  pianoCorrente.equilibrio = {
+    ...squilibrio(pianoCorrente.mazzi),
+    scambi: [...(pianoCorrente.equilibrio?.scambi ?? []), ...scambi],
+  };
+
   disegnaPiano(pianoCorrente, opzioni);
+}
+
+/**
+ * Se i mazzi di questo piano sono troppo diversi fra loro.
+ * @param {object} piano
+ * @returns {boolean}
+ */
+function squilibrati(piano) {
+  return mazziSquilibrati(piano.equilibrio);
+}
+
+/**
+ * La riga che dice quanto i mazzi si somigliano.
+ *
+ * Va detto **prima** della partita: uno squilibrio scoperto giocando è una
+ * partita rovinata, e chi legge non ha modo di sapere che il motore ci ha
+ * provato.
+ *
+ * @param {object} piano
+ * @returns {string} HTML
+ */
+function statoEquilibrio(piano) {
+  const eq = piano.equilibrio;
+  if (!eq?.punteggi?.length) return '';
+
+  const punteggi = eq.punteggi.map((p, i) => `${piano.mazzi[i]?.nome ?? i + 1}: ${p.totale}`);
+  const spostate = eq.scambi?.length
+    ? ` Il motore ha già spostato ${eq.scambi.length === 1 ? 'una linea evolutiva' : `${eq.scambi.length} linee evolutive`} per avvicinarli.`
+    : '';
+
+  if (!squilibrati(piano)) {
+    return `<p class="aiuto">Mazzi equilibrati (forza ${punteggi.join(' · ')}).${spostate}</p>`;
+  }
+  return `<p class="errore">I mazzi non sono del tutto pari: forza ${punteggi.join(' · ')}.
+    ${piano.mazzi[eq.migliore]?.nome} è più forte, soprattutto per le linee evolutive.${spostate}
+    Con questa collezione può non esserci di meglio: prova a rigenerare, o passa una carta
+    da un mazzo all'altro col pulsante ⇄.</p>`;
 }
 
 /**
@@ -115,6 +168,7 @@ function disegnaPiano(piano, opzioni) {
       </button>
     </p>
     ${spiegazioneLineeEvolutive(piano)}
+    ${statoEquilibrio(piano)}
     ${
       incompleti.length
         ? `<p class="errore">Attenzione: ${incompleti.length} mazzo/i non si è potuto completare
@@ -126,6 +180,11 @@ function disegnaPiano(piano, opzioni) {
       <button type="button" id="bottone-stampa">Stampa mazzi e regole</button>
       <button type="button" id="bottone-salva" class="secondario">Salva questi mazzi</button>
       ${ultimeRisposte ? '<button type="button" id="bottone-rigenera" class="secondario">Rigenera diversi</button>' : ''}
+      ${
+        squilibrati(piano)
+          ? '<button type="button" id="bottone-riequilibra" class="secondario">Riequilibra i mazzi</button>'
+          : ''
+      }
       <button type="button" id="bottone-nuovo" class="secondario">Ricomincia</button>
     </div>
     <p id="stato-mazzi" class="stato" hidden></p>
@@ -155,6 +214,26 @@ function disegnaPiano(piano, opzioni) {
     location.hash = 'regole';
   });
   intestazione.querySelector('#bottone-nuovo').addEventListener('click', () => ricomincia());
+
+  // Il riequilibrio dopo le modifiche a mano è un pulsante, non un automatismo:
+  // se hai appena scelto tu una carta, il motore non deve spostartela altrove
+  // senza chiedere. Compare solo quando i mazzi si sono davvero allontanati.
+  intestazione.querySelector('#bottone-riequilibra')?.addEventListener('click', async () => {
+    const scambi = bilancia(piano.mazzi, {
+      indiceEvoluzioni: await indiceEvoluzioni(),
+      nonPokemon: await preEvoluzioniNonPokemon(),
+    });
+    piano.equilibrio = { ...squilibrio(piano.mazzi), scambi };
+    rivaluta(piano, piano.opzioni ?? {});
+    disegnaPiano(piano, piano.opzioni ?? {});
+    const stato = document.querySelector('#stato-mazzi');
+    if (stato) {
+      stato.hidden = false;
+      stato.textContent = scambi.length
+        ? `Spostate ${scambi.length} linee: ${scambi.map((s) => `${s.linea} → ${s.a}`).join(', ')}.`
+        : 'Non c\'è uno scambio che migliori le cose: le linee disponibili sono queste.';
+    }
+  });
 
   // Rigenera con le stesse risposte ma un seme nuovo: stessa collezione, mazzi
   // diversi. Senza questo pulsante la varietà del motore non si vedrebbe,

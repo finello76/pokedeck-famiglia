@@ -25,6 +25,7 @@ import { generaMazzi } from './generazione.js';
 import { rilevaCarenze } from './carenze.js';
 import { valutaRegole } from './regole.js';
 import { calcolaProxy, integraProxy } from './proxy.js';
+import { bilancia, squilibrio } from './bilancia.js';
 
 /**
  * Costruisce mazzi e foglio regole.
@@ -91,6 +92,15 @@ export function pianifica(voci, opzioni) {
     budgetProxy: configurazione.proxyPokemon ? configurazione.budgetProxy : 0,
   });
 
+  // I mazzi nascono insieme, ma questo non basta a renderli pari: se un tipo
+  // ha più linee evolutive dell'altro, un mazzo cresce e l'altro no. Qui si
+  // pareggiano spostando linee intere. Prima delle Energie proxy, che si
+  // calcolano sui mazzi definitivi.
+  const scambi = bilancia(definitivo.mazzi, {
+    indiceEvoluzioni: configurazione.indiceEvoluzioni,
+    nonPokemon: configurazione.nonPokemon,
+  });
+
   // Restano da calcolare le sole Energie proxy, che non dipendono dalle linee
   // evolutive; poi le carenze si RIMISURANO, perché un buco tappato da un
   // proxy non è più un buco e non deve attivare regole della casa.
@@ -136,6 +146,9 @@ export function pianifica(voci, opzioni) {
     carenze,
     analisi: definitivo.analisi,
     proxy,
+    // Come sono venuti fuori i mazzi l'uno rispetto all'altro: serve alla UI
+    // per dirlo, invece di lasciarlo scoprire perdendo una partita.
+    equilibrio: { ...squilibrio(definitivo.mazzi), scambi },
     // Nessuno scarto da segnalare: il generatore non prende mai una linea che
     // non può completare, quindi non restano carte "in attesa di un proxy".
     proxyScartati: [],

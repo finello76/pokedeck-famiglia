@@ -19,6 +19,7 @@ import { composizione, fettaPerMazzo, piramide } from './proporzioni.js';
 import { Casuale } from './casuale.js';
 import { aggiungiAlMazzo } from './mazzo.js';
 import { rilevaCarenze } from './carenze.js';
+import { punteggioMazzo } from './bilancia.js';
 import { enumeraLinee, ordinaLinee, richiestaPerLinea, firmaLinea } from './linee.js';
 
 /**
@@ -68,12 +69,21 @@ function cartaDaStampare(gradino, cima) {
  * di Livello 2 giocabili per tipo ce n'è quasi sempre uno solo. "Rigenera
  * diversi" restituiva mazzi identici.
  *
+ * Il caso però non basta: **un tipo senza linee evolutive costruibili produce
+ * per forza un mazzo di sole Base**. Sulla collezione di prova il tipo Erba ha
+ * sette Pokémon e zero evoluzioni: assegnarlo a un mazzo lo condanna prima
+ * ancora di cominciare, e accanto a un mazzo con due Livello 2 non c'è partita.
+ * Perciò i tipi che possono evolvere vengono prima, e gli altri restano un
+ * ripiego.
+ *
  * @param {object} analisi risultato di `analizza()`
  * @param {number} numeroMazzi
  * @param {Casuale} [casuale] senza, la scelta resta deterministica (il migliore)
+ * @param {Map<string, number>} [lineePerTipo] quante linee evolutive costruibili
+ *   ha ciascun tipo, viste le carte libere e il budget di stampa
  * @returns {string[][]} un elenco di tipi per mazzo
  */
-export function scegliTipi(analisi, numeroMazzi, casuale = null) {
+export function scegliTipi(analisi, numeroMazzi, casuale = null, lineePerTipo = null) {
   const candidati = analisi.tipiPromettenti
     .map((t) => ({
       tipo: t.tipo,
@@ -88,9 +98,15 @@ export function scegliTipi(analisi, numeroMazzi, casuale = null) {
 
   const utilizzabili = candidati.filter((c) => c.punteggio > 0);
   const scelte = [];
+  // I tipi che sanno evolvere hanno la precedenza; gli altri si usano solo
+  // quando i primi sono finiti. Non è una preferenza estetica: senza linee, un
+  // mazzo non ha modo di crescere durante la partita.
+  const evolvono = (c) => !lineePerTipo || (lineePerTipo.get(c.tipo) ?? 0) > 0;
+  const primaScelta = utilizzabili.filter(evolvono);
+  const ripiego = utilizzabili.filter((c) => !evolvono(c));
   // I tipi già assegnati escono dal mazzetto: due mazzi dello stesso tipo si
   // contendono le stesse carte e finiscono per somigliarsi.
-  let disponibili = [...utilizzabili];
+  let disponibili = [...primaScelta];
 
   for (let i = 0; i < numeroMazzi; i++) {
     if (!utilizzabili.length) {
@@ -99,13 +115,38 @@ export function scegliTipi(analisi, numeroMazzi, casuale = null) {
       scelte.push(candidati.length ? [candidati[0].tipo] : []);
       continue;
     }
-    // Meno tipi giocabili che mazzi: si ricomincia il giro. I mazzi saranno
-    // simili, ma giocabili — che conta di più della varietà.
+    // Finiti i tipi che evolvono si passa al ripiego, e poi si ricomincia il
+    // giro: meglio due mazzi dello stesso tipo che un mazzo senza linee.
+    if (!disponibili.length) disponibili = ripiego.length ? [...ripiego] : [...primaScelta];
     if (!disponibili.length) disponibili = [...utilizzabili];
 
     scelte.push([estraiTipo(disponibili, casuale).tipo]);
   }
   return scelte;
+}
+
+/**
+ * Quante linee evolutive **davvero costruibili** ha ciascun tipo.
+ *
+ * Non conta i Pokémon: conta le linee che si riesce a portare in gioco con le
+ * carte libere e il budget di stampa concesso. Un tipo con dieci Base e nessuna
+ * evoluzione vale zero, ed è l'informazione che serve a non condannare un mazzo.
+ *
+ * @param {Array<{carta: object, disponibili: number}>} candidati
+ * @param {object} opzioni `{indiceEvoluzioni, nonPokemon, budget}`
+ * @returns {Map<string, number>} tipo → numero di linee con almeno due gradini
+ */
+export function lineeEvolutivePerTipo(candidati, opzioni = {}) {
+  const { indiceEvoluzioni = {}, nonPokemon = new Set(), budget = 0 } = opzioni;
+  const conteggio = new Map();
+
+  for (const linea of enumeraLinee(candidati, indiceEvoluzioni, nonPokemon)) {
+    if (linea.radiceOrfana || linea.profondita < 2 || linea.daStampare > budget) continue;
+    for (const tipo of linea.cima.tipi ?? []) {
+      conteggio.set(tipo, (conteggio.get(tipo) ?? 0) + 1);
+    }
+  }
+  return conteggio;
 }
 
 /**
@@ -188,7 +229,14 @@ export function generaMazzi(voci, opzioni) {
   // stampa non avrebbe dove spendersi.
   fetta.pokemon += budgetPerMazzo;
   const quota = composizione(taglia, fetta);
-  const tipiPerMazzo = scegliTipi(analisi, numeroMazzi, casuale);
+
+  // I tipi si scelgono sapendo quali sanno evolvere: si guarda l'intera
+  // collezione, prima che i mazzi comincino a consumarla.
+  const lineePerTipo = lineeEvolutivePerTipo(
+    dispensa.cerca((c) => c.categoria === 'Pokémon' && classifica(c).livello !== null),
+    { indiceEvoluzioni, nonPokemon, budget: budgetPerMazzo },
+  );
+  const tipiPerMazzo = scegliTipi(analisi, numeroMazzi, casuale, lineePerTipo);
 
   /** @type {Mazzo[]} */
   const mazzi = Array.from({ length: numeroMazzi }, (_, i) => ({
@@ -214,7 +262,16 @@ export function generaMazzi(voci, opzioni) {
   // produceva solo mucchi di Base sciolte. Vedi linee.js.
   for (let giro = 0; giro < taglia; giro++) {
     let qualcosaAggiunto = false;
-    for (const mazzo of mazzi) {
+    // Sceglie per primo il mazzo messo peggio, rimisurando a ogni giro. Con un
+    // ordine fisso il primo mazzo aveva la prima scelta ogni volta e su una
+    // collezione con poche linee buone se le prendeva tutte; alternare
+    // soltanto non bastava, perché una linea da tre gradini vale molto più di
+    // una da due. Pareggiare mentre si costruisce riesce molto meglio che
+    // rimettere a posto dopo.
+    const ordine = [...mazzi].sort(
+      (a, b) => punteggioMazzo(a).totale - punteggioMazzo(b).totale,
+    );
+    for (const mazzo of ordine) {
       if (mazzo.composizione.pokemon >= quota.pokemon) continue;
 
       const candidati = dispensa.cerca(
