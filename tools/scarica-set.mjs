@@ -175,12 +175,40 @@ async function main() {
   const indice = [];
   const saltati = [];
 
+  /**
+   * Quante carte della **numerazione ufficiale** contiene davvero il file.
+   *
+   * Non coincide col numero di carte: i set hanno segrete oltre il totale
+   * (`252` carte per `191` ufficiali), e i set promo usano numerazioni non
+   * numeriche (`SM01`, `SWSH033`) che non stanno in nessun conteggio. Serve a
+   * dire la verità sul completamento: se dei 30 numeri di un set ne
+   * conosciamo 18, mostrare "12/30" fa credere che ne manchino 18 quando
+   * dodici non le abbiamo proprio nei dati.
+   *
+   * @param {object[]} carte
+   * @param {number|null} totale
+   * @returns {number}
+   */
+  const contaUfficiali = (carte, totale) =>
+    !totale
+      ? 0
+      : carte.filter((c) => {
+          const n = Number(c.numero);
+          return Number.isFinite(n) && n >= 1 && n <= totale;
+        }).length;
+
   for (const set of daScaricare) {
     const destinazione = join(CARTELLA_DATI, `${set.id}.json`);
     if (!forza && (await esiste(destinazione))) {
       const gia = JSON.parse(await readFile(destinazione, 'utf8'));
       console.log(`  ${set.id}: già presente (${gia.carte.length} carte), salto`);
-      indice.push({ id: gia.id, nome: gia.nome, totale: gia.totaleUfficiale, carte: gia.carte.length });
+      indice.push({
+        id: gia.id,
+        nome: gia.nome,
+        totale: gia.totaleUfficiale,
+        carte: gia.carte.length,
+        ufficiali: contaUfficiali(gia.carte, gia.totaleUfficiale),
+      });
       continue;
     }
     const scaricato = await scaricaSet(set);
@@ -201,6 +229,7 @@ async function main() {
       nome: scaricato.nome,
       totale: scaricato.totaleUfficiale,
       carte: scaricato.carte.length,
+      ufficiali: contaUfficiali(scaricato.carte, scaricato.totaleUfficiale),
     });
   }
 

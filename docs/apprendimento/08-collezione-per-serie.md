@@ -178,3 +178,84 @@ Perché serve quel `|| v.numero`?
 possedere una segreta non fa mai salire la percentuale. Un collezionista
 protesterebbe. Come mostreresti entrambe le cose — completamento del set e carte
 extra — senza confondere?
+
+---
+
+## 7. Poscritto: quando il denominatore non esiste
+
+Alla prima prova vera è arrivata una domanda che sembrava un dettaglio: *«non ho
+neanche una Sole e Luna, ma volevo integrare il mio Kit Allenatore Sole e
+Luna»*. Guardando i dati sono usciti due difetti, uno di comprensione e uno mio.
+
+### I Kit Allenatore non sono nella serie che hanno scritto sopra
+
+```
+tk-sm-l   Sole e Luna trainer Kit (Lycanroc)   [serie: Trainer Kit]
+tk-sm-r   Sole e Luna trainer Kit (Alolan Raichu)  [serie: Trainer Kit]
+```
+
+Per TCGdex — e per il gioco — i Kit Allenatore sono una serie a sé, anche
+quando la scatola dice "Sole e Luna". Non è un errore da correggere: è la
+tassonomia vera, e cambiarla renderebbe l'app diversa da ogni altro catalogo.
+Va però saputo, perché cercare quelle carte sotto "Sole e Luna" non le trova
+mai.
+
+### Il difetto mio: dodici carte che non esistono
+
+```
+Sole e Luna trainer Kit (Lycanroc):  18 carte nei dati,  30 ufficiali
+SL Promo:                             0 carte numerate, 248 ufficiali
+```
+
+Il completamento che avevo consegnato avrebbe detto `2/30` — facendo credere
+che ne mancassero 28 — e l'elenco delle mancanti ne avrebbe mostrate 16, non 28.
+Le altre dodici non sono "da trovare": **non sono nei dati italiani di TCGdex**.
+Sui set promo è peggio: la loro numerazione non è numerica (`SM01`, `SWSH033`),
+quindi il denominatore 248 non corrisponde a niente di verificabile.
+
+Un conteggio che non puoi verificare non è un conteggio, è una promessa che non
+manterrai. La correzione distingue tre casi:
+
+| Quello che sappiamo | Cosa si mostra |
+|---|---|
+| tutte le carte ufficiali | `21/191` con la barra |
+| solo una parte | `2/30` con la barra e la nota **dati parziali** |
+| niente di numerato (promo) | `1 carta`, senza barra né percentuale |
+
+Il dato nuovo — quante carte della numerazione ufficiale abbiamo davvero — si
+calcola quando si scarica il set e si scrive nell'indice, come tutto il resto:
+
+```js
+const contaUfficiali = (carte, totale) =>
+  !totale ? 0 : carte.filter((c) => {
+    const n = Number(c.numero);
+    return Number.isFinite(n) && n >= 1 && n <= totale;
+  }).length;
+```
+
+> **Lezione trasferibile.** Ogni volta che mostri `x / y`, chiediti chi
+> garantisce `y`. Se il denominatore viene da una fonte che può essere
+> incompleta, o è di un altro tipo rispetto al numeratore, la frazione mente con
+> l'aria di essere precisa — che è il modo peggiore di sbagliare.
+
+### Un uso dei dati che non avevo previsto
+
+La stessa domanda ha prodotto una risposta utile per chi gioca. Simulando
+l'aggiunta dei due kit alla collezione reale:
+
+```
+oggi:                          0 linee evolutive complete senza stampare nulla
++ Kit Lycanroc:                4   (fra cui Pikipek → Trumbeak → Toucannon)
++ Kit Alolan Raichu:           3   (fra cui Stufful → Bewear, che completa un Bewear già posseduto)
+```
+
+Trenta carte comprate anni fa valgono, per il generatore di mazzi, più di
+tutte le buste singole della collezione: i kit **sono** linee evolutive
+complete, che è esattamente ciò di cui una collezione di carte sciolte è priva.
+
+### Esercizio
+
+**5. La domanda che i dati sanno già.** Il calcolo qui sopra è venti righe che
+leggono `enumeraLinee()` sulla collezione più le carte di un set. Dove lo
+metteresti nell'app — e come lo chiameresti — per rispondere a "quale set mi
+conviene comprare?" senza trasformare l'app in un consigliere per gli acquisti?

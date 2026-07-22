@@ -53,6 +53,7 @@ export function filtra(voci, filtri) {
  * @property {string} idSet
  * @property {string} nomeSet
  * @property {number|null} totale carte della numerazione ufficiale, se note
+ * @property {number|null} ufficiali quante di quelle carte abbiamo nei dati
  * @property {object[]} voci le tue carte di quel set, filtrate
  * @property {number} distinte quante ne mostri
  * @property {number} copie quante copie in tutto
@@ -97,6 +98,7 @@ export function raggruppa(voci) {
         idSet: voce.idSet,
         nomeSet: voce.nomeSet ?? voce.idSet,
         totale: voce.totaleSet ?? null,
+        ufficiali: voce.ufficialiSet ?? null,
         voci: [],
         distinte: 0,
         copie: 0,

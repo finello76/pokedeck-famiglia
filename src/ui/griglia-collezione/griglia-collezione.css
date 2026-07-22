@@ -87,6 +87,17 @@ griglia-collezione {
   opacity: 0.7;
 }
 
+.testa-set .dati-parziali {
+  /* Non è un errore né un avviso: è una nota sui dati. Deve leggersi solo se
+     la si cerca, altrimenti sembra che ci sia qualcosa da riparare. */
+  font-size: 0.7rem;
+  color: var(--colore-testo-tenue);
+  border: 1px dashed var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+  padding: 0.05rem 0.35rem;
+  cursor: help;
+}
+
 .testa-set progress {
   /* La barra dice a colpo d'occhio quanto manca: il numero lo si legge dopo. */
   flex: 1 1 6rem;

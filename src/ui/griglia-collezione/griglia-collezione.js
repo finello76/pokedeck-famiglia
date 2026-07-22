@@ -215,17 +215,10 @@ export class GrigliaCollezione extends HTMLElement {
     const sezione = document.createElement('section');
     sezione.className = 'set-collezione';
 
-    // Senza totale (le energie base) non si parla di completamento: si mostra
-    // il conteggio e basta, invece di inventare un denominatore.
-    const completamento = set.totale
-      ? `<span class="completamento">${set.distinte}<span class="su">/${set.totale}</span></span>
-         <progress max="${set.totale}" value="${set.distinte}"></progress>`
-      : `<span class="completamento">${set.distinte} carte</span>`;
-
     sezione.innerHTML = `
       <header class="testa-set">
         <strong>${escapeHtml(set.nomeSet)}</strong>
-        ${completamento}
+        ${completamentoDi(set)}
       </header>
       <div class="griglia"></div>
     `;
@@ -233,7 +226,8 @@ export class GrigliaCollezione extends HTMLElement {
     const griglia = sezione.querySelector('.griglia');
     griglia.replaceChildren(...set.voci.map((voce) => this.#cella(voce)));
 
-    if (this.#mostraMancanti && set.totale) this.#aggiungiMancanti(griglia, set);
+    // Le mancanti si possono elencare solo dove i dati ci sono davvero.
+    if (this.#mostraMancanti && confrontabile(set)) this.#aggiungiMancanti(griglia, set);
     return sezione;
   }
 
@@ -308,6 +302,44 @@ export class GrigliaCollezione extends HTMLElement {
     cella.append(comandi);
     return cella;
   }
+}
+
+/**
+ * Se di questo set sappiamo abbastanza da parlare di completamento.
+ *
+ * @param {import('./raggruppa.js').GruppoSet} set
+ * @returns {boolean}
+ */
+function confrontabile(set) {
+  return Boolean(set.totale) && set.ufficiali !== 0;
+}
+
+/**
+ * Il completamento di un set, detto onestamente.
+ *
+ * Tre casi, tre messaggi diversi. Un solo messaggio per tutti mentirebbe in due
+ * casi su tre: i set promo non hanno una numerazione da completare, e quelli
+ * con dati parziali mostrerebbero come "mancanti" carte che non esistono nei
+ * file — irraggiungibili per sempre, senza che si capisca perché.
+ *
+ * @param {import('./raggruppa.js').GruppoSet} set
+ * @returns {string} HTML
+ */
+function completamentoDi(set) {
+  if (!confrontabile(set)) {
+    return `<span class="completamento">${set.distinte} carte</span>`;
+  }
+
+  const parziale = set.ufficiali !== null && set.ufficiali < set.totale;
+  return `
+    <span class="completamento">${set.distinte}<span class="su">/${set.totale}</span></span>
+    <progress max="${set.totale}" value="${set.distinte}"></progress>
+    ${
+      parziale
+        ? `<span class="dati-parziali" title="Di questo set conosciamo solo ${set.ufficiali} carte su ${set.totale}: le altre non sono nei dati italiani di TCGdex.">dati parziali</span>`
+        : ''
+    }
+  `;
 }
 
 /**

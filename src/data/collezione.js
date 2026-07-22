@@ -152,6 +152,12 @@ export async function elencoCompleto() {
         // senza dover conoscere il dataset.
         serie: suo?.serie ?? energie,
         totaleSet: suo?.totale ?? null,
+        // Quante carte di quel set abbiamo davvero nei dati. Non sempre sono
+        // tutte: dei 30 numeri del Kit Allenatore Sole e Luna ne conosciamo
+        // 18, e i set promo hanno numerazioni che non stanno in nessun
+        // conteggio. Senza questo dato la griglia direbbe "mancano 12 carte"
+        // di carte che nessuno può catalogare.
+        ufficialiSet: suo?.ufficiali ?? null,
       };
     }),
   );
