@@ -133,7 +133,9 @@
     <visore-carta id="visore"></visore-carta>
 
     <footer class="pie-versione no-stampa">
-      <span id="versione" hidden></span>
+      <!-- Cliccabile: è la via di fuga se l'app resta bloccata su una versione
+           vecchia. Su un telefono non c'è altro modo di svuotare la cache. -->
+      <button type="button" id="versione" title="Ricarica l'app dalla rete" hidden></button>
     </footer>
 
     <!--
@@ -142,7 +144,7 @@
       sarebbe alcun modo di passare alla versione appena pubblicata.
     -->
     <div id="barra-aggiornamento" class="barra-aggiornamento no-stampa" role="status" hidden>
-      <span>È disponibile una versione nuova dell'app.</span>
+      <span data-testo>È disponibile una versione nuova dell'app.</span>
       <button type="button" id="bottone-aggiorna">Aggiorna</button>
       <button type="button" id="bottone-rimanda" class="secondario">Più tardi</button>
     </div>

@@ -16,7 +16,7 @@ import {
   SET_ENERGIE_GENERICHE,
 } from '../data/collezione.js';
 import { scaricaFile, importa } from '../data/scambio.js';
-import { registraServiceWorker } from './registra-sw.js';
+import { avviaBarraAggiornamento } from './barra-aggiornamento.js';
 import { avviaViste } from './viste.js';
 import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
@@ -237,17 +237,9 @@ aggiornaCollezione().catch((errore) => {
 // L'aggiornamento non è automatico: ricaricare butterebbe via i mazzi appena
 // generati. Si avvisa e si lascia decidere — ma l'avviso deve esserci, o su
 // telefono non c'è modo di uscire dalla versione vecchia.
-registraServiceWorker((aggiorna) => {
-  const barra = document.querySelector('#barra-aggiornamento');
-  if (!barra) return;
-  barra.hidden = false;
-  barra.querySelector('#bottone-aggiorna').addEventListener('click', () => {
-    barra.querySelector('span').textContent = 'Aggiornamento in corso…';
-    aggiorna();
-  });
-  barra.querySelector('#bottone-rimanda').addEventListener('click', () => {
-    barra.hidden = true;
-  });
+avviaBarraAggiornamento({
+  barra: document.querySelector('#barra-aggiornamento'),
+  versione: document.querySelector('#versione'),
 });
 
 mostraVersione(document.querySelector('#versione'));

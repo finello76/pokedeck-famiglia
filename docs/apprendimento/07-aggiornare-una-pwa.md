@@ -188,3 +188,100 @@ ogni pubblicazione se ce l'avesse?
 **4. Un caso che non abbiamo gestito.** Se l'utente tocca "Più tardi", la barra
 sparisce e non torna fino al prossimo riavvio della pagina. Come la faresti
 ricomparire — e ogni quanto — senza diventare molesto?
+
+---
+
+## 9. Poscritto: il meccanismo di aggiornamento si è incastrato
+
+Prima segnalazione dopo la pubblicazione: *«l'app mostra sempre Aggiorna e Più
+tardi, la pressione dei due pulsanti non fa nulla»*.
+
+È il difetto peggiore possibile in questa parte del programma, perché **si
+manifesta proprio dove non ci sono alternative**: se il pulsante che serve ad
+aggiornare non funziona, su un telefono non resta niente da provare.
+
+### Il difetto di progetto, prima ancora del difetto di codice
+
+Il flusso della sezione 4 ha un punto cieco:
+
+```js
+alPronto(() => lavoratore.postMessage({ tipo: 'attiva-subito' }));
+```
+
+`postMessage` è **senza risposta**. Se il worker in attesa non raccoglie il
+messaggio — perché è nato da un file che quel messaggio non lo conosce, o
+perché è in errore — non succede assolutamente nulla, e il pulsante resta lì a
+non fare niente per sempre.
+
+La correzione non è un `try/catch`: è ammettere che il percorso pulito può
+fallire e prevederne uno che non può.
+
+```js
+function applica(lavoratore) {
+  lavoratore.postMessage({ tipo: 'attiva-subito' });
+  setTimeout(() => { if (!ricaricaInCorso) forzaAggiornamento(); }, ATTESA_RISPOSTA);
+}
+```
+
+`forzaAggiornamento()` disinstalla i service worker, cancella le cache (tranne
+quella dei set: sono megabyte che non c'entrano con la versione dell'app) e
+ricarica con un indirizzo mai visto:
+
+```js
+const url = new URL(location.href);
+url.searchParams.set('aggiornato', String(Date.now()));
+location.replace(url.toString());
+```
+
+> **Lezione trasferibile.** Un meccanismo di recupero deve avere un piano B che
+> non dipende da nulla di ciò che potrebbe essersi rotto. Qui il piano A
+> dipende dal service worker, cioè esattamente dal componente che potrebbe
+> essere il problema.
+
+### Gli ascoltatori nel posto sbagliato
+
+I click erano registrati **dentro** la richiamata che annuncia la versione
+nuova. Basta un'eccezione fra `barra.hidden = false` e la riga dopo, e la barra
+resta visibile con i pulsanti morti — cioè il sintomo esatto.
+
+Ora stanno in [`barra-aggiornamento.js`](../../src/app/barra-aggiornamento.js) e
+si registrano **una volta sola all'avvio**, indipendentemente da quello che
+succede dopo. Se non c'è nessun worker in attesa, "Aggiorna" ricade sulla
+pulizia forzata: il pulsante fa sempre qualcosa.
+
+### La via di fuga permanente
+
+Il numero di build in fondo alla pagina è diventato un pulsante. Serve a chi si
+trova bloccato **senza** che l'avviso sia mai comparso: è l'unico appiglio
+possibile dentro una PWA installata, dove non esiste "svuota la cache di questo
+sito".
+
+Attenzione a un dettaglio che sembra minore e non lo è:
+
+```css
+.pie-versione #versione { inline-size: auto; }
+```
+
+Il CSS del progetto ha `button { width: 100% }` per i moduli delle form. Senza
+quell'override il numero di build diventava una fascia larga quanto la pagina —
+invisibile ma cliccabile — e ricaricava l'app a chi sfiorava il fondo pagina.
+
+### E la diagnosi, per la prossima volta
+
+```js
+console.info('Service worker registrato.',
+  `attivo=${registrazione.active?.state ?? 'nessuno'}`,
+  `in attesa=${registrazione.waiting?.state ?? 'nessuno'}`,
+  `controlla questa pagina=${Boolean(navigator.serviceWorker.controller)}`);
+```
+
+La riga di prima diceva soltanto "registrato", che è la cosa meno utile da
+sapere quando qualcosa non va: era vera anche mentre l'aggiornamento era
+bloccato.
+
+### Esercizio
+
+**5. Il tempo di attesa.** `ATTESA_RISPOSTA` è tre secondi. Cosa succede se lo
+si mette a 300 ms su una connessione lenta? E se lo si mette a 30 secondi?
+Quale dei due errori è peggiore, e perché dipende da *chi* sta guardando lo
+schermo in quel momento?

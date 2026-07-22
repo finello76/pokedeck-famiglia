@@ -85,8 +85,8 @@ h3 {
   margin-inline: auto;
 }
 
-/* Numero di build, discreto a fine pagina: serve a capire se GitHub Pages ha
-   pubblicato la versione nuova. Non fixed, per non coprire la barra azioni. */
+/* Avviso di versione nuova: fisso in fondo, sopra tutto il resto. È l'unico
+   modo di aggiornare una PWA installata su telefono. */
 .barra-aggiornamento {
   position: fixed;
   /* `env(safe-area-inset-bottom)` tiene la barra sopra la tacca dei telefoni
@@ -113,8 +113,12 @@ h3 {
 }
 
 .barra-aggiornamento button {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
+  /* `button` ha `width: 100%` per le form dell'app: qui i due pulsanti devono
+     stare in riga accanto al testo, non uno per riga. */
+  inline-size: auto;
+  flex: 0 0 auto;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
 }
 
 .pie-versione {
@@ -124,11 +128,22 @@ h3 {
   text-align: center;
 }
 
-.pie-versione span {
+.pie-versione #versione {
   font-size: 0.72rem;
   color: var(--colore-testo-tenue);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
+  /* È un <button> perché si può toccare per forzare l'aggiornamento, ma deve
+     restare la scritta discreta di prima: niente sfondo, niente bordo. */
+  background: none;
+  border: 0;
+  /* Senza, eredita il `width: 100%` dei pulsanti dell'app e diventa una fascia
+     larga quanto la pagina, che invita a toccarla per sbaglio. */
+  inline-size: auto;
+  padding: 0.25rem;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
 }
 
 .intestazione .sottotitolo {

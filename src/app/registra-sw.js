@@ -22,6 +22,17 @@
 /** Ogni quanto chiedere al server se c'è una versione nuova. */
 const INTERVALLO_CONTROLLO = 15 * 60 * 1000;
 
+/**
+ * Quanto si aspetta che il service worker in attesa risponda, prima di
+ * ricorrere alle maniere forti.
+ *
+ * Serve perché un worker può restare sordo al messaggio: se il file da cui è
+ * nato è vecchio non conosce il messaggio, e se è andato in errore non risponde
+ * affatto. Senza questa scadenza il pulsante "Aggiorna" sembrerebbe rotto —
+ * proprio nella situazione in cui l'utente non ha altri modi per uscirne.
+ */
+const ATTESA_RISPOSTA = 3000;
+
 /** @type {boolean} guardia contro il ciclo di ricariche */
 let ricaricaInCorso = false;
 
@@ -66,7 +77,14 @@ export async function registraServiceWorker(alPronto = null) {
         updateViaCache: 'none',
       },
     );
-    console.info('Service worker registrato.');
+    // Lo stato va detto per intero: quando un aggiornamento si incastra, la
+    // sola riga "registrato" non permette di capire da che parte guardare.
+    console.info(
+      'Service worker registrato.',
+      `attivo=${registrazione.active?.state ?? 'nessuno'}`,
+      `in attesa=${registrazione.waiting?.state ?? 'nessuno'}`,
+      `controlla questa pagina=${Boolean(navigator.serviceWorker.controller)}`,
+    );
     sorvegliaAggiornamenti(registrazione, alPronto);
     return registrazione;
   } catch (errore) {
@@ -85,7 +103,7 @@ export async function registraServiceWorker(alPronto = null) {
 function sorvegliaAggiornamenti(registrazione, alPronto) {
   const annuncia = (lavoratore) => {
     if (!lavoratore || !alPronto) return;
-    alPronto(() => lavoratore.postMessage({ tipo: 'attiva-subito' }));
+    alPronto(() => applica(lavoratore));
   };
 
   // Può essercene già uno in attesa da una visita precedente: chi riapre l'app
@@ -123,4 +141,68 @@ function sorvegliaAggiornamenti(registrazione, alPronto) {
     if (document.visibilityState === 'visible') registrazione.update().catch(() => {});
   });
   setInterval(() => registrazione.update().catch(() => {}), INTERVALLO_CONTROLLO);
+}
+
+/**
+ * Chiede al service worker in attesa di prendere il comando, e se non risponde
+ * passa alle maniere forti.
+ *
+ * La ricarica non la fa questa funzione: la fa `controllerchange`, quando il
+ * passaggio è davvero avvenuto. Ricaricare prima rimetterebbe in piedi la
+ * stessa versione di prima.
+ *
+ * @param {ServiceWorker} lavoratore
+ */
+function applica(lavoratore) {
+  lavoratore.postMessage({ tipo: 'attiva-subito' });
+  // Se entro qualche secondo non è successo niente, il worker in attesa non ha
+  // raccolto il messaggio: si smonta tutto e si riparte dalla rete.
+  setTimeout(() => {
+    if (!ricaricaInCorso) forzaAggiornamento();
+  }, ATTESA_RISPOSTA);
+}
+
+/**
+ * La via di fuga: butta via service worker e cache, e ricarica dalla rete.
+ *
+ * È il "premi qui se niente funziona" che su un telefono non esiste: nella PWA
+ * installata non ci sono strumenti per sviluppatori né un modo di svuotare la
+ * cache di una singola app. Senza questa funzione, un aggiornamento che si
+ * inceppa lascia l'utente bloccato su una versione vecchia per sempre.
+ *
+ * I dati dei set (`pokedeck-dati`) si salvano: sono megabyte già scaricati e
+ * non c'entrano niente con la versione dell'app. La collezione sta in
+ * IndexedDB e non viene toccata da nessuna di queste operazioni.
+ *
+ * @returns {Promise<void>}
+ * @example
+ * // dal pulsante "Aggiorna" quando il modo gentile non ha funzionato
+ * await forzaAggiornamento();
+ */
+export async function forzaAggiornamento() {
+  if (ricaricaInCorso) return;
+  ricaricaInCorso = true;
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrazioni = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrazioni.map((r) => r.unregister()));
+    }
+    if ('caches' in window) {
+      const nomi = await caches.keys();
+      await Promise.all(
+        nomi.filter((n) => n !== 'pokedeck-dati').map((n) => caches.delete(n)),
+      );
+    }
+  } catch (errore) {
+    // Anche se la pulizia fallisce si ricarica lo stesso: peggio di così non
+    // può andare, e senza service worker i file arrivano comunque dalla rete.
+    console.warn('Pulizia incompleta prima della ricarica:', errore);
+  }
+
+  // `location.reload()` non basta su tutti i browser: ripropone la stessa
+  // pagina dalla cache HTTP. Con la query si chiede un indirizzo mai visto.
+  const url = new URL(location.href);
+  url.searchParams.set('aggiornato', String(Date.now()));
+  location.replace(url.toString());
 }
