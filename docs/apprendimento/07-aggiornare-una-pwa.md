@@ -285,3 +285,73 @@ bloccato.
 si mette a 300 ms su una connessione lenta? E se lo si mette a 30 secondi?
 Quale dei due errori è peggiore, e perché dipende da *chi* sta guardando lo
 schermo in quel momento?
+
+---
+
+## 10. Poscritto secondo: la barra che non spariva
+
+Terza segnalazione: *«rimangono sempre attivi, se premo Più tardi non scompare,
+se premo Aggiorna ricarica ma poi non scompare»*.
+
+Una riga di CSS.
+
+```css
+.barra-aggiornamento {
+  display: flex;   /* ← */
+}
+```
+
+L'attributo `hidden` non è magia del DOM: è una **regola di stile** che il
+browser applica nel proprio foglio, `[hidden] { display: none }`. E le regole
+d'autore battono sempre quelle del browser, a prescindere dalla specificità.
+Bastava dichiarare `display: flex` sulla stessa classe perché `hidden`
+diventasse decorativo: l'attributo veniva impostato, il DOM lo riportava
+correttamente, e l'elemento restava lì.
+
+Da qui i tre sintomi, tutti la stessa cosa vista da angoli diversi: la barra
+compariva anche senza aggiornamenti (era sempre stata visibile), "Più tardi"
+impostava `hidden = true` senza effetti, e dopo la ricarica la barra era ancora
+lì — non era mai andata via.
+
+```css
+/* la difesa, valida per tutta l'app */
+[hidden] {
+  display: none !important;
+}
+```
+
+`!important` in un progetto senza framework va usato col contagocce; qui è
+appropriato, perché esprime esattamente l'intenzione: *`hidden` vince su
+tutto*. È l'unico uso in tutto il foglio di stile.
+
+### La parte che fa più male: la verifica sbagliata
+
+Il difetto era già presente quando ho "verificato che funzionava". La verifica
+diceva:
+
+```js
+barraVisibile: !document.querySelector('#barra-aggiornamento').hidden
+```
+
+Cioè controllava **la proprietà**, che era corretta, invece di **ciò che si
+vede**, che era sbagliato. Un test che chiede al programma se crede di aver
+fatto la cosa giusta, e ottiene sì.
+
+La versione che avrebbe trovato il difetto al primo colpo:
+
+```js
+getComputedStyle(barra).display        // → 'flex' anche con hidden = true
+barra.getBoundingClientRect().height   // → 67, non 0
+```
+
+> **Lezione trasferibile.** Verificare lo stato interno non è verificare il
+> comportamento. Per l'interfaccia la domanda giusta non è mai "l'attributo è
+> impostato?" ma "questa cosa si vede?" — e la risposta la dà lo stile
+> calcolato o la geometria, non la proprietà che hai appena scritto tu.
+
+### Esercizio
+
+**6. Cerca gli altri.** In `index.html` l'attributo `hidden` compare su una
+decina di elementi. Per ciascuno, verifica con `getComputedStyle` che
+nascondendolo sparisca davvero: quanti altri erano rotti allo stesso modo, e
+perché la maggior parte funzionava comunque?

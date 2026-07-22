@@ -37,6 +37,16 @@
   }
 }
 
+/* L'attributo `hidden` deve vincere sempre.
+   Il browser lo applica con `[hidden] { display: none }`, ma è una regola del
+   suo foglio di stile: QUALUNQUE regola d'autore che imposti `display` la
+   scavalca, anche una meno specifica. È successo con la barra di
+   aggiornamento (`display: flex`), rimasta visibile per sempre pur avendo
+   `hidden = true`: i pulsanti funzionavano, ma non spariva niente. */
+[hidden] {
+  display: none !important;
+}
+
 *,
 *::before,
 *::after {
