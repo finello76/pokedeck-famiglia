@@ -10,7 +10,7 @@
  */
 
 import { STORE_COLLEZIONE, leggiTutto, leggi, scrivi, cancella, svuota, scriviMolte } from './deposito.js';
-import { trovaCarta, elencoSet } from './dataset.js';
+import { trovaCarta, elencoSet, elencoSerie } from './dataset.js';
 import { conteggioEnergie } from './energie.js';
 
 /**
@@ -125,24 +125,43 @@ export function rimuovi(idSet, numero) {
  *   mostrano lo stesso, segnalate, invece di sparire senza spiegazione.
  */
 export async function elencoCompleto() {
-  const [righe, set] = await Promise.all([leggiTutto(STORE_COLLEZIONE), elencoSet()]);
-  const nomiSet = new Map(set.map((s) => [s.id, s.nome]));
+  const [righe, set, serie] = await Promise.all([
+    leggiTutto(STORE_COLLEZIONE),
+    elencoSet(),
+    elencoSerie(),
+  ]);
+  const infoSet = new Map(set.map((s) => [s.id, s]));
+  // Posizione della serie nell'indice: le serie sono in ordine di uscita, e la
+  // griglia le mostra così. Ordinarle per nome metterebbe "Sole e Luna" prima
+  // di "Spada e Scudo" per motivi alfabetici, non storici.
+  const ordine = new Map(serie.map((s, i) => [s.id, i]));
+
+  const energie = { id: 'altre', nome: 'Altre serie' };
 
   const complete = await Promise.all(
-    righe.map(async (riga) => ({
-      ...riga,
-      carta: await cartaDi(riga.idSet, riga.numero),
-      nomeSet:
-        riga.idSet === SET_ENERGIE_GENERICHE
-          ? 'Energie base'
-          : (nomiSet.get(riga.idSet) ?? riga.idSet),
-    })),
+    righe.map(async (riga) => {
+      const suo = infoSet.get(riga.idSet);
+      return {
+        ...riga,
+        carta: await cartaDi(riga.idSet, riga.numero),
+        nomeSet:
+          riga.idSet === SET_ENERGIE_GENERICHE
+            ? 'Energie base'
+            : (suo?.nome ?? riga.idSet),
+        // Serie e totale viaggiano con la voce: la griglia raggruppa e conta
+        // senza dover conoscere il dataset.
+        serie: suo?.serie ?? energie,
+        totaleSet: suo?.totale ?? null,
+      };
+    }),
   );
 
-  // Ordine stabile: prima per set, poi per numero. Senza, l'ordine è quello
-  // di inserimento nel database e la griglia sembra rimescolarsi.
+  // Ordine stabile: prima per serie (dalla più vecchia), poi per set, poi per
+  // numero. Senza, l'ordine è quello di inserimento nel database e la griglia
+  // sembra rimescolarsi.
   return complete.sort(
     (a, b) =>
+      (ordine.get(a.serie.id) ?? 99) - (ordine.get(b.serie.id) ?? 99) ||
       a.nomeSet.localeCompare(b.nomeSet, 'it') ||
       String(a.numero).localeCompare(String(b.numero), 'it', { numeric: true }),
   );

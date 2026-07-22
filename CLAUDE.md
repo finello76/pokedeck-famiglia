@@ -50,7 +50,14 @@ node tools/scarica-set.mjs --forza   # riscarica tutto: >21.000 richieste, ~10 m
 ```
 
 Serve solo quando escono set nuovi: i set già presenti vengono saltati. Dopo aver
-scaricato set nuovi, rigenerare anche l'indice delle evoluzioni:
+scaricato set nuovi, aggiungere all'indice la serie di appartenenza:
+
+```bash
+node tools/aggiorna-serie.mjs   # 18 richieste: scrive `serie` in data/set/indice.json
+```
+
+Senza, i set nuovi finiscono nel gruppo "Altre serie" della vista collezione. Poi
+rigenerare anche l'indice delle evoluzioni:
 
 ```bash
 node tools/genera-indice-evoluzioni.mjs   # ricostruisce data/evoluzioni.json

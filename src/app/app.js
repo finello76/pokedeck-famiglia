@@ -22,6 +22,7 @@ import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
+import { carteMancanti } from '../data/completamento.js';
 import '../ui/contatore-energie/contatore-energie.js';
 import '../ui/visore-carta/visore-carta.js';
 import '../ui/vista-regole/vista-regole.js';
@@ -74,6 +75,9 @@ async function aggiornaCollezione() {
   const voci = await elencoCompleto();
   const stat = await statistiche(voci);
 
+  // Il confronto con la collezione di riferimento lo fa il livello dati: la
+  // griglia riceve una funzione e non sa da dove arrivino le carte.
+  griglia.caricaMancanti = (idSet) => carteMancanti(idSet, voci);
   griglia.voci = voci;
   contatore.dati = stat.energie;
 

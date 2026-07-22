@@ -74,6 +74,21 @@ export async function elencoSet() {
 }
 
 /**
+ * Le serie (Sole e Luna, Scarlatto e Violetto…), dalla più vecchia alla più
+ * recente.
+ *
+ * L'elenco lo scrive `tools/aggiorna-serie.mjs` dentro l'indice. Se manca —
+ * indice vecchio ancora in cache dopo un aggiornamento — si torna un elenco
+ * vuoto: chi legge deve cavarsela lo stesso, non rompersi.
+ *
+ * @returns {Promise<Array<{id: string, nome: string}>>}
+ */
+export async function elencoSerie() {
+  cacheIndice ??= await leggiJson('indice.json');
+  return cacheIndice.serie ?? [];
+}
+
+/**
  * Carica un set completo di tutte le sue carte.
  *
  * @param {string} idSet id TCGdex, es. `'sv08'`

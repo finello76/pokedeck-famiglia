@@ -18,9 +18,93 @@ griglia-collezione {
 
 @media (min-width: 34rem) {
   .filtri {
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    /* Sei filtri: nome, serie, set, tipo di carta, tipo, stadio. Su schermi
+       stretti restano in colonna, che è il caso normale col telefono in mano. */
+    grid-template-columns: repeat(3, 1fr);
     align-items: end;
   }
+}
+
+.interruttore {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.interruttore input {
+  /* I checkbox del progetto non hanno stile proprio: qui basta che sia grande
+     abbastanza da centrarlo col pollice. */
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+
+/* --- Serie e set ------------------------------------------------------- */
+
+.serie {
+  margin-bottom: 1.75rem;
+}
+
+.titolo-serie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--colore-bordo);
+  font-size: 1.05rem;
+}
+
+.titolo-serie .conteggio {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--colore-testo-tenue);
+}
+
+.set-collezione {
+  margin-bottom: 1.25rem;
+}
+
+.testa-set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.testa-set .completamento {
+  font-variant-numeric: tabular-nums;
+  color: var(--colore-testo-tenue);
+}
+
+.testa-set .completamento .su {
+  /* Il totale è il riferimento, non il tuo dato: resta un passo indietro. */
+  opacity: 0.7;
+}
+
+.testa-set progress {
+  /* La barra dice a colpo d'occhio quanto manca: il numero lo si legge dopo. */
+  flex: 1 1 6rem;
+  max-inline-size: 12rem;
+  block-size: 0.4rem;
+}
+
+/* Carte che NON possiedi: si vedono, ma non si confondono con le tue. */
+.cella.mancante-in-set scheda-carta {
+  opacity: 0.4;
+  filter: grayscale(0.85);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.cella.mancante-in-set:hover scheda-carta,
+.cella.mancante-in-set:focus-within scheda-carta {
+  opacity: 0.85;
+  filter: grayscale(0.2);
 }
 
 .riepilogo {

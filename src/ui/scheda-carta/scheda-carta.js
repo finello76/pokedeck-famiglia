@@ -105,8 +105,13 @@ export class SchedaCarta extends HTMLElement {
     const c = this.#carta;
     const tipoPrincipale = c.tipi?.[0] ?? 'Incolore';
 
+    // Zero copie non è una quantità da mostrare: è una carta che non hai, e
+    // "×0" accanto al nome sembra un errore invece di un'informazione. Capita
+    // con le carte mancanti mostrate accanto alle tue.
     const quantita =
-      this.#quantita === null ? '' : `<span class="quantita">×${this.#quantita}</span>`;
+      this.#quantita === null || this.#quantita === 0
+        ? ''
+        : `<span class="quantita">×${this.#quantita}</span>`;
 
     this.shadowRoot.innerHTML = `
       <article part="scheda" data-tipo="${tipoPrincipale}">
