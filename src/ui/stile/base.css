@@ -13,7 +13,7 @@
   --colore-testo-tenue: #6a7288;
   --colore-bordo: #e2e7f1;
   --colore-primario: #2a5fd6;
-  --colore-primario-scuro: #1e46a0;
+  --colore-primario-scuro: #c3cee9;
   /* Testo/icone SOPRA il colore primario: un token, così non serve più un
      override di tema per invertirlo (era `color:#10151f` in scuro). */
   --colore-su-primario: #ffffff;
