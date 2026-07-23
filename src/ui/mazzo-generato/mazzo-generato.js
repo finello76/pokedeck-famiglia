@@ -217,11 +217,15 @@ export class MazzoGenerato extends HTMLElement {
           (c) => (c.carta ?? c).nome === bottone.dataset.nome,
         );
         if (!voce) return;
+        // Si passa l'intero mazzo come elenco scorribile: così dal visore si
+        // sfoglia carta per carta senza chiuderlo e ricliccare.
+        const lista = this.#mazzo.carte.map((c) => ({ carta: c.carta ?? c, nomeSet: '' }));
+        const indice = this.#mazzo.carte.indexOf(voce);
         this.dispatchEvent(
           new CustomEvent('carta-scelta', {
             bubbles: true,
             composed: true,
-            detail: { carta: voce.carta ?? voce, nomeSet: '' },
+            detail: { carta: voce.carta ?? voce, nomeSet: '', lista, indice: Math.max(indice, 0) },
           }),
         );
       });

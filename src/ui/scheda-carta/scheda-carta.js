@@ -83,6 +83,10 @@ export class SchedaCarta extends HTMLElement {
     this.#disegna();
   }
 
+  get nomeSet() {
+    return this.#nomeSet;
+  }
+
   /** @param {number|null} valore copie possedute, o null per non mostrarle */
   set quantita(valore) {
     this.#quantita = valore ?? null;

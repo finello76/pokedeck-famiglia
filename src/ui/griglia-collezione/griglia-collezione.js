@@ -73,6 +73,20 @@ export class GrigliaCollezione extends HTMLElement {
       this.#disegnaRisultati();
     });
 
+    // La scheda annuncia solo "hanno cliccato me": qui, dove si conosce l'ordine
+    // di tutte le carte a schermo, si arricchisce l'evento con l'elenco e la
+    // posizione, così il visore può scorrere avanti e indietro. L'evento passa
+    // di qui salendo verso il document, prima di arrivare a chi lo apre.
+    this.addEventListener('carta-scelta', (evento) => {
+      const schede = [...this.querySelectorAll('scheda-carta')];
+      const lista = schede
+        .filter((s) => s.carta)
+        .map((s) => ({ carta: s.carta, nomeSet: s.nomeSet }));
+      const indice = schede.filter((s) => s.carta).findIndex((s) => s.carta === evento.detail.carta);
+      evento.detail.lista = lista;
+      evento.detail.indice = Math.max(indice, 0);
+    });
+
     this.addEventListener('click', (evento) => {
       const bottone = evento.target.closest('[data-azione]');
       if (!bottone) return;

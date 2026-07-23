@@ -184,7 +184,10 @@ moduloEnergie.addEventListener('submit', async (evento) => {
 // Le schede annunciano il click da qualunque punto della pagina: un solo
 // ascoltatore sul document invece di uno per scheda.
 document.addEventListener('carta-scelta', (evento) => {
-  visore.mostra(evento.detail.carta, evento.detail.nomeSet);
+  // `lista` e `indice` li aggiunge chi contiene le carte (griglia o mazzo), che
+  // è l'unico a conoscerne l'ordine: se ci sono, il visore ci scorre dentro.
+  const { carta, nomeSet, lista, indice } = evento.detail;
+  visore.mostra(carta, nomeSet, lista, indice);
 });
 
 griglia.addEventListener('quantita-cambiata', async (evento) => {

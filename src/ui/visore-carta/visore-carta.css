@@ -74,3 +74,48 @@ figcaption {
 .chiudi:hover {
   background: rgb(255 255 255 / 28%);
 }
+
+/* Frecce di scorrimento: ai lati dello schermo, sopra lo sfondo oscurato ma
+   senza coprire la carta. Su telefono il gesto naturale è lo swipe, ma restano
+   comode anche lì come alternativa al tocco. */
+.freccia {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: rgb(255 255 255 / 15%);
+  color: #fff;
+  font-size: 2rem;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.freccia.prec {
+  left: max(0.75rem, env(safe-area-inset-left));
+}
+
+.freccia.succ {
+  right: max(0.75rem, env(safe-area-inset-right));
+}
+
+.freccia:hover:not(:disabled) {
+  background: rgb(255 255 255 / 28%);
+}
+
+/* Agli estremi la freccia resta al suo posto ma smorzata: sparire farebbe
+   saltare la carta di lato a ogni scorrimento. */
+.freccia:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.freccia[hidden] {
+  display: none;
+}

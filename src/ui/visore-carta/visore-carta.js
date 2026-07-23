@@ -10,8 +10,15 @@
  * solo la chiusura con Esc, il fondo oscurato e il confinamento del focus, che
  * a mano sarebbero tre cose facili da sbagliare.
  *
+ * Quando chi apre il visore gli passa **l'elenco** delle carte visibili (griglia
+ * o mazzo) più l'indice di quella cliccata, si può scorrere avanti e indietro
+ * senza tornare alla lista: frecce sinistra/destra col mouse o tastiera, swipe
+ * col dito sul telefono. È l'unica ragione per cui `mostra()` accetta la lista.
+ *
  * @example
  * document.querySelector('visore-carta').mostra(carta, 'Set Base');
+ * // con navigazione:
+ * visore.mostra(carta, nomeSet, [{ carta, nomeSet }, …], indice);
  *
  * @module ui/visore-carta
  */
@@ -27,6 +34,12 @@ const cssCaricato = fetch(new URL('./visore-carta.css', import.meta.url))
 export class VisoreCarta extends HTMLElement {
   /** @type {HTMLDialogElement|null} */
   #dialogo = null;
+  /** @type {Array<{carta: object, nomeSet: string}>} carte scorribili */
+  #lista = [];
+  /** @type {number} posizione corrente dentro #lista */
+  #indice = 0;
+  /** @type {number|null} X d'inizio dello swipe, null se nessun tocco in corso */
+  #tocco = null;
 
   constructor() {
     super();
@@ -39,6 +52,8 @@ export class VisoreCarta extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <dialog part="finestra">
         <button class="chiudi" type="button" aria-label="Chiudi">×</button>
+        <button class="freccia prec" type="button" aria-label="Carta precedente">‹</button>
+        <button class="freccia succ" type="button" aria-label="Carta successiva">›</button>
         <figure>
           <img alt="" />
           <figcaption></figcaption>
@@ -48,12 +63,44 @@ export class VisoreCarta extends HTMLElement {
     this.#dialogo = this.shadowRoot.querySelector('dialog');
 
     this.shadowRoot.querySelector('.chiudi').addEventListener('click', () => this.chiudi());
+    this.shadowRoot.querySelector('.prec').addEventListener('click', () => this.#scorri(-1));
+    this.shadowRoot.querySelector('.succ').addEventListener('click', () => this.#scorri(1));
 
     // Cliccare fuori dalla carta chiude: su un dialog il click "sullo sfondo"
     // arriva al dialog stesso, non ai figli.
     this.#dialogo.addEventListener('click', (evento) => {
       if (evento.target === this.#dialogo) this.chiudi();
     });
+
+    // Le frecce della tastiera scorrono; Esc lo gestisce già il <dialog>.
+    this.#dialogo.addEventListener('keydown', (evento) => {
+      if (evento.key === 'ArrowLeft') this.#scorri(-1);
+      else if (evento.key === 'ArrowRight') this.#scorri(1);
+    });
+
+    // Swipe: si registra dove il dito tocca e dove lo alza. Oltre una soglia
+    // in orizzontale è uno scorrimento; sotto è un tocco e non si fa nulla, per
+    // non scambiare per swipe un dito che trema.
+    const figura = this.shadowRoot.querySelector('figure');
+    figura.addEventListener(
+      'touchstart',
+      (evento) => {
+        this.#tocco = evento.changedTouches[0]?.clientX ?? null;
+      },
+      { passive: true },
+    );
+    figura.addEventListener(
+      'touchend',
+      (evento) => {
+        if (this.#tocco === null) return;
+        const delta = (evento.changedTouches[0]?.clientX ?? this.#tocco) - this.#tocco;
+        this.#tocco = null;
+        if (Math.abs(delta) < 40) return;
+        // Trascinare verso sinistra porta alla carta dopo, come sfogliare.
+        this.#scorri(delta < 0 ? 1 : -1);
+      },
+      { passive: true },
+    );
 
     // `showModal()` blocca l'interazione con la pagina ma NON il suo scroll:
     // la rotella e lo swipe continuano a far scorrere il catalogo sotto la
@@ -66,14 +113,47 @@ export class VisoreCarta extends HTMLElement {
   }
 
   /**
-   * Mostra una carta.
+   * Mostra una carta, eventualmente inserita in un elenco scorribile.
    *
    * @param {object} carta
    * @param {string} [nomeSet]
+   * @param {Array<{carta: object, nomeSet: string}>} [lista] carte fra cui
+   *   scorrere; se assente si mostra solo `carta` senza frecce
+   * @param {number} [indice] posizione di `carta` dentro `lista`
    * @returns {void}
    */
-  mostra(carta, nomeSet = '') {
+  mostra(carta, nomeSet = '', lista = null, indice = 0) {
     if (!this.#dialogo || !carta) return;
+
+    // Senza una lista valida si scorre in un elenco di una sola carta: le
+    // frecce spariscono da sole e il resto del codice non ha casi speciali.
+    this.#lista = Array.isArray(lista) && lista.length ? lista : [{ carta, nomeSet }];
+    this.#indice = Math.min(Math.max(indice, 0), this.#lista.length - 1);
+
+    this.#rendi();
+
+    this.#dialogo.showModal();
+    // La classe sta su <html> e non su <body>: su iOS Safari l'overflow del
+    // body da solo non ferma lo scroll della pagina.
+    document.documentElement.classList.add('scorrimento-bloccato');
+  }
+
+  /**
+   * Sposta di `passo` carte (±1) restando dentro i limiti dell'elenco.
+   * @param {number} passo
+   */
+  #scorri(passo) {
+    const nuovo = Math.min(Math.max(this.#indice + passo, 0), this.#lista.length - 1);
+    if (nuovo === this.#indice) return;
+    this.#indice = nuovo;
+    this.#rendi();
+  }
+
+  /** Disegna la carta corrente e aggiorna lo stato delle frecce. */
+  #rendi() {
+    const voce = this.#lista[this.#indice];
+    if (!voce) return;
+    const carta = voce.carta;
 
     const img = this.shadowRoot.querySelector('img');
     const didascalia = this.shadowRoot.querySelector('figcaption');
@@ -87,17 +167,22 @@ export class VisoreCarta extends HTMLElement {
       img.alt = `Carta ${carta.nome}`;
       img.hidden = false;
     } else {
+      img.removeAttribute('src');
       img.hidden = true;
     }
 
-    didascalia.textContent = [carta.nome, nomeSet, carta.numero ? `n. ${carta.numero}` : '']
+    didascalia.textContent = [carta.nome, voce.nomeSet, carta.numero ? `n. ${carta.numero}` : '']
       .filter(Boolean)
       .join(' · ');
 
-    this.#dialogo.showModal();
-    // La classe sta su <html> e non su <body>: su iOS Safari l'overflow del
-    // body da solo non ferma lo scroll della pagina.
-    document.documentElement.classList.add('scorrimento-bloccato');
+    // Con una carta sola le frecce non servono; agli estremi si disabilita
+    // quella che non porterebbe da nessuna parte.
+    const sola = this.#lista.length <= 1;
+    const prec = this.shadowRoot.querySelector('.prec');
+    const succ = this.shadowRoot.querySelector('.succ');
+    prec.hidden = succ.hidden = sola;
+    prec.disabled = this.#indice <= 0;
+    succ.disabled = this.#indice >= this.#lista.length - 1;
   }
 
   /** @returns {void} */
