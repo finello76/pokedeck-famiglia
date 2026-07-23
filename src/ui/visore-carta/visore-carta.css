@@ -25,6 +25,14 @@ figure {
   gap: 0.6rem;
 }
 
+/* La tela avvolge immagine e girotondo così che il secondo possa stare al
+   centro esatto della prima, sovrapposto. */
+.tela {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
 img {
   /* La carta si adatta allo schermo mantenendo le proporzioni reali 63×88.
      Su telefono in verticale comanda la larghezza, su PC l'altezza. */
@@ -35,6 +43,44 @@ img {
   border-radius: 12px;
   box-shadow: 0 12px 40px rgb(0 0 0 / 55%);
   background: #ffffff10;
+}
+
+.caricamento {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* Un velo leggero: se sotto c'è ancora la carta precedente, si capisce che
+     sta cambiando; se è vuoto, il girotondo resta visibile lo stesso. */
+  background: rgb(10 14 22 / 35%);
+  border-radius: 12px;
+}
+
+.caricamento[hidden] {
+  display: none;
+}
+
+.giro {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 4px solid rgb(255 255 255 / 25%);
+  border-top-color: #fff;
+  animation: gira 0.8s linear infinite;
+}
+
+@keyframes gira {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* Chi ha chiesto meno animazioni vede il girotondo fermo: la spia c'è ancora,
+   ma non ruota. */
+@media (prefers-reduced-motion: reduce) {
+  .giro {
+    animation: none;
+  }
 }
 
 figcaption {

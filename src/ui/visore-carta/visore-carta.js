@@ -55,7 +55,10 @@ export class VisoreCarta extends HTMLElement {
         <button class="freccia prec" type="button" aria-label="Carta precedente">‹</button>
         <button class="freccia succ" type="button" aria-label="Carta successiva">›</button>
         <figure>
-          <img alt="" />
+          <div class="tela">
+            <div class="caricamento" hidden><span class="giro"></span></div>
+            <img alt="" />
+          </div>
           <figcaption></figcaption>
         </figure>
       </dialog>
@@ -65,6 +68,14 @@ export class VisoreCarta extends HTMLElement {
     this.shadowRoot.querySelector('.chiudi').addEventListener('click', () => this.chiudi());
     this.shadowRoot.querySelector('.prec').addEventListener('click', () => this.#scorri(-1));
     this.shadowRoot.querySelector('.succ').addEventListener('click', () => this.#scorri(1));
+
+    // L'immagine ad alta risoluzione pesa ~830 KB: finché non è arrivata si
+    // mostra un girotondo, altrimenti sfogliando sembra che il tocco non abbia
+    // fatto nulla e si preme due volte. `load` ed `error` lo tolgono in ogni
+    // caso — anche se la carta non ha immagine è giusto smettere di girare.
+    const img = this.shadowRoot.querySelector('img');
+    img.addEventListener('load', () => this.#caricamento(false));
+    img.addEventListener('error', () => this.#caricamento(false));
 
     // Cliccare fuori dalla carta chiude: su un dialog il click "sullo sfondo"
     // arriva al dialog stesso, non ai figli.
@@ -163,12 +174,21 @@ export class VisoreCarta extends HTMLElement {
     // (attacchi, illustratore) devono essere leggibili.
     const src = urlImmagine(carta, 'stampa');
     if (src) {
-      img.src = src;
+      // Solo se la sorgente cambia davvero: riassegnare la stessa non fa
+      // ripartire `load`, e il girotondo resterebbe acceso all'infinito.
+      if (img.getAttribute('src') !== src) {
+        this.#caricamento(true);
+        img.src = src;
+      }
       img.alt = `Carta ${carta.nome}`;
       img.hidden = false;
+      // Immagine già in cache: `complete` è vero subito e `load` potrebbe non
+      // riscattare. Si spegne il girotondo a mano.
+      if (img.complete && img.naturalWidth > 0) this.#caricamento(false);
     } else {
       img.removeAttribute('src');
       img.hidden = true;
+      this.#caricamento(false);
     }
 
     didascalia.textContent = [carta.nome, voce.nomeSet, carta.numero ? `n. ${carta.numero}` : '']
@@ -183,6 +203,15 @@ export class VisoreCarta extends HTMLElement {
     prec.hidden = succ.hidden = sola;
     prec.disabled = this.#indice <= 0;
     succ.disabled = this.#indice >= this.#lista.length - 1;
+  }
+
+  /**
+   * Accende o spegne il girotondo di caricamento.
+   * @param {boolean} attivo
+   */
+  #caricamento(attivo) {
+    const spia = this.shadowRoot?.querySelector('.caricamento');
+    if (spia) spia.hidden = !attivo;
   }
 
   /** @returns {void} */

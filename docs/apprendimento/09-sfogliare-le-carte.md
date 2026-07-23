@@ -143,6 +143,44 @@ Due dettagli non ovvi:
 
 ---
 
+## 3.5. Il girotondo di caricamento
+
+L'immagine ad alta risoluzione pesa ~830 KB e arriva con ritardo. Senza un
+segnale, sfogliando sembra che il tocco non abbia fatto nulla — e si preme due
+volte. Un girotondo sopra la carta dice "sto lavorando":
+
+```js
+if (img.getAttribute('src') !== src) {   // solo se la sorgente cambia davvero
+  this.#caricamento(true);               // accendi la spia
+  img.src = src;
+}
+img.hidden = false;
+if (img.complete && img.naturalWidth > 0) this.#caricamento(false);  // già in cache
+```
+
+```js
+// una volta sola, in connectedCallback
+img.addEventListener('load', () => this.#caricamento(false));
+img.addEventListener('error', () => this.#caricamento(false));
+```
+
+Tre trappole, tutte già viste in cima al codice:
+
+- **Riassegnare la stessa `src` non fa ripartire `load`.** Se ritorni su una
+  carta già mostrata e riscrivi lo stesso URL, l'evento non riscatta e il
+  girotondo girerebbe per sempre. Il confronto `getAttribute('src') !== src`
+  evita di accenderlo quando non c'è niente da caricare.
+- **L'immagine in cache non emette sempre `load`.** Se è già scaricata,
+  `img.complete` è vero all'istante e `load` può non arrivare: si spegne la spia
+  a mano leggendo `complete && naturalWidth > 0`.
+- **`error` deve spegnere quanto `load`.** Una carta senza immagine, o una rete
+  che cade, non devono lasciare il girotondo acceso in eterno.
+
+E per chi ha chiesto meno animazioni (`prefers-reduced-motion`), la spia resta
+visibile ma **ferma**: l'informazione "sta caricando" c'è, il movimento no.
+
+---
+
 ## 4. Frecce agli estremi: disabilitare, non nascondere
 
 A inizio elenco la freccia "‹" non porta da nessuna parte. Due scelte: farla
