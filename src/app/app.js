@@ -8,7 +8,6 @@
  * @module app/app
  */
 
-import { cercaPerNumeroStampato } from '../data/dataset.js';
 import {
   aggiungiCopie,
   elencoCompleto,
@@ -18,6 +17,8 @@ import {
 import { scaricaFile, importa } from '../data/scambio.js';
 import { avviaBarraAggiornamento } from './barra-aggiornamento.js';
 import { avviaViste } from './viste.js';
+import { avviaTema } from './tema.js';
+import { avviaAggiunta } from './aggiunta.js';
 import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
 import '../ui/scheda-carta/scheda-carta.js';
@@ -27,27 +28,34 @@ import '../ui/contatore-energie/contatore-energie.js';
 import '../ui/visore-carta/visore-carta.js';
 import '../ui/vista-regole/vista-regole.js';
 
-const moduloRicerca = document.querySelector('#modulo-ricerca');
-const moduloEnergie = document.querySelector('#modulo-energie');
-const statoRicerca = document.querySelector('#stato-ricerca');
-const risultati = document.querySelector('#risultati');
 const griglia = document.querySelector('#griglia');
 const contatore = document.querySelector('#contatore-energie');
 const riepilogo = document.querySelector('#riepilogo-collezione');
 const statoScambio = document.querySelector('#stato-scambio');
 const fileImport = document.querySelector('#file-import');
 const visore = document.querySelector('#visore');
+const toast = document.querySelector('#toast');
 
 /**
- * I nomi delle carte vengono da un dataset esterno: mai interpolati grezzi.
+ * Mostra un messaggio effimero (toast) in fondo alla pagina.
  * @param {string} testo
- * @returns {string}
+ * @returns {void}
  */
-function escapeHtml(testo) {
-  return String(testo ?? '').replace(
-    /[&<>"']/g,
-    (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch],
-  );
+let timerToast;
+function mostraToast(testo) {
+  if (!toast) return;
+  toast.textContent = testo;
+  toast.hidden = false;
+  // Riavvia l'animazione anche quando un toast è già a schermo: senza il
+  // reflow forzato il browser non la fa ripartire.
+  toast.classList.remove('mostra');
+  void toast.offsetWidth;
+  toast.classList.add('mostra');
+  clearTimeout(timerToast);
+  timerToast = setTimeout(() => {
+    toast.hidden = true;
+    toast.classList.remove('mostra');
+  }, 2200);
 }
 
 /**
@@ -78,106 +86,22 @@ async function aggiornaCollezione() {
   // Il confronto con la collezione di riferimento lo fa il livello dati: la
   // griglia riceve una funzione e non sa da dove arrivino le carte.
   griglia.caricaMancanti = (idSet) => carteMancanti(idSet, voci);
-  griglia.voci = voci;
+  // Le energie base generiche non vanno nella griglia: non hanno scansione né
+  // numero di collezione e si contano già nel contatore dedicato qui sotto.
+  griglia.voci = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);
   contatore.dati = stat.energie;
 
-  const pezzi = Object.entries(stat.perCategoria)
-    .sort((a, b) => b[1] - a[1])
-    .map(([categoria, quante]) => `${quante} ${categoria}`);
-
-  riepilogo.textContent = voci.length
-    ? `${stat.totaleCarte} carte in totale (${pezzi.join(', ')})`
-    : 'Nessuna carta ancora catalogata.';
+  // Il riepilogo della collezione (conteggi, sezioni) lo mostra ora la griglia:
+  // qui la riga serve solo per errori di caricamento, quindi resta nascosta.
+  riepilogo.hidden = true;
+  riepilogo.classList.remove('errore');
 }
 
-/** Disegna i candidati di una ricerca, con il modulo per aggiungerli. */
-function mostraCandidati(trovate) {
-  risultati.replaceChildren();
-
-  if (trovate.length > 1) {
-    const avviso = document.createElement('p');
-    avviso.className = 'aiuto';
-    avviso.textContent =
-      `${trovate.length} set hanno lo stesso numero di carte: confronta l'illustrazione ` +
-      'con la carta che hai in mano per capire qual è la tua.';
-    risultati.append(avviso);
-  }
-
-  for (const { set, carta } of trovate) {
-    // Ogni candidato sta in un riquadro suo: con due carte diverse che hanno lo
-    // stesso numero, un pulsante "Aggiungi" sospeso sotto le schede non lascia
-    // capire a quale delle due si riferisca.
-    const contenitore = document.createElement('div');
-    contenitore.className = 'proposta';
-
-    const scheda = document.createElement('scheda-carta');
-    scheda.nomeSet = set.nome;
-    scheda.carta = carta;
-
-    const azioni = document.createElement('div');
-    azioni.className = 'azioni-aggiunta';
-    azioni.innerHTML = `
-      <label for="quante-${set.id}-${carta.numero}">Copie possedute</label>
-      <input id="quante-${set.id}-${carta.numero}" type="number" min="1" value="1" />
-      <button type="button">Aggiungi ${escapeHtml(carta.nome)}</button>
-    `;
-
-    const campo = azioni.querySelector('input');
-    azioni.querySelector('button').addEventListener('click', async () => {
-      const quante = Math.max(1, Number(campo.value) || 1);
-      const totale = await aggiungiCopie(set.id, carta.numero, quante);
-      await aggiornaCollezione();
-      mostraStato(statoRicerca, `${carta.nome}: ora ne hai ${totale}.`);
-      risultati.replaceChildren();
-      moduloRicerca.reset();
-      document.querySelector('#campo-numero').focus();
-    });
-
-    contenitore.append(scheda, azioni);
-    risultati.append(contenitore);
-  }
-}
-
-moduloRicerca.addEventListener('submit', async (evento) => {
-  evento.preventDefault();
-  risultati.replaceChildren();
-
-  const dati = new FormData(moduloRicerca);
-  const numero = String(dati.get('numero')).trim();
-  const totale = String(dati.get('totale')).trim();
-
-  mostraStato(statoRicerca, 'Cerco…');
-  try {
-    // Il numero si passa così com'è digitato: gli zeri iniziali e i codici non
-    // numerici (TG01, SV01) li normalizza il dataset.
-    const { trovate, nonLetti } = await cercaPerNumeroStampato(numero, totale);
-
-    if (trovate.length === 0) {
-      const motivo = nonLetti.length
-        ? ` Non è stato possibile leggere ${nonLetti.length} set (${nonLetti.join(', ')}): ` +
-          'probabilmente sei senza rete e quei set non erano ancora stati aperti.'
-        : ' Controlla il numero e il totale stampati sulla carta.';
-      mostraStato(statoRicerca, `Nessuna carta ${numero}/${totale}.${motivo}`, true);
-      return;
-    }
-
-    mostraStato(
-      statoRicerca,
-      nonLetti.length ? `Attenzione: ${nonLetti.length} set non leggibili offline.` : '',
-    );
-    mostraCandidati(trovate);
-  } catch (errore) {
-    mostraStato(statoRicerca, `Errore nel caricamento dei dati: ${errore.message}`, true);
-  }
-});
-
-moduloEnergie.addEventListener('submit', async (evento) => {
-  evento.preventDefault();
-  const dati = new FormData(moduloEnergie);
-  const tipo = String(dati.get('tipo'));
-  const quante = Math.max(1, Number(dati.get('quante')) || 1);
-
-  await aggiungiCopie(SET_ENERGIE_GENERICHE, tipo, quante);
+// Le energie base si aggiungono e si tolgono dal contatore stesso, una alla
+// volta: numero di collezione non ne hanno, quindi la "chiave" è il tipo.
+contatore.addEventListener('energia-cambiata', async (evento) => {
+  const { tipo, delta } = evento.detail;
+  await aggiungiCopie(SET_ENERGIE_GENERICHE, tipo, delta);
   await aggiornaCollezione();
 });
 
@@ -190,11 +114,15 @@ document.addEventListener('carta-scelta', (evento) => {
   visore.mostra(carta, nomeSet, lista, indice);
 });
 
-griglia.addEventListener('quantita-cambiata', async (evento) => {
+// La stessa modifica arriva da due parti: gli stepper della griglia e quello
+// del visore a schermo intero. Un solo gestore per entrambe.
+async function cambiaQuantita(evento) {
   const { idSet, numero, delta } = evento.detail;
   await aggiungiCopie(idSet, numero, delta);
   await aggiornaCollezione();
-});
+}
+griglia.addEventListener('quantita-cambiata', cambiaQuantita);
+visore.addEventListener('quantita-cambiata', cambiaQuantita);
 
 document.querySelector('#bottone-esporta').addEventListener('click', async () => {
   try {
@@ -235,8 +163,11 @@ fileImport.addEventListener('change', async () => {
 });
 
 avviaViste();
+avviaTema(document.querySelector('#cambia-tema'));
+avviaAggiunta({ onAggiornata: aggiornaCollezione, onMessaggio: mostraToast });
 
 aggiornaCollezione().catch((errore) => {
+  riepilogo.hidden = false;
   riepilogo.textContent = `Impossibile leggere la collezione: ${errore.message}`;
   riepilogo.classList.add('errore');
 });

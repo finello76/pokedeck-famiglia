@@ -25,19 +25,38 @@
 [data-tipo='Drago']    { --tipo-colore: #94812c; --tipo-tenue: #f5f1de; }
 [data-tipo='Incolore'] { --tipo-colore: #8b93a7; --tipo-tenue: #eceef4; }
 
+/* Tinte scure: più chiare, per staccare dallo sfondo scuro.
+   Le stesse due strade del tema in base.css — scelta esplicita col pulsante
+   (`:root[data-theme='scuro']`) oppure sistema su scuro salvo forzatura a
+   "chiaro". I selettori sono ancorati alla radice così l'intera pagina segue
+   il tema scelto, non il singolo elemento. Il blocco è ripetuto perché uno dei
+   due sta dentro una @media e non si può fondere con l'altro. */
+:root[data-theme='scuro'] [data-tipo] { --tipo-tenue: #262d3d; }
+:root[data-theme='scuro'] [data-tipo='Erba']     { --tipo-colore: #6bc274; }
+:root[data-theme='scuro'] [data-tipo='Fuoco']    { --tipo-colore: #f0745a; }
+:root[data-theme='scuro'] [data-tipo='Acqua']    { --tipo-colore: #5ea6f0; }
+:root[data-theme='scuro'] [data-tipo='Lampo']    { --tipo-colore: #f0cc3d; }
+:root[data-theme='scuro'] [data-tipo='Psico']    { --tipo-colore: #c07de6; }
+:root[data-theme='scuro'] [data-tipo='Lotta']    { --tipo-colore: #dd8158; }
+:root[data-theme='scuro'] [data-tipo='Oscurità'] { --tipo-colore: #99a2b8; }
+:root[data-theme='scuro'] [data-tipo='Metallo']  { --tipo-colore: #9aabbd; }
+:root[data-theme='scuro'] [data-tipo='Fata']     { --tipo-colore: #ef7bb5; }
+:root[data-theme='scuro'] [data-tipo='Drago']    { --tipo-colore: #cbb650; }
+:root[data-theme='scuro'] [data-tipo='Incolore'] { --tipo-colore: #a7aec0; }
+
 @media (prefers-color-scheme: dark) {
-  [data-tipo] { --tipo-tenue: #262d3d; }
-  [data-tipo='Erba']     { --tipo-colore: #6bc274; }
-  [data-tipo='Fuoco']    { --tipo-colore: #f0745a; }
-  [data-tipo='Acqua']    { --tipo-colore: #5ea6f0; }
-  [data-tipo='Lampo']    { --tipo-colore: #f0cc3d; }
-  [data-tipo='Psico']    { --tipo-colore: #c07de6; }
-  [data-tipo='Lotta']    { --tipo-colore: #dd8158; }
-  [data-tipo='Oscurità'] { --tipo-colore: #99a2b8; }
-  [data-tipo='Metallo']  { --tipo-colore: #9aabbd; }
-  [data-tipo='Fata']     { --tipo-colore: #ef7bb5; }
-  [data-tipo='Drago']    { --tipo-colore: #cbb650; }
-  [data-tipo='Incolore'] { --tipo-colore: #a7aec0; }
+  :root:not([data-theme='chiaro']) [data-tipo] { --tipo-tenue: #262d3d; }
+  :root:not([data-theme='chiaro']) [data-tipo='Erba']     { --tipo-colore: #6bc274; }
+  :root:not([data-theme='chiaro']) [data-tipo='Fuoco']    { --tipo-colore: #f0745a; }
+  :root:not([data-theme='chiaro']) [data-tipo='Acqua']    { --tipo-colore: #5ea6f0; }
+  :root:not([data-theme='chiaro']) [data-tipo='Lampo']    { --tipo-colore: #f0cc3d; }
+  :root:not([data-theme='chiaro']) [data-tipo='Psico']    { --tipo-colore: #c07de6; }
+  :root:not([data-theme='chiaro']) [data-tipo='Lotta']    { --tipo-colore: #dd8158; }
+  :root:not([data-theme='chiaro']) [data-tipo='Oscurità'] { --tipo-colore: #99a2b8; }
+  :root:not([data-theme='chiaro']) [data-tipo='Metallo']  { --tipo-colore: #9aabbd; }
+  :root:not([data-theme='chiaro']) [data-tipo='Fata']     { --tipo-colore: #ef7bb5; }
+  :root:not([data-theme='chiaro']) [data-tipo='Drago']    { --tipo-colore: #cbb650; }
+  :root:not([data-theme='chiaro']) [data-tipo='Incolore'] { --tipo-colore: #a7aec0; }
 }
 
 /* Pastiglia con il nome del tipo o del costo di un attacco. */

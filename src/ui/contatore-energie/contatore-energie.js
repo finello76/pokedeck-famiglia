@@ -1,31 +1,45 @@
 /**
- * Web Component `<contatore-energie>`: quante energie base ci sono, per tipo.
+ * Web Component `<contatore-energie>`: quante energie base ci sono, per tipo,
+ * con i comandi per aggiungerne e toglierne.
  *
  * Non è una statistica decorativa: è il dato da cui dipende metà del motore di
  * generazione (v2). Le proporzioni del mazzo, la scelta del tipo e l'eventuale
- * attivazione delle regole della casa compensative partono da qui.
+ * attivazione delle regole della casa compensative partono da qui — perciò da
+ * qui le si conta e le si modifica, senza un modulo a parte.
+ *
+ * Disegna in **DOM normale, non Shadow DOM**: così i colori dei tipi (`tipi.css`)
+ * tingono le pastiglie, cosa che nello Shadow DOM non accadrebbe. Lo stile sta
+ * in `contatore-energie.css`, incluso da index.html.
+ *
+ * @fires contatore-energie#energia-cambiata - detail: `{ tipo, delta }`
  *
  * @example
  * const c = document.createElement('contatore-energie');
- * c.dati = { perTipo: { Fuoco: 8, Acqua: 3 }, totaleBase: 11, totaleSpeciali: 1, senzaTipo: 0 };
+ * c.dati = { perTipo: { Fuoco: 8 }, totaleBase: 8, totaleSpeciali: 0, senzaTipo: 0 };
  *
  * @module ui/contatore-energie
  */
 
-const stile = new CSSStyleSheet();
-const cssCaricato = fetch(new URL('./contatore-energie.css', import.meta.url))
-  .then((r) => r.text())
-  .then((css) => stile.replaceSync(css))
-  .catch(() => {});
+/**
+ * I tipi con un'energia base nel gioco. Si mostrano tutti, anche a zero, così
+ * si può aggiungerne uno che ancora non hai senza un menu a tendina a parte.
+ */
+const TIPI_BASE = [
+  'Erba',
+  'Fuoco',
+  'Acqua',
+  'Lampo',
+  'Psico',
+  'Lotta',
+  'Oscurità',
+  'Metallo',
+  'Fata',
+  'Drago',
+];
 
 export class ContatoreEnergie extends HTMLElement {
   /** @type {object|null} */
   #dati = null;
-
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-  }
 
   /** @param {object|null} valore risultato di `conteggioEnergie()` */
   set dati(valore) {
@@ -33,36 +47,41 @@ export class ContatoreEnergie extends HTMLElement {
     this.#disegna();
   }
 
-  async connectedCallback() {
-    await cssCaricato;
-    this.shadowRoot.adoptedStyleSheets = [stile];
+  connectedCallback() {
     this.#disegna();
+    this.addEventListener('click', (evento) => {
+      const bottone = evento.target.closest('[data-energia]');
+      if (!bottone) return;
+      this.dispatchEvent(
+        new CustomEvent('energia-cambiata', {
+          bubbles: true,
+          detail: { tipo: bottone.dataset.tipo, delta: Number(bottone.dataset.energia) },
+        }),
+      );
+    });
   }
 
   #disegna() {
-    if (!this.shadowRoot || !this.#dati) return;
-    const { perTipo, totaleBase, totaleSpeciali, senzaTipo } = this.#dati;
+    const perTipo = this.#dati?.perTipo ?? {};
+    const totaleBase = this.#dati?.totaleBase ?? 0;
+    const totaleSpeciali = this.#dati?.totaleSpeciali ?? 0;
+    const senzaTipo = this.#dati?.senzaTipo ?? 0;
+    const attivi = TIPI_BASE.filter((t) => (perTipo[t] ?? 0) > 0).length;
 
-    if (totaleBase === 0 && totaleSpeciali === 0) {
-      this.shadowRoot.innerHTML = `
-        <p class="vuoto">
-          Nessuna carta Energia in collezione. Il generatore di mazzi non potrà
-          costruire mazzi giocabili finché non ce ne sono: aggiungile qui sopra
-          scegliendo <strong>Energia base</strong>.
-        </p>`;
-      return;
-    }
-
-    const tipi = Object.entries(perTipo).sort((a, b) => b[1] - a[1]);
-    const voci = tipi
-      .map(
-        ([tipo, quante]) => `
-          <li data-tipo="${tipo}">
-            <span class="nome">${tipo}</span>
-            <span class="numero">${quante}</span>
-          </li>`,
-      )
-      .join('');
+    const chips = TIPI_BASE.map((tipo) => {
+      const n = perTipo[tipo] ?? 0;
+      return `
+        <div class="energia${n ? '' : ' vuota'}" data-tipo="${tipo}">
+          <span class="nome">${tipo}</span>
+          <div class="controlli">
+            <button type="button" data-energia="-1" data-tipo="${tipo}"
+                    aria-label="Una ${tipo} in meno"${n ? '' : ' disabled'}>−</button>
+            <span class="num">${n}</span>
+            <button type="button" data-energia="1" data-tipo="${tipo}"
+                    aria-label="Una ${tipo} in più">+</button>
+          </div>
+        </div>`;
+    }).join('');
 
     const note = [];
     if (totaleSpeciali) {
@@ -72,10 +91,13 @@ export class ContatoreEnergie extends HTMLElement {
       note.push(`<strong>${senzaTipo} energia/e base di tipo non riconosciuto</strong>`);
     }
 
-    this.shadowRoot.innerHTML = `
-      <p class="totale">${totaleBase} energie base, ${tipi.length} tipi</p>
-      <ul>${voci}</ul>
-      ${note.length ? `<p class="nota">${note.join(' · ')}</p>` : ''}
+    this.innerHTML = `
+      <div class="intestazione-energie">
+        <span class="titolo-energie">Energie base</span>
+        <span class="totale-energie">${totaleBase} · ${attivi} ${attivi === 1 ? 'tipo' : 'tipi'}</span>
+      </div>
+      <div class="chips-energie">${chips}</div>
+      ${note.length ? `<p class="nota-energie">${note.join(' · ')}</p>` : ''}
     `;
   }
 }

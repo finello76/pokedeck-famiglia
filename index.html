@@ -7,6 +7,21 @@
     <meta name="description" content="Catalogo della collezione Pokémon TCG e generatore di mazzi equilibrati per giocare in famiglia." />
     <meta name="theme-color" content="#2a5fd6" />
 
+    <!-- Applica il tema salvato PRIMA del CSS, così al caricamento non lampeggia
+         il tema sbagliato. La stessa chiave la usa src/app/tema.js. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('pokedeck-tema');
+          if (t === 'chiaro' || t === 'scuro') {
+            document.documentElement.setAttribute('data-theme', t);
+          }
+        } catch (e) {
+          /* localStorage negato (modalità privata): si segue il sistema. */
+        }
+      })();
+    </script>
+
     <!-- Tutti i path sono RELATIVI: l'app deve funzionare da una sottocartella
          di GitHub Pages (/PokeDeckFamiglia/) oltre che dalla radice. -->
     <link rel="manifest" href="manifest.webmanifest" />
@@ -15,6 +30,8 @@
     <link rel="stylesheet" href="src/ui/stile/base.css" />
     <link rel="stylesheet" href="src/ui/stile/tipi.css" />
     <link rel="stylesheet" href="src/ui/griglia-collezione/griglia-collezione.css" />
+    <link rel="stylesheet" href="src/ui/contatore-energie/contatore-energie.css" />
+    <link rel="stylesheet" href="src/ui/visore-carta/visore-carta.css" />
     <link rel="stylesheet" href="src/ui/procedura-guidata/procedura-guidata.css" />
     <link rel="stylesheet" href="src/ui/mazzo-generato/mazzo-generato.css" />
     <link rel="stylesheet" href="src/ui/vista-regole/vista-regole.css" />
@@ -22,96 +39,30 @@
   </head>
   <body>
     <header class="intestazione">
-      <h1>PokéDeck Famiglia</h1>
-      <p class="sottotitolo">Catalogo e generatore di mazzi</p>
+      <div class="marchio">
+        <span class="pokeball" aria-hidden="true"></span>
+        <div class="titoli">
+          <h1>You<span>Pokè</span>Deck</h1>
+        </div>
+        <button type="button" id="cambia-tema" class="bottone-tema" aria-label="Cambia tema chiaro/scuro" aria-pressed="false">🌙</button>
+      </div>
     </header>
-
-    <nav class="barra-viste" aria-label="Sezioni">
-      <button type="button" data-vai="catalogo">Catalogo</button>
-      <button type="button" data-vai="mazzi">Crea mazzi</button>
-      <button type="button" data-vai="regole">Regole</button>
-    </nav>
 
     <main>
       <div data-vista="catalogo">
-      <section class="pannello">
-        <h2>Aggiungi una carta</h2>
-        <p class="aiuto">
-          Sulla carta fisica, in basso, trovi qualcosa come <strong>118/191</strong>:
-          il primo numero è la carta, il secondo il totale del set.
-        </p>
-
-        <form id="modulo-ricerca" class="riga-modulo">
-          <div>
-            <label for="campo-numero">Numero della carta</label>
-            <input id="campo-numero" name="numero" placeholder="118" required />
-          </div>
-          <div>
-            <label for="campo-totale">Totale del set</label>
-            <input id="campo-totale" name="totale" inputmode="numeric" placeholder="191" required />
-          </div>
-          <div>
-            <button type="submit">Cerca</button>
-          </div>
-        </form>
-
-        <p id="stato-ricerca" class="stato" hidden></p>
-        <section id="risultati" aria-live="polite"></section>
-      </section>
-
-      <section class="pannello">
-        <h2>Energie base</h2>
-        <p class="aiuto">
-          Le energie base arrivano quasi sempre dai mazzi di partenza e non
-          appartengono a nessun set catalogato: qui si contano e basta, senza
-          numero di collezione.
-        </p>
-        <form id="modulo-energie" class="riga-modulo">
-          <div>
-            <label for="campo-tipo-energia">Tipo</label>
-            <select id="campo-tipo-energia" name="tipo">
-              <option>Erba</option>
-              <option>Fuoco</option>
-              <option>Acqua</option>
-              <option>Lampo</option>
-              <option>Psico</option>
-              <option>Lotta</option>
-              <option>Oscurità</option>
-              <option>Metallo</option>
-              <option>Fata</option>
-              <option>Drago</option>
-            </select>
-          </div>
-          <div>
-            <label for="campo-quante-energie">Quante</label>
-            <input id="campo-quante-energie" name="quante" type="number" min="1" value="1" />
-          </div>
-          <div>
-            <button type="submit">Aggiungi</button>
-          </div>
-        </form>
-        <contatore-energie id="contatore-energie"></contatore-energie>
-      </section>
-
-      <section class="pannello">
-        <h2>La collezione</h2>
-        <p id="riepilogo-collezione" class="stato">Caricamento…</p>
+        <!-- La collezione è il cuore d'uso quotidiano: sta in cima. La griglia
+             disegna da sé titolo, ricerca, chip per tipo e sezioni. -->
+        <p id="riepilogo-collezione" class="stato" hidden></p>
         <griglia-collezione id="griglia"></griglia-collezione>
-      </section>
 
-      <section class="pannello">
-        <h2>Salvataggio e trasferimento</h2>
-        <p class="aiuto">
-          I dati stanno solo in questo browser. Per portarli su un altro
-          dispositivo serve esportarli e reimportarli a mano.
-        </p>
-        <div class="azioni">
-          <button type="button" id="bottone-esporta">Esporta JSON</button>
-          <button type="button" id="bottone-importa" class="secondario">Importa JSON</button>
-          <input type="file" id="file-import" accept="application/json,.json" hidden />
-        </div>
-        <p id="stato-scambio" class="stato" hidden></p>
-      </section>
+        <section class="pannello" id="pannello-energie">
+          <p class="aiuto">
+            Le energie base arrivano quasi sempre dai mazzi di partenza e non
+            appartengono a nessun set catalogato: qui si contano e basta, coi
+            tasti <strong>−</strong> e <strong>+</strong>, senza numero di collezione.
+          </p>
+          <contatore-energie id="contatore-energie"></contatore-energie>
+        </section>
       </div>
 
       <div data-vista="mazzi" hidden>
@@ -127,10 +78,84 @@
 
       <div data-vista="regole" hidden>
         <vista-regole id="regole"></vista-regole>
+
+        <section class="pannello" id="pannello-dati">
+          <h2>Dati</h2>
+          <p class="aiuto">
+            I dati stanno solo in questo browser. Per portarli su un altro
+            dispositivo serve esportarli e reimportarli a mano.
+          </p>
+          <div class="azioni">
+            <button type="button" id="bottone-esporta">Esporta JSON</button>
+            <button type="button" id="bottone-importa" class="secondario">Importa JSON</button>
+            <input type="file" id="file-import" accept="application/json,.json" hidden />
+          </div>
+          <p id="stato-scambio" class="stato" hidden></p>
+        </section>
       </div>
     </main>
 
+    <!--
+      Navigazione principale in basso: raggiungibile col pollice mentre l'altra
+      mano tiene le carte. I pulsanti conservano `data-vai`, così il routing di
+      viste.js (che accende `.attivo` e `aria-current`) resta identico.
+    -->
+    <nav class="tab-bar no-stampa" aria-label="Sezioni">
+      <button type="button" data-vai="catalogo">
+        <span class="icona" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
+        </span>
+        <span class="etichetta">Catalogo</span>
+      </button>
+      <button type="button" data-vai="mazzi">
+        <span class="icona" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6" width="14" height="10" rx="2.5" opacity=".5"/><rect x="7" y="9" width="14" height="10" rx="2.5"/></svg>
+        </span>
+        <span class="etichetta">Crea mazzi</span>
+      </button>
+      <button type="button" data-vai="regole">
+        <span class="icona" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 4h9a3 3 0 0 1 3 3v13H8a2 2 0 0 1-2-2V4Z" fill="currentColor" opacity=".5"/><path d="M9 8h7M9 11h7M9 14h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+        <span class="etichetta">Regole</span>
+      </button>
+    </nav>
+
     <visore-carta id="visore"></visore-carta>
+
+    <!-- Aggiunta carta: pulsante flottante sempre a portata di pollice (solo nel
+         catalogo) e pannello a comparsa dal basso. La logica sta in aggiunta.js. -->
+    <button type="button" id="fab-aggiungi" class="fab no-stampa" aria-label="Aggiungi una carta" hidden>＋</button>
+
+    <div id="foglio-aggiunta" class="foglio no-stampa" hidden>
+      <div class="foglio-fondo" data-chiudi></div>
+      <div class="foglio-pannello" role="dialog" aria-label="Aggiungi una carta" aria-modal="true">
+        <div class="maniglia" aria-hidden="true"></div>
+        <div class="foglio-testa">
+          <h2>Aggiungi una carta</h2>
+          <button type="button" class="chiudi-foglio" data-chiudi aria-label="Chiudi">✕</button>
+        </div>
+        <div class="pannello-cerca">
+          <p class="aiuto">
+            Digita il numero stampato in basso sulla carta, es. <strong>118/191</strong>.
+          </p>
+          <form id="modulo-ricerca" class="riga-frazione">
+            <div class="frazione">
+              <input id="campo-numero" name="numero" inputmode="numeric" placeholder="118"
+                     aria-label="Numero della carta" required />
+              <span class="barra-frazione" aria-hidden="true">/</span>
+              <input id="campo-totale" name="totale" inputmode="numeric" placeholder="191"
+                     aria-label="Totale del set" required />
+            </div>
+            <button type="submit" class="cerca" aria-label="Cerca">↵</button>
+          </form>
+          <p id="stato-ricerca" class="stato" hidden></p>
+          <div id="risultati" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast no-stampa" role="status" aria-live="polite" hidden></div>
 
     <footer class="pie-versione no-stampa">
       <!-- Cliccabile: è la via di fuga se l'app resta bloccata su una versione

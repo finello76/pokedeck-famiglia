@@ -1,10 +1,17 @@
+/* Stile di <mazzo-generato>. Vive nel DOM normale per ereditare il tema.
+
+   TUTTE le regole sono circoscritte sotto `mazzo-generato`: il foglio è incluso
+   globalmente da index.html, e senza questo prefisso classi generiche come
+   `.marchio`, `.miniatura`, `.nome` o `.dettaglio` uscirebbero a colorare mezza
+   pagina (è già successo: `.marchio` tingeva di arancione l'intestazione). */
+
 mazzo-generato {
   display: block;
   /* Come sopra: senza, il carosello detta la larghezza al mazzo. */
   min-inline-size: 0;
 }
 
-.mazzo {
+mazzo-generato .mazzo {
   background: var(--colore-superficie);
   border: 1px solid var(--colore-bordo);
   border-top: 5px solid var(--tipo-colore, #8b93a7);
@@ -15,19 +22,19 @@ mazzo-generato {
   min-inline-size: 0;
 }
 
-.mazzo header {
+mazzo-generato .mazzo header {
   border-block-end: 1px solid var(--colore-bordo);
   padding-block-end: 0.6rem;
   margin-block-end: 0.8rem;
 }
 
-.mazzo h3 {
+mazzo-generato .mazzo h3 {
   margin: 0;
   font-size: 1.15rem;
   color: var(--tipo-colore, var(--colore-testo));
 }
 
-.mazzo .sommario {
+mazzo-generato .mazzo .sommario {
   margin: 0.15rem 0 0;
   font-size: 0.85rem;
   color: var(--colore-testo-tenue);
@@ -35,7 +42,7 @@ mazzo-generato {
 
 /* Carosello con frecce ai lati: lo swipe resta il gesto principale su
    telefono, le frecce servono soprattutto col mouse. */
-.zona-carosello {
+mazzo-generato .zona-carosello {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -43,7 +50,7 @@ mazzo-generato {
   min-inline-size: 0;
 }
 
-.freccia {
+mazzo-generato .freccia {
   flex: none;
   inline-size: 2rem;
   block-size: 2.75rem;
@@ -59,12 +66,12 @@ mazzo-generato {
   cursor: pointer;
 }
 
-.freccia:hover:not(:disabled) {
+mazzo-generato .freccia:hover:not(:disabled) {
   background: var(--tipo-tenue, #eef2fb);
   color: var(--tipo-colore, var(--colore-primario));
 }
 
-.freccia:disabled {
+mazzo-generato .freccia:disabled {
   opacity: 0.35;
   cursor: default;
 }
@@ -72,32 +79,26 @@ mazzo-generato {
 /* Il carosello si scorre anche col dito.
    scroll-snap fa fermare lo scorrimento su una carta intera invece che a
    metà, che col pollice è molto più gradevole. */
-.carosello {
+mazzo-generato .carosello {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  /* Le frecce scorrono in modo fluido; chi ha chiesto meno animazioni al
-     sistema ottiene lo scatto secco (vedi sotto). */
   scroll-behavior: smooth;
   padding-block-end: 0.5rem;
-  /* Figlio di un flex: senza questo non si restringe sotto il contenuto e
-     allargherebbe il mazzo (stesso errore già visto su .elenco-mazzi). */
   flex: 1 1 auto;
   min-inline-size: 0;
-  /* Su iOS lo scorrimento orizzontale dentro una pagina verticale va
-     dichiarato, altrimenti il gesto viene rubato dalla pagina. */
   touch-action: pan-x;
   scrollbar-width: thin;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .carosello {
+  mazzo-generato .carosello {
     scroll-behavior: auto;
   }
 }
 
-.miniatura {
+mazzo-generato .miniatura {
   position: relative;
   flex: none;
   inline-size: 5.5rem;
@@ -109,7 +110,7 @@ mazzo-generato {
   scroll-snap-align: start;
 }
 
-.miniatura img {
+mazzo-generato .miniatura img {
   inline-size: 100%;
   aspect-ratio: 63 / 88;
   object-fit: cover;
@@ -118,24 +119,24 @@ mazzo-generato {
   background: var(--colore-bordo);
 }
 
-.miniatura:focus-visible {
+mazzo-generato .miniatura:focus-visible {
   outline: 3px solid var(--colore-primario);
   outline-offset: 2px;
 }
 
 /* Le carte giocabili solo per deroga si riconoscono anche nel carosello. */
-.miniatura.deroga {
+mazzo-generato .miniatura.deroga {
   border-color: var(--colore-attenzione, #c2410c);
 }
 
 /* I proxy (carte da stampare) usano il tratteggio, mai usato per le carte
    vere: si distinguono a colpo d'occhio anche in bianco e nero. */
-.miniatura.proxy {
+mazzo-generato .miniatura.proxy {
   border: 2px dashed var(--colore-proxy, #7c3aed);
 }
 
 /* Proxy senza scansione (Energie generiche): riquadro col colore del tipo. */
-.segnaposto-mini {
+mazzo-generato .segnaposto-mini {
   display: grid;
   place-items: center;
   aspect-ratio: 63 / 88;
@@ -147,11 +148,11 @@ mazzo-generato {
   padding: 0.3rem;
 }
 
-.segnaposto-mini .nome-mini {
+mazzo-generato .segnaposto-mini .nome-mini {
   overflow-wrap: anywhere;
 }
 
-.quante-mini {
+mazzo-generato .quante-mini {
   position: absolute;
   inset-block-end: 0.2rem;
   inset-inline-end: 0.2rem;
@@ -163,11 +164,11 @@ mazzo-generato {
   font-weight: 700;
 }
 
-.gruppo + .gruppo {
+mazzo-generato .gruppo + .gruppo {
   margin-block-start: 0.9rem;
 }
 
-.gruppo h4 {
+mazzo-generato .gruppo h4 {
   margin: 0 0 0.35rem;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -178,7 +179,7 @@ mazzo-generato {
   align-items: center;
 }
 
-.conteggio {
+mazzo-generato .conteggio {
   background: var(--colore-bordo);
   color: var(--colore-testo);
   border-radius: 999px;
@@ -187,13 +188,13 @@ mazzo-generato {
   letter-spacing: 0;
 }
 
-.gruppo ul {
+mazzo-generato .gruppo ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.gruppo li {
+mazzo-generato .gruppo li {
   display: flex;
   align-items: baseline;
   /* Su schermo stretto contrassegni e pulsante vanno a capo sotto il nome,
@@ -205,13 +206,13 @@ mazzo-generato {
   font-size: 0.92rem;
 }
 
-.quante {
+mazzo-generato .quante {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   min-inline-size: 1.6rem;
 }
 
-.nome {
+mazzo-generato .nome {
   /* La base di 7rem è la larghezza sotto cui il nome preferisce mandare a
      capo i contrassegni piuttosto che spezzarsi. */
   flex: 1 1 7rem;
@@ -219,7 +220,7 @@ mazzo-generato {
   overflow-wrap: anywhere;
 }
 
-.dettaglio {
+mazzo-generato .dettaglio {
   font-size: 0.78rem;
   color: var(--colore-testo-tenue);
   flex: none;
@@ -228,11 +229,11 @@ mazzo-generato {
 /* Le carte giocabili solo grazie a una regola della casa devono saltare
    all'occhio: senza il contrassegno la regola sarebbe inapplicabile, perché
    non si saprebbe a quali carte si riferisce. */
-.deroga .nome {
+mazzo-generato .deroga .nome {
   font-weight: 600;
 }
 
-.marchio {
+mazzo-generato .marchio {
   background: var(--colore-attenzione, #c2410c);
   color: #fff;
   border-radius: 999px;
@@ -245,16 +246,16 @@ mazzo-generato {
 
 /* Il contrassegno dei proxy ha un colore suo: "da stampare" e "come Base"
    sono avvisi diversi e non devono confondersi. */
-.marchio-proxy {
+mazzo-generato .marchio-proxy {
   background: var(--colore-proxy, #7c3aed);
 }
 
-.proxy .nome {
+mazzo-generato .proxy .nome {
   font-style: italic;
 }
 
 /* Il pulsante ⇄ per sostituire la riga: discreto, ma bersaglio pieno da 2rem. */
-.cambia {
+mazzo-generato .cambia {
   flex: none;
   inline-size: 2rem;
   block-size: 2rem;
@@ -271,7 +272,7 @@ mazzo-generato {
   cursor: pointer;
 }
 
-.cambia:hover {
+mazzo-generato .cambia:hover {
   border-color: var(--colore-primario);
   color: var(--colore-primario);
   background: transparent;

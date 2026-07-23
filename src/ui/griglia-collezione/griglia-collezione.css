@@ -1,126 +1,215 @@
 /* Stile di <griglia-collezione>.
 
-   A differenza di scheda-carta.css questo NON sta in uno Shadow DOM: il
-   componente usa il DOM normale per ereditare il tema della pagina, quindi il
-   foglio va incluso da index.html. */
+   NON sta in uno Shadow DOM: usa il DOM normale per ereditare il tema della
+   pagina e, soprattutto, per far colorare le card dai token dei tipi in
+   tipi.css (`--tipo-colore`/`--tipo-tenue`), che nello Shadow DOM non
+   arriverebbero. Il foglio va incluso da index.html. */
 
 griglia-collezione {
   display: block;
   container-type: inline-size;
 }
 
-.filtri {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.6rem;
-  margin-bottom: 0.9rem;
+/* --- Testata e controlli ---------------------------------------------- */
+
+.testa-collezione {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0.15rem 0.6rem;
 }
 
-@media (min-width: 34rem) {
-  .filtri {
-    /* Sei filtri: nome, serie, set, tipo di carta, tipo, stadio. Su schermi
-       stretti restano in colonna, che è il caso normale col telefono in mano. */
-    grid-template-columns: repeat(3, 1fr);
-    align-items: end;
-  }
+.testa-collezione .titolo {
+  font-size: 1.2rem;
+  font-weight: 800;
 }
 
-.interruttore {
+.testa-collezione .conteggio-vis {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--colore-testo-tenue);
+}
+
+.barra-collezione {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.campo-cerca {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.8rem;
-  font-size: 0.9rem;
+  min-width: 0;
+  background: var(--colore-superficie);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 13px;
+  padding: 0 0.75rem;
+  height: 44px;
+}
+
+.campo-cerca .lente {
+  color: var(--colore-testo-tenue);
+  font-size: 1rem;
+}
+
+.campo-cerca input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  /* 16px minimo: evita lo zoom automatico di Safari iOS sul focus. */
+  font-size: 16px;
+}
+
+.campo-cerca input:focus {
+  outline: none;
+}
+
+/* Pulsante filtro accanto alla ricerca: apre il pannello coi filtri avanzati. */
+.bottone-filtri {
+  position: relative;
+  flex: none;
+  width: auto;
+  inline-size: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  border: 1px solid var(--colore-bordo);
+  background: var(--colore-superficie);
+  color: var(--colore-testo-tenue);
+}
+
+.bottone-filtri svg {
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.bottone-filtri:hover {
+  background: var(--colore-superficie);
+  border-color: var(--colore-primario);
+  color: var(--colore-testo);
+}
+
+.bottone-filtri.attivo {
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+  color: var(--colore-su-primario);
+}
+
+/* Puntino che segnala "ci sono filtri attivi" col pannello chiuso. */
+.pallino-filtri {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--colore-accento);
+  border: 1.5px solid var(--colore-superficie);
+}
+
+.bottone-filtri.attivo .pallino-filtri {
+  border-color: var(--colore-primario);
+}
+
+/* Chip dei tipi: scorrono in orizzontale e "sbordano" fino ai margini di
+   pagina, così l'ultimo non sembra tagliato di netto. */
+.chip-tipi {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--spazio)) 0.25rem;
+  padding: 0.15rem var(--spazio) 0.5rem;
+  scrollbar-width: none;
+}
+
+.chip-tipi::-webkit-scrollbar {
+  display: none;
+}
+
+.chip-tipo {
+  flex: none;
+  width: auto;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--tipo-colore) 28%, transparent);
+  background: color-mix(in srgb, var(--tipo-colore) 10%, transparent);
+  color: var(--tipo-colore);
+}
+
+/* "Tutti" non ha data-tipo: gli si dà una tinta neutra, o color-mix riceverebbe
+   una variabile non valida e salterebbe. */
+.chip-tipo:not([data-tipo]) {
+  --tipo-colore: #8b93a7;
+}
+
+.chip-tipo.attivo {
+  background: var(--tipo-colore);
+  border-color: var(--tipo-colore);
+  color: #fff;
+}
+
+/* Pannello dei filtri avanzati: nascosto finché non si tocca il pulsante-filtro. */
+.pannello-filtri {
+  margin: 0.2rem 0 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid var(--colore-bordo);
+  border-radius: 14px;
+  background: var(--colore-superficie);
+}
+
+.filtri-extra {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.interruttore-mancanti {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--colore-bordo);
   cursor: pointer;
 }
 
-.interruttore input {
-  /* I checkbox del progetto non hanno stile proprio: qui basta che sia grande
-     abbastanza da centrarlo col pollice. */
-  inline-size: 1.15rem;
-  block-size: 1.15rem;
+.interruttore-mancanti input {
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
+  margin-top: 0.15rem;
+  flex: none;
 }
 
-/* --- Serie e set ------------------------------------------------------- */
-
-.serie {
-  margin-bottom: 1.75rem;
+.interruttore-mancanti span {
+  display: block;
 }
 
-.titolo-serie {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin: 0 0 0.75rem;
-  padding-bottom: 0.35rem;
-  border-bottom: 2px solid var(--colore-bordo);
-  font-size: 1.05rem;
+.interruttore-mancanti strong {
+  display: block;
+  font-size: 0.85rem;
 }
 
-.titolo-serie .conteggio {
-  font-size: 0.8rem;
-  font-weight: 400;
+.interruttore-mancanti small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
   color: var(--colore-testo-tenue);
-}
-
-.set-collezione {
-  margin-bottom: 1.25rem;
-}
-
-.testa-set {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.testa-set .completamento {
-  font-variant-numeric: tabular-nums;
-  color: var(--colore-testo-tenue);
-}
-
-.testa-set .completamento .su {
-  /* Il totale è il riferimento, non il tuo dato: resta un passo indietro. */
-  opacity: 0.7;
-}
-
-.testa-set .dati-parziali {
-  /* Non è un errore né un avviso: è una nota sui dati. Deve leggersi solo se
-     la si cerca, altrimenti sembra che ci sia qualcosa da riparare. */
-  font-size: 0.7rem;
-  color: var(--colore-testo-tenue);
-  border: 1px dashed var(--colore-bordo);
-  border-radius: var(--raggio-piccolo);
-  padding: 0.05rem 0.35rem;
-  cursor: help;
-}
-
-.testa-set progress {
-  /* La barra dice a colpo d'occhio quanto manca: il numero lo si legge dopo. */
-  flex: 1 1 6rem;
-  max-inline-size: 12rem;
-  block-size: 0.4rem;
-}
-
-/* Carte che NON possiedi: si vedono, ma non si confondono con le tue. */
-.cella.mancante-in-set scheda-carta {
-  opacity: 0.4;
-  filter: grayscale(0.85);
-  transition: opacity 0.15s ease, filter 0.15s ease;
-}
-
-.cella.mancante-in-set:hover scheda-carta,
-.cella.mancante-in-set:focus-within scheda-carta {
-  opacity: 0.85;
-  filter: grayscale(0.2);
+  line-height: 1.4;
 }
 
 .riepilogo {
-  margin: 0 0 0.8rem;
-  font-size: 0.85rem;
+  margin: 0 0.15rem 0.8rem;
+  font-size: 0.8rem;
   color: var(--colore-testo-tenue);
 }
 
@@ -128,60 +217,271 @@ griglia-collezione {
   background: none;
   border: none;
   color: var(--colore-primario);
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
   padding: 0;
   width: auto;
 }
 
-.griglia {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: 1fr;
+/* --- Serie e set ------------------------------------------------------ */
+
+.serie {
+  margin-top: 1.1rem;
 }
 
-/* Container query, non media query: la griglia si adatta allo spazio che ha,
-   non alla finestra. Serve perché in futuro comparirà anche dentro colonne più
-   strette (elenco mazzi, wizard). */
-@container (min-width: 34rem) {
-  .griglia {
-    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+.etichetta-serie {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-testo-tenue);
+}
+
+.set-collezione {
+  margin-bottom: 1.1rem;
+}
+
+.testa-set {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.3rem 0 0.75rem;
+}
+
+.testa-set .nome-set {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.testa-set .barra {
+  flex: 1;
+  min-width: 2rem;
+  max-inline-size: 12rem;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--colore-superficie-2);
+  overflow: hidden;
+}
+
+.testa-set .riempi {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--colore-primario);
+}
+
+.testa-set .prog {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--colore-testo-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.testa-set .dati-parziali {
+  font-size: 0.62rem;
+  color: var(--colore-testo-tenue);
+  border: 1px dashed var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+  padding: 0.05rem 0.3rem;
+  cursor: help;
+}
+
+/* --- Card ------------------------------------------------------------- */
+
+.griglia-carte {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Container query: se la griglia ha più spazio (tablet, desktop) mette più
+   colonne, restando la stessa card. */
+@container (min-width: 32rem) {
+  .griglia-carte {
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
   }
 }
 
-.cella {
+.carta-griglia {
   display: flex;
   flex-direction: column;
-}
-
-.cella scheda-carta {
-  flex: 1;
-}
-
-.comandi {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: flex-end;
-  margin: -0.4rem 0 0;
-}
-
-.comandi button {
-  width: 2.6rem;
-  /* Bersaglio comodo da toccare col pollice mentre si tengono le carte. */
-  min-height: 2.6rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 0;
-}
-
-.mancante {
+  border-radius: 18px;
+  overflow: hidden;
   background: var(--colore-superficie);
-  border: 1px dashed var(--colore-bordo);
-  border-radius: var(--raggio);
-  padding: 0.85rem;
+  border: 1px solid var(--colore-bordo);
+  box-shadow: 0 3px 10px rgb(28 35 51 / 7%);
+}
+
+/* Carte che NON possiedi (col toggle "Mancanti"): visibili ma sbiadite. */
+.carta-griglia.mancante {
+  opacity: 0.55;
+}
+
+.apri-carta {
+  display: block;
+  width: 100%;
+  padding: 0;
   margin: 0;
-  font-size: 0.85rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.apri-carta:focus-visible {
+  outline: 3px solid var(--colore-primario);
+  outline-offset: -3px;
+}
+
+.miniatura {
+  position: relative;
+  height: 128px;
+  /* Righe diagonali nel colore del tipo: riempiono lo spazio mentre l'immagine
+     arriva, e restano per le carte senza scan (energie base). */
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tipo-colore) 30%, var(--colore-superficie)) 0 12px,
+    color-mix(in srgb, var(--tipo-colore) 15%, var(--colore-superficie)) 12px 24px
+  );
+}
+
+.miniatura img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Le carte sono verticali: si mostra la parte alta (nome e illustrazione). */
+  object-position: center 20%;
+  display: block;
+}
+
+/* Immagine non ancora caricata dall'osservatore: si tiene lo spazio (le righe
+   diagonali sotto) senza mostrare l'icona di immagine rotta. */
+.miniatura img:not([src]) {
+  visibility: hidden;
+}
+
+.segnaposto-mini {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--tipo-colore);
+}
+
+.badge-qty {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgb(15 20 35 / 62%);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.scan {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-family: ui-monospace, Menlo, monospace;
   color: var(--colore-testo-tenue);
+  background: var(--colore-superficie);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  opacity: 0.92;
+}
+
+.corpo {
+  padding: 0.6rem 0.7rem 0.35rem;
+}
+
+.nome-carta {
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.meta-carta {
+  font-size: 0.7rem;
+  color: var(--colore-testo-tenue);
+  margin-top: 0.2rem;
+}
+
+.chips {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.chip-tipo-carta {
+  background: color-mix(in srgb, var(--tipo-colore) 16%, transparent);
+  color: var(--tipo-colore);
+  border: 1px solid color-mix(in srgb, var(--tipo-colore) 32%, transparent);
+}
+
+.chip-evo {
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo-tenue);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.6rem 0.6rem;
+}
+
+/* Un solo pulsante (carte mancanti): il "+" resta a destra. */
+.stepper:only-child,
+.mancante .stepper {
+  justify-content: flex-end;
+}
+
+.stepper button {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stepper .meno {
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo);
+}
+
+.stepper .meno:hover {
+  background: var(--colore-superficie-2);
+  filter: brightness(0.95);
+}
+
+.stepper .piu {
+  background: var(--colore-primario);
+  color: var(--colore-su-primario);
 }

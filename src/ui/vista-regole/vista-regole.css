@@ -1,7 +1,11 @@
 /* Stile di <vista-regole>.
 
    Niente Shadow DOM: è testo lungo da leggere, e deve ereditare la tipografia
-   della pagina. Il foglio va incluso da index.html. */
+   della pagina. Il foglio va incluso da index.html. Tutte le regole sono
+   circoscritte sotto `vista-regole` (vedi la nota in mazzo-generato.css su
+   cosa succede altrimenti). I colori di tema passano SOLO dai token di
+   base.css: niente blocchi `prefers-color-scheme` locali, che ignorerebbero il
+   tema scelto col pulsante. */
 
 vista-regole {
   display: block;
@@ -9,7 +13,7 @@ vista-regole {
 
 /* --- Schede dei formati --- */
 
-.schede-formato {
+vista-regole .schede-formato {
   display: grid;
   gap: 0.6rem;
   grid-template-columns: 1fr;
@@ -18,31 +22,33 @@ vista-regole {
 @media (min-width: 42rem) {
   /* Chiuse stanno in due colonne; quella aperta prende tutta la riga, perché
      il dettaglio è troppo alto per starci accanto a un'altra scheda. */
-  .schede-formato {
+  vista-regole .schede-formato {
     grid-template-columns: 1fr 1fr;
   }
-  .scheda-formato.aperta {
+  vista-regole .scheda-formato.aperta {
     grid-column: 1 / -1;
   }
 }
 
-.scheda-formato {
+vista-regole .scheda-formato {
   border: 1px solid var(--colore-bordo);
-  border-radius: var(--raggio);
-  background: var(--colore-fondo);
+  border-radius: 16px;
+  background: var(--colore-superficie);
+  box-shadow: 0 2px 7px rgb(28 35 51 / 5%);
   overflow: hidden;
 }
 
-.scheda-formato.aperta {
+vista-regole .scheda-formato.aperta {
   border-color: var(--colore-primario);
 }
 
 /* Il formato ufficiale si distingue: è l'unico che vale davvero fuori di casa. */
-.scheda-formato[data-ufficiale='si'] {
+vista-regole .scheda-formato[data-ufficiale='si'] {
   border-left: 4px solid var(--colore-primario);
 }
 
-.testa-formato {
+vista-regole .testa-formato {
+  position: relative;
   display: grid;
   gap: 0.25rem;
   width: 100%;
@@ -51,24 +57,38 @@ vista-regole {
   color: var(--colore-testo);
   border: none;
   border-radius: 0;
-  padding: 0.8rem;
+  padding: 0.85rem 2.2rem 0.85rem 0.9rem;
   cursor: pointer;
 }
 
-.testa-formato:hover {
-  background: var(--tipo-tenue, #eef2fb);
+vista-regole .testa-formato:hover {
+  background: var(--colore-superficie-2);
   color: var(--colore-testo);
 }
 
-.nome-formato {
-  font-weight: 700;
+/* Il gallozzo che dice "si apre": ruota quando la scheda è aperta. */
+vista-regole .testa-formato::after {
+  content: '▾';
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  color: var(--colore-testo-tenue);
+  transition: transform 0.15s ease;
+}
+
+vista-regole .scheda-formato.aperta .testa-formato::after {
+  transform: rotate(180deg);
+}
+
+vista-regole .nome-formato {
+  font-weight: 800;
   font-size: 1rem;
 }
 
-.bollino {
+vista-regole .bollino {
   justify-self: start;
   background: var(--colore-primario);
-  color: #fff;
+  color: var(--colore-su-primario);
   border-radius: 999px;
   padding: 0.02rem 0.5rem;
   font-size: 0.68rem;
@@ -77,19 +97,13 @@ vista-regole {
   letter-spacing: 0.04em;
 }
 
-@media (prefers-color-scheme: dark) {
-  .bollino {
-    color: #10151f;
-  }
-}
-
-.per-chi {
+vista-regole .per-chi {
   font-size: 0.85rem;
   color: var(--colore-testo-tenue);
   font-weight: 400;
 }
 
-.numeri {
+vista-regole .numeri {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem 0.9rem;
@@ -99,17 +113,17 @@ vista-regole {
   font-weight: 400;
 }
 
-.numeri b {
+vista-regole .numeri b {
   color: var(--colore-testo);
   font-variant-numeric: tabular-nums;
 }
 
-.dettaglio-formato {
-  padding: 0 0.8rem 0.8rem;
+vista-regole .dettaglio-formato {
+  padding: 0 0.9rem 0.9rem;
   border-top: 1px solid var(--colore-bordo);
 }
 
-.dettaglio-formato h4 {
+vista-regole .dettaglio-formato h4 {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -117,34 +131,34 @@ vista-regole {
   margin: 0.8rem 0 0.35rem;
 }
 
-.dettaglio-formato ul {
+vista-regole .dettaglio-formato ul {
   margin: 0;
   padding-left: 1.1rem;
   font-size: 0.9rem;
 }
 
-.dettaglio-formato li {
+vista-regole .dettaglio-formato li {
   margin-bottom: 0.25rem;
 }
 
 /* Verde e rosso sarebbero illeggibili per chi non distingue i due colori:
    il segno lo dà il marcatore, non la tinta. */
-.si-puo {
+vista-regole .si-puo {
   list-style: '✓  ';
 }
 
-.non-si-puo {
+vista-regole .non-si-puo {
   list-style: '✕  ';
 }
 
-.numeri-formato {
+vista-regole .numeri-formato {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.9rem;
   font-size: 0.88rem;
 }
 
-.numeri-formato caption {
+vista-regole .numeri-formato caption {
   text-align: left;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -153,40 +167,40 @@ vista-regole {
   padding-bottom: 0.35rem;
 }
 
-.numeri-formato th,
-.numeri-formato td {
+vista-regole .numeri-formato th,
+vista-regole .numeri-formato td {
   text-align: left;
   padding: 0.3rem 0;
   border-bottom: 1px dotted var(--colore-bordo);
 }
 
-.numeri-formato th {
+vista-regole .numeri-formato th {
   font-weight: 500;
   color: var(--colore-testo-tenue);
 }
 
-.numeri-formato td {
+vista-regole .numeri-formato td {
   font-variant-numeric: tabular-nums;
 }
 
-.uguale,
-.diverso {
+vista-regole .uguale,
+vista-regole .diverso {
   font-size: 0.78rem;
   font-variant-numeric: normal;
 }
 
-.uguale {
+vista-regole .uguale {
   color: var(--colore-testo-tenue);
 }
 
-.diverso {
+vista-regole .diverso {
   color: var(--colore-attenzione);
 }
 
-.nota-formato {
+vista-regole .nota-formato {
   margin: 0.9rem 0 0;
   padding: 0.6rem 0.8rem;
-  background: var(--colore-superficie);
+  background: var(--colore-superficie-2);
   border-left: 3px solid var(--colore-primario);
   border-radius: var(--raggio-piccolo);
   font-size: 0.87rem;
@@ -194,99 +208,97 @@ vista-regole {
 
 /* --- Regolamento --- */
 
-.indice-regole {
+vista-regole .indice-regole {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.5rem;
   grid-template-columns: 1fr;
   margin-bottom: 1.2rem;
 }
 
 @media (min-width: 34rem) {
-  .indice-regole {
+  vista-regole .indice-regole {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-.voce-indice {
+vista-regole .voce-indice {
   display: grid;
   gap: 0.1rem;
   text-align: left;
-  background: var(--colore-fondo);
+  background: var(--colore-superficie);
   color: var(--colore-testo);
   border: 1px solid var(--colore-bordo);
-  padding: 0.5rem 0.7rem;
+  border-radius: 14px;
+  padding: 0.65rem 0.8rem;
   cursor: pointer;
+  box-shadow: 0 2px 7px rgb(28 35 51 / 5%);
 }
 
-.voce-indice:hover {
+vista-regole .voce-indice:hover {
   border-color: var(--colore-primario);
-  background: var(--tipo-tenue, #eef2fb);
+  background: var(--colore-superficie-2);
   color: var(--colore-testo);
 }
 
-.titolo-indice {
-  font-weight: 600;
+vista-regole .titolo-indice {
+  font-weight: 800;
   font-size: 0.92rem;
 }
 
-.sommario-indice {
+vista-regole .sommario-indice {
   font-size: 0.78rem;
   color: var(--colore-testo-tenue);
   font-weight: 400;
 }
 
-.sezione-regole {
+vista-regole .sezione-regole {
   border-top: 1px solid var(--colore-bordo);
   padding-top: 1rem;
   margin-top: 1rem;
   /* Lo scorrimento dall'indice non deve incastrare il titolo sotto
-     l'intestazione fissa, che è alta 80px: 4.5rem (72px) lo lasciavano
-     nascosto per 8px. 6rem tiene un margine anche se l'intestazione cresce di
-     una riga su schermi molto stretti. */
+     l'intestazione fissa: 6rem tiene un margine anche se l'intestazione cresce
+     di una riga su schermi molto stretti. */
   scroll-margin-top: 6rem;
 }
 
-.sezione-regole > h3 {
+vista-regole .sezione-regole > h3 {
   font-size: 1.1rem;
+  font-weight: 800;
   color: var(--colore-primario);
 }
 
-.voce-regola {
+vista-regole .voce-regola {
   margin-bottom: 1rem;
 }
 
-.voce-regola h4 {
+vista-regole .voce-regola h4 {
   font-size: 0.95rem;
   margin: 0 0 0.3rem;
 }
 
-.voce-regola p {
+vista-regole .voce-regola p {
   margin: 0 0 0.5rem;
   font-size: 0.92rem;
 }
 
-.voce-regola ul {
+vista-regole .voce-regola ul {
   margin: 0 0 0.5rem;
   padding-left: 1.2rem;
   font-size: 0.92rem;
 }
 
-.voce-regola li {
+vista-regole .voce-regola li {
   margin-bottom: 0.3rem;
 }
 
 /* L'errore che si fa più spesso: si stacca dal testo perché è la parte che
-   evita le discussioni a metà partita. */
-.attenzione {
-  background: var(--tipo-tenue, #fff6e8);
+   evita le discussioni a metà partita. La tinta viene dal colore d'attenzione
+   miscelato con la superficie, così funziona in chiaro E in scuro senza un
+   blocco prefers-color-scheme che ignorerebbe il toggle manuale. */
+vista-regole .attenzione {
+  background: color-mix(in srgb, var(--colore-attenzione) 9%, var(--colore-superficie));
   border-left: 3px solid var(--colore-attenzione);
   border-radius: var(--raggio-piccolo);
   padding: 0.5rem 0.7rem;
   font-size: 0.87rem !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  .attenzione {
-    background: #2a2118;
-  }
 }

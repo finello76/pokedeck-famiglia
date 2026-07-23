@@ -6,14 +6,19 @@
 
 @media print {
   /* Su carta il tema scuro sarebbe uno spreco di inchiostro, e i grigi chiari
-     spariscono. Si forza il nero su bianco. */
+     spariscono. Si forza il nero su bianco.
+     `!important` non è pigrizia: la scelta esplicita del tema
+     (`:root[data-theme='scuro']`) ha specificità (0,2,0) e senza questo
+     scavalcherebbe il forzamento della stampa, mandando testo chiaro su carta
+     bianca. In stampa la priorità è assoluta, quindi si forza davvero. */
   :root {
-    --colore-fondo: #fff;
-    --colore-superficie: #fff;
-    --colore-testo: #000;
-    --colore-testo-tenue: #444;
-    --colore-bordo: #999;
-    --ombra: none;
+    --colore-fondo: #fff !important;
+    --colore-superficie: #fff !important;
+    --colore-superficie-2: #fff !important;
+    --colore-testo: #000 !important;
+    --colore-testo-tenue: #444 !important;
+    --colore-bordo: #999 !important;
+    --ombra: none !important;
   }
 
   @page {
@@ -30,7 +35,7 @@
   /* Via tutto ciò che serve solo a interagire: intestazione fissa, moduli,
      pulsanti, catalogo. Su carta non si clicca. */
   .intestazione,
-  .barra-viste,
+  .tab-bar,
   .no-stampa,
   button,
   input,

@@ -1,71 +1,142 @@
-/* Stile del wizard. Vive nel DOM normale per ereditare il tema di pagina. */
+/* Stile del wizard. Vive nel DOM normale per ereditare il tema di pagina.
+   Tutte le regole circoscritte sotto `procedura-guidata`: il foglio è globale
+   (vedi la nota in mazzo-generato.css su cosa succede altrimenti). */
 
 procedura-guidata {
   display: block;
 }
 
-procedura-guidata .avanzamento {
-  display: grid;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  font-size: 0.8rem;
-  color: var(--colore-testo-tenue);
+/* Barra di avanzamento a segmenti: uno per domanda. */
+procedura-guidata .segmenti {
+  display: flex;
+  gap: 6px;
+  margin: 0.25rem 0 1.1rem;
 }
 
-procedura-guidata .barra {
+procedura-guidata .segmento {
+  flex: 1;
   block-size: 6px;
-  background: var(--colore-bordo);
   border-radius: 999px;
-  overflow: hidden;
+  background: var(--colore-superficie-2);
 }
 
-procedura-guidata .barra i {
-  display: block;
-  block-size: 100%;
+procedura-guidata .segmento.fatto {
   background: var(--colore-primario);
-  transition: inline-size 0.25s ease;
+}
+
+procedura-guidata .passo-di {
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-primario);
 }
 
 procedura-guidata h3 {
-  font-size: 1.3rem;
-  margin-bottom: 0.3rem;
+  font-size: 1.4rem;
+  font-weight: 900;
+  line-height: 1.15;
+  margin: 0.45rem 0 0.25rem;
+  text-wrap: pretty;
+}
+
+procedura-guidata .aiuto {
+  font-size: 0.85rem;
+  color: var(--colore-testo-tenue);
+  line-height: 1.5;
+  margin: 0 0 1.1rem;
 }
 
 procedura-guidata .opzioni {
   display: grid;
-  gap: 0.6rem;
-  margin: 1rem 0;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
 }
 
-/* Le opzioni sono bersagli grandi: si usano col telefono in una mano e le
-   carte nell'altra. */
+/* Le opzioni sono schede grandi: si usano col telefono in una mano e le carte
+   nell'altra. Il tocco risponde subito (niente passo "Continua"). */
 procedura-guidata .opzione {
-  display: grid;
-  gap: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
   text-align: start;
   background: var(--colore-superficie);
   color: var(--colore-testo);
   border: 2px solid var(--colore-bordo);
-  border-radius: var(--raggio);
-  padding: 0.9rem 1rem;
-  min-block-size: 3.5rem;
+  border-radius: 18px;
+  padding: 0.9rem;
   width: 100%;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgb(28 35 51 / 6%);
 }
 
 procedura-guidata .opzione:hover,
 procedura-guidata .opzione:focus-visible {
   border-color: var(--colore-primario);
-  background: var(--colore-fondo);
+  background: var(--colore-superficie);
+}
+
+/* Quadratino col numero/simbolo dell'opzione: dà un appiglio visivo prima di
+   leggere il testo. */
+procedura-guidata .badge {
+  flex: none;
+  inline-size: 46px;
+  block-size: 46px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  font-weight: 900;
+  background: color-mix(in srgb, var(--colore-primario) 12%, transparent);
+  color: var(--colore-primario);
+}
+
+procedura-guidata .testi {
+  flex: 1;
+  min-inline-size: 0;
+  display: grid;
+  gap: 0.15rem;
 }
 
 procedura-guidata .etichetta {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1rem;
 }
 
 procedura-guidata .dettaglio {
   font-weight: 400;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--colore-testo-tenue);
+  line-height: 1.4;
+}
+
+/* Il cerchio a destra suggerisce la scelta: si riempie al passaggio/focus. */
+procedura-guidata .cerchio {
+  flex: none;
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--colore-bordo);
+}
+
+procedura-guidata .opzione:hover .cerchio,
+procedura-guidata .opzione:focus-visible .cerchio {
+  border-color: var(--colore-primario);
+}
+
+procedura-guidata .indietro {
+  width: auto;
+  background: transparent;
+  border: 1px solid var(--colore-bordo);
+  color: var(--colore-testo);
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0.65rem 1.1rem;
+  border-radius: 14px;
+}
+
+procedura-guidata .indietro:hover {
+  background: var(--colore-superficie);
+  border-color: var(--colore-primario);
+  color: var(--colore-primario);
 }

@@ -25,10 +25,10 @@ const DOMANDE = [
     testo: 'Quanto deve essere semplice la partita?',
     aiuto: 'Determina quante carte ha ogni mazzo e quante regole vengono semplificate.',
     opzioni: [
-      { valore: 'bambini', etichetta: 'Per bambini piccoli', dettaglio: '15 carte per mazzo, regole ridotte all\'osso' },
-      { valore: 'facile', etichetta: 'Facile', dettaglio: '20 carte, si ignorano abilità e poteri' },
-      { valore: 'intermedio', etichetta: 'Intermedio', dettaglio: '30 carte, quasi tutte le regole vere' },
-      { valore: 'standard', etichetta: 'Standard', dettaglio: '60 carte, regole ufficiali' },
+      { valore: 'bambini', etichetta: 'Per bambini piccoli', dettaglio: '15 carte per mazzo, regole ridotte all\'osso', badge: '15' },
+      { valore: 'facile', etichetta: 'Facile', dettaglio: '20 carte, si ignorano abilità e poteri', badge: '20' },
+      { valore: 'intermedio', etichetta: 'Intermedio', dettaglio: '30 carte, quasi tutte le regole vere', badge: '30' },
+      { valore: 'standard', etichetta: 'Standard', dettaglio: '60 carte, regole ufficiali', badge: '60' },
     ],
   },
   {
@@ -36,9 +36,9 @@ const DOMANDE = [
     testo: 'Quanti giocatori?',
     aiuto: 'Viene generato un mazzo per giocatore, tutti insieme, così sono equilibrati fra loro.',
     opzioni: [
-      { valore: 2, etichetta: '2 giocatori' },
-      { valore: 3, etichetta: '3 giocatori' },
-      { valore: 4, etichetta: '4 giocatori' },
+      { valore: 2, etichetta: '2 giocatori', badge: '2' },
+      { valore: 3, etichetta: '3 giocatori', badge: '3' },
+      { valore: 4, etichetta: '4 giocatori', badge: '4' },
     ],
   },
   {
@@ -48,8 +48,8 @@ const DOMANDE = [
       'Se le Energie non bastano, il sistema può generarne di stampabili. ' +
       'Così si gioca con le regole vere invece di adattarle.',
     opzioni: [
-      { valore: false, etichetta: 'No, adatta le regole', dettaglio: 'Ogni Energia varrà per qualsiasi tipo' },
-      { valore: true, etichetta: 'Sì, stampo le Energie', dettaglio: 'Foglio da ritagliare, misura reale' },
+      { valore: false, etichetta: 'No, adatta le regole', dettaglio: 'Ogni Energia varrà per qualsiasi tipo', badge: '✕' },
+      { valore: true, etichetta: 'Sì, stampo le Energie', dettaglio: 'Foglio da ritagliare, misura reale', badge: '✓' },
     ],
   },
   {
@@ -66,16 +66,19 @@ const DOMANDE = [
         valore: 0,
         etichetta: 'Nessuna',
         dettaglio: 'Solo carte vere: le evoluzioni si giocheranno come Base, con una regola della casa',
+        badge: '0',
       },
       {
         valore: 4,
         etichetta: 'Poche',
         dettaglio: 'Fino a 4 carte per mazzo: una linea evolutiva completa',
+        badge: '4',
       },
       {
         valore: 12,
         etichetta: 'Quante servono',
         dettaglio: 'Fino a 12 carte per mazzo: tre linee complete, mazzi che evolvono davvero',
+        badge: '12',
       },
     ],
   },
@@ -163,21 +166,29 @@ export class ProceduraGuidata extends HTMLElement {
       .map(
         (o) => `
         <button type="button" class="opzione" data-valore='${JSON.stringify(o.valore)}'>
-          <span class="etichetta">${o.etichetta}</span>
-          ${o.dettaglio ? `<span class="dettaglio">${o.dettaglio}</span>` : ''}
+          <span class="badge">${o.badge ?? '›'}</span>
+          <span class="testi">
+            <span class="etichetta">${o.etichetta}</span>
+            ${o.dettaglio ? `<span class="dettaglio">${o.dettaglio}</span>` : ''}
+          </span>
+          <span class="cerchio" aria-hidden="true"></span>
         </button>`,
       )
       .join('');
 
+    // Un segmento per domanda, pieni fino a quella corrente: si vede quanto
+    // manca senza leggere numeri.
+    const segmenti = attive
+      .map((d, i) => `<span class="segmento${i <= this.#passo ? ' fatto' : ''}"></span>`)
+      .join('');
+
     this.innerHTML = `
-      <div class="avanzamento">
-        <span>Domanda ${this.#passo + 1} di ${attive.length}</span>
-        <div class="barra"><i style="inline-size:${((this.#passo + 1) / attive.length) * 100}%"></i></div>
-      </div>
+      <div class="segmenti">${segmenti}</div>
+      <div class="passo-di">Passo ${this.#passo + 1} di ${attive.length}</div>
       <h3>${domanda.testo}</h3>
       <p class="aiuto">${domanda.aiuto}</p>
       <div class="opzioni">${opzioni}</div>
-      ${this.#passo > 0 ? '<button type="button" class="collegamento" data-azione="indietro">← Torna indietro</button>' : ''}
+      ${this.#passo > 0 ? '<button type="button" class="indietro" data-azione="indietro">← Torna indietro</button>' : ''}
     `;
   }
 }

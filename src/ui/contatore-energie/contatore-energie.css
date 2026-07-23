@@ -1,54 +1,102 @@
-:host {
+/* Stile di <contatore-energie>.
+
+   NON sta in uno Shadow DOM: usa il DOM normale per farsi tingere dai colori
+   dei tipi (`tipi.css`, foglio della pagina). Il foglio va incluso da
+   index.html. */
+
+contatore-energie {
   display: block;
 }
 
-.totale {
-  margin: 0 0 0.6rem;
-  font-weight: 600;
-  color: var(--colore-testo, #222);
+.intestazione-energie {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.7rem;
 }
 
-ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  /* auto-fill riempie la riga con quante celle ci stanno: da telefono ne
-     entrano due, da PC sei, senza scrivere breakpoint. */
-  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+.intestazione-energie .titolo-energie {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--colore-testo-tenue);
+}
+
+.intestazione-energie .totale-energie {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--colore-testo-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le pastiglie scorrono in orizzontale: su telefono ci sono 10 tipi, in colonna
+   occuperebbero mezza schermata. */
+.chips-energie {
+  display: flex;
   gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scrollbar-width: thin;
 }
 
-li {
+.energia {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-inline-size: 64px;
+  padding: 0.5rem 0.4rem 0.4rem;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--tipo-colore) 14%, var(--colore-superficie));
+  border: 1px solid color-mix(in srgb, var(--tipo-colore) 30%, transparent);
+}
+
+/* I tipi che non hai restano visibili ma spenti: si possono comunque aggiungere. */
+.energia.vuota {
+  opacity: 0.55;
+}
+
+.energia .nome {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--tipo-colore);
+}
+
+.energia .controlli {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  background: var(--tipo-tenue, #eee);
-  border: 1px solid var(--tipo-colore, #ccc);
-  border-radius: var(--raggio-piccolo, 8px);
-  padding: 0.35rem 0.6rem;
+  gap: 0.25rem;
 }
 
-.nome {
-  color: var(--tipo-colore, #444);
-  font-size: 0.85rem;
-  font-weight: 600;
+.energia .controlli button {
+  inline-size: 24px;
+  block-size: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--colore-superficie) 70%, transparent);
+  color: var(--colore-testo);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
-.numero {
-  font-weight: 700;
+.energia .controlli button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.energia .num {
+  min-inline-size: 1.1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--tipo-colore);
   font-variant-numeric: tabular-nums;
-  color: var(--colore-testo, #222);
 }
 
-.nota,
-.vuoto {
-  margin: 0.6rem 0 0;
-  font-size: 0.85rem;
-  color: var(--colore-testo-tenue, #666);
-}
-
-.vuoto {
-  margin-top: 0;
+.nota-energie {
+  margin: 0.7rem 0 0;
+  font-size: 0.78rem;
+  color: var(--colore-testo-tenue);
 }

@@ -2,36 +2,68 @@
    I colori dei tipi Pokémon stanno in tipi.css. */
 
 :root {
+  color-scheme: light dark;
+
   /* Palette ispirata al mondo Pokémon, non copiata da asset ufficiali. */
   --colore-fondo: #f4f6fb;
   --colore-superficie: #ffffff;
+  /* Superficie di secondo livello: pulsanti tenui, pastiglie icona, campi. */
+  --colore-superficie-2: #eef1f8;
   --colore-testo: #1c2333;
-  --colore-testo-tenue: #5b6478;
-  --colore-bordo: #dfe3ee;
+  --colore-testo-tenue: #6a7288;
+  --colore-bordo: #e2e7f1;
   --colore-primario: #2a5fd6;
   --colore-primario-scuro: #1e46a0;
+  /* Testo/icone SOPRA il colore primario: un token, così non serve più un
+     override di tema per invertirlo (era `color:#10151f` in scuro). */
+  --colore-su-primario: #ffffff;
+  /* Giallo-pokéball: usato per l'avviso "versione nuova" e piccoli accenti. */
+  --colore-accento: #ffcb3d;
   --colore-attenzione: #c2410c;
   /* Contrassegno delle carte proxy (da stampare): un colore mai usato per
      altro, così non si confonde con gli avvisi. */
   --colore-proxy: #7c3aed;
 
-  --raggio: 14px;
-  --raggio-piccolo: 8px;
+  --raggio: 16px;
+  --raggio-piccolo: 12px;
   --ombra: 0 1px 2px rgb(28 35 51 / 8%), 0 4px 14px rgb(28 35 51 / 6%);
   --spazio: 1rem;
 
   --larghezza-massima: 60rem;
 }
 
+/* Tema scuro. Ci si arriva per due strade, che devono dare la STESSA palette:
+   1. l'utente lo sceglie col pulsante in intestazione → <html data-theme="scuro">;
+   2. il sistema è su scuro e l'utente non ha forzato "chiaro".
+   I due blocchi ripetono i valori apposta: uno sta dentro una @media e non si
+   può fondere con l'altro in un unico selettore. La specificità (0,2,0) di
+   entrambi vince sul :root chiaro (0,1,0), così la scelta esplicita ha sempre
+   la precedenza sul sistema. */
+:root[data-theme='scuro'] {
+  --colore-fondo: #0f131c;
+  --colore-superficie: #191f2c;
+  --colore-superficie-2: #232b3b;
+  --colore-testo: #eaeefb;
+  --colore-testo-tenue: #94a0bd;
+  --colore-bordo: #2b3348;
+  --colore-primario: #5e8bf0;
+  --colore-primario-scuro: #7aa2ff;
+  --colore-su-primario: #ffffff;
+  --colore-proxy: #a78bfa;
+  --ombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 14px rgb(0 0 0 / 25%);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --colore-fondo: #12161f;
-    --colore-superficie: #1b2130;
-    --colore-testo: #e9edf7;
-    --colore-testo-tenue: #a2abc0;
-    --colore-bordo: #2c3446;
-    --colore-primario: #7aa2ff;
-    --colore-primario-scuro: #a8c2ff;
+  :root:not([data-theme='chiaro']) {
+    --colore-fondo: #0f131c;
+    --colore-superficie: #191f2c;
+    --colore-superficie-2: #232b3b;
+    --colore-testo: #eaeefb;
+    --colore-testo-tenue: #94a0bd;
+    --colore-bordo: #2b3348;
+    --colore-primario: #5e8bf0;
+    --colore-primario-scuro: #7aa2ff;
+    --colore-su-primario: #ffffff;
     --colore-proxy: #a78bfa;
     --ombra: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 14px rgb(0 0 0 / 25%);
   }
@@ -82,26 +114,87 @@ h3 {
 .intestazione {
   background: var(--colore-superficie);
   border-bottom: 1px solid var(--colore-bordo);
-  padding: var(--spazio);
+  padding: 0.6rem var(--spazio);
+  /* Sotto la tacca dei telefoni: la barra non finisce dietro la fotocamera. */
+  padding-top: calc(0.6rem + env(safe-area-inset-top, 0px));
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.intestazione h1 {
-  font-size: 1.25rem;
-  margin: 0;
+/* Marchio: pokéball disegnata a mano (nessun asset ufficiale) + logotipo. */
+.marchio {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
   max-width: var(--larghezza-massima);
   margin-inline: auto;
+}
+
+.pokeball {
+  inline-size: 34px;
+  block-size: 34px;
+  flex: none;
+  border-radius: 50%;
+  /* Metà superiore primaria, metà inferiore bianca: la forma della pokéball
+     evocata da un gradiente netto, non da un'immagine protetta. */
+  background: linear-gradient(to bottom, var(--colore-primario) 0 47%, #fff 53% 100%);
+  border: 2.5px solid var(--colore-testo);
+  position: relative;
+}
+
+.pokeball::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  transform: translate(-50%, -50%);
+  inline-size: 11px;
+  block-size: 11px;
+  border-radius: 50%;
+  background: var(--colore-superficie);
+  border: 2.5px solid var(--colore-testo);
+}
+
+.intestazione h1 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.intestazione h1 span {
+  color: var(--colore-primario);
+}
+
+.bottone-tema {
+  margin-inline-start: auto;
+  inline-size: 40px;
+  block-size: 40px;
+  flex: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  border-radius: var(--raggio-piccolo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  color: var(--colore-testo);
+}
+
+.bottone-tema:hover {
+  background: var(--colore-superficie-2);
+  border-color: var(--colore-primario);
 }
 
 /* Avviso di versione nuova: fisso in fondo, sopra tutto il resto. È l'unico
    modo di aggiornare una PWA installata su telefono. */
 .barra-aggiornamento {
   position: fixed;
-  /* `env(safe-area-inset-bottom)` tiene la barra sopra la tacca dei telefoni
-     senza tasto Home: senza, il pulsante finisce sotto il bordo e non si tocca. */
-  inset-block-end: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  /* Sopra la tab bar fissa (≈4.75rem) e, con essa, sopra la tacca dei telefoni
+     senza tasto Home: senza, l'avviso finirebbe dietro la barra o sotto il bordo. */
+  inset-block-end: calc(5.25rem + env(safe-area-inset-bottom, 0px));
   inset-inline: 0.75rem;
   z-index: 50;
   margin-inline: auto;
@@ -112,14 +205,17 @@ h3 {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-radius: var(--raggio, 0.75rem);
-  background: var(--colore-testo);
-  color: var(--colore-sfondo);
+  /* Giallo-pokéball con testo scuro: si nota subito senza sembrare un errore,
+     ed è leggibile in entrambi i temi (l'accento non cambia col tema). */
+  background: var(--colore-accento);
+  color: #3a2a00;
   box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.25);
 }
 
 .barra-aggiornamento span {
   flex: 1 1 12rem;
   font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .barra-aggiornamento button {
@@ -129,6 +225,26 @@ h3 {
   flex: 0 0 auto;
   padding: 0.45rem 0.9rem;
   font-size: 0.9rem;
+  background: #3a2a00;
+  border-color: #3a2a00;
+  color: var(--colore-accento);
+}
+
+.barra-aggiornamento button:hover {
+  background: #241a00;
+  border-color: #241a00;
+}
+
+.barra-aggiornamento button.secondario {
+  background: transparent;
+  border-color: transparent;
+  color: #3a2a00;
+  text-decoration: underline;
+}
+
+.barra-aggiornamento button.secondario:hover {
+  background: transparent;
+  color: #241a00;
 }
 
 .pie-versione {
@@ -156,17 +272,13 @@ h3 {
   text-underline-offset: 0.2em;
 }
 
-.intestazione .sottotitolo {
-  color: var(--colore-testo-tenue);
-  font-size: 0.85rem;
-  max-width: var(--larghezza-massima);
-  margin: 0.15rem auto 0;
-}
 
 main {
   max-width: var(--larghezza-massima);
   margin-inline: auto;
   padding: var(--spazio);
+  /* Spazio in fondo per non finire sotto la tab bar fissa (≈4.5rem + tacca). */
+  padding-block-end: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .pannello {
@@ -205,7 +317,7 @@ button {
 button {
   background: var(--colore-primario);
   border-color: var(--colore-primario);
-  color: #fff;
+  color: var(--colore-su-primario);
   font-weight: 600;
   cursor: pointer;
 }
@@ -213,12 +325,6 @@ button {
 button:hover {
   background: var(--colore-primario-scuro);
   border-color: var(--colore-primario-scuro);
-}
-
-@media (prefers-color-scheme: dark) {
-  button {
-    color: #10151f;
-  }
 }
 
 .riga-modulo {
@@ -260,34 +366,79 @@ button:hover {
   font-style: italic;
 }
 
-/* Barra delle sezioni. */
-.barra-viste {
+/* Barra delle sezioni, in BASSO: col telefono in mano il pollice ci arriva
+   senza cambiare presa, mentre l'altra mano tiene le carte. Fissa sopra al
+   contenuto; `main` riserva lo spazio in fondo con un padding pari alla sua
+   altezza. Su schermo largo diventa una barra centrata dai bordi arrotondati. */
+.tab-bar {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 40;
   display: flex;
-  gap: 0.4rem;
-  max-width: var(--larghezza-massima);
-  margin: 0.75rem auto -0.25rem;
-  padding: 0 var(--spazio);
+  gap: 0.25rem;
+  margin-inline: auto;
+  max-inline-size: 32rem;
+  padding: 0.5rem 0.6rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  background: var(--colore-superficie);
+  border-top: 1px solid var(--colore-bordo);
+  box-shadow: 0 -4px 16px rgb(28 35 51 / 6%);
 }
 
-.barra-viste button {
-  width: auto;
-  flex: 1 1 auto;
-  background: transparent;
-  color: var(--colore-testo-tenue);
-  border-color: var(--colore-bordo);
-  font-weight: 600;
-}
-
-.barra-viste button.attivo {
-  background: var(--colore-primario);
-  border-color: var(--colore-primario);
-  color: #fff;
-}
-
-@media (prefers-color-scheme: dark) {
-  .barra-viste button.attivo {
-    color: #10151f;
+@media (min-width: 33rem) {
+  .tab-bar {
+    border: 1px solid var(--colore-bordo);
+    border-radius: var(--raggio) var(--raggio) 0 0;
   }
+}
+
+.tab-bar button {
+  flex: 1;
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  /* Bersaglio tattile ampio (≥44px) senza sembrare un pulsante pieno. */
+  min-height: 48px;
+  padding: 0.3rem 0;
+  background: transparent;
+  border: none;
+  color: var(--colore-testo-tenue);
+  font-weight: 700;
+}
+
+.tab-bar button:hover {
+  background: transparent;
+  color: var(--colore-testo);
+}
+
+/* La pastiglia dietro l'icona si accende sul tab attivo: il segnale non è solo
+   il colore (che escluderebbe chi non lo distingue) ma anche il riempimento. */
+.tab-bar .icona {
+  display: grid;
+  place-items: center;
+  inline-size: 52px;
+  block-size: 30px;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.tab-bar .icona svg {
+  inline-size: 22px;
+  block-size: 22px;
+}
+
+.tab-bar .etichetta {
+  font-size: 0.66rem;
+}
+
+.tab-bar button.attivo {
+  color: var(--colore-primario);
+}
+
+.tab-bar button.attivo .icona {
+  background: color-mix(in srgb, var(--colore-primario) 16%, transparent);
 }
 
 /* Lo spazio orizzontale lo dà già `main`: qui servono solo quelli verticali,
@@ -303,7 +454,7 @@ button:hover {
 /* Spiegazione di un risultato controintuitivo: si distingue dal resto senza
    sembrare un errore, perché non lo è. */
 .nota-spiegazione {
-  background: var(--tipo-tenue, #eef2fb);
+  background: var(--colore-superficie-2);
   border-left: 4px solid var(--colore-primario);
   border-radius: var(--raggio-piccolo);
   padding: 0.8rem 1rem;
@@ -322,12 +473,6 @@ button:hover {
 
 .nota-spiegazione p:last-child {
   margin-bottom: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .nota-spiegazione {
-    background: #1f2839;
-  }
 }
 
 /* Mazzi generati, affiancati quando c'è spazio. */
@@ -516,4 +661,408 @@ button.secondario:hover {
      di allargarlo. */
   overflow-wrap: anywhere;
   line-height: 1.2;
+}
+
+/* ====================================================================== */
+/* Aggiunta carta: FAB + pannello a comparsa (bottom sheet) + toast.       */
+/* ====================================================================== */
+
+/* Pulsante flottante: aggiungere una carta è l'azione più ripetuta, quindi
+   sta sempre a portata di pollice sopra la tab bar, non in fondo alla pagina. */
+.fab {
+  position: fixed;
+  inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+  inset-block-end: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  inline-size: 56px;
+  block-size: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(
+    150deg,
+    var(--colore-primario),
+    color-mix(in srgb, var(--colore-primario) 78%, #6f3ce0)
+  );
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 10px 24px -6px color-mix(in srgb, var(--colore-primario) 60%, transparent);
+}
+
+.fab:hover {
+  background: linear-gradient(
+    150deg,
+    var(--colore-primario-scuro),
+    color-mix(in srgb, var(--colore-primario) 70%, #6f3ce0)
+  );
+}
+
+.foglio {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.foglio-fondo {
+  position: absolute;
+  inset: 0;
+  background: rgb(10 12 20 / 50%);
+}
+
+.foglio-pannello {
+  position: relative;
+  background: var(--colore-fondo);
+  border-radius: 26px 26px 0 0;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  max-block-size: 85%;
+  overflow-y: auto;
+  box-shadow: 0 -20px 50px rgb(0 0 0 / 35%);
+  animation: foglio-su 0.26s ease both;
+}
+
+/* Contenuto del foglio centrato come il resto su schermi larghi. */
+@media (min-width: 33rem) {
+  .foglio-pannello {
+    inline-size: min(32rem, 100%);
+    margin-inline: auto;
+    border-radius: 26px;
+    margin-block-end: 1rem;
+  }
+}
+
+.maniglia {
+  inline-size: 38px;
+  block-size: 5px;
+  border-radius: 99px;
+  background: var(--colore-bordo);
+  margin: 0 auto 0.8rem;
+}
+
+.foglio-testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.foglio-testa h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.chiudi-foglio {
+  inline-size: 36px;
+  block-size: 36px;
+  flex: none;
+  padding: 0;
+  border-radius: 11px;
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  color: var(--colore-testo);
+  font-size: 1rem;
+}
+
+.chiudi-foglio:hover {
+  background: var(--colore-superficie-2);
+  border-color: var(--colore-primario);
+}
+
+/* Riquadro blu del modulo di ricerca, come nel modello: il campo e i candidati
+   risaltano su un gradiente primario. */
+.pannello-cerca {
+  margin-top: 0.9rem;
+  border-radius: 22px;
+  padding: 1rem 0.95rem;
+  background: linear-gradient(
+    150deg,
+    var(--colore-primario),
+    color-mix(in srgb, var(--colore-primario) 78%, #6f3ce0)
+  );
+  color: #fff;
+  box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--colore-primario) 60%, transparent);
+}
+
+.pannello-cerca .aiuto {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 88%);
+}
+
+.pannello-cerca .frazione {
+  background: rgb(255 255 255 / 16%);
+  border-color: rgb(255 255 255 / 28%);
+}
+
+.pannello-cerca .frazione input {
+  color: #fff;
+}
+
+.pannello-cerca .frazione input::placeholder {
+  color: rgb(255 255 255 / 55%);
+}
+
+.pannello-cerca .barra-frazione {
+  color: rgb(255 255 255 / 60%);
+}
+
+.pannello-cerca .riga-frazione .cerca {
+  background: var(--colore-accento);
+  border-color: var(--colore-accento);
+  color: #3a2a00;
+}
+
+.pannello-cerca .stato {
+  color: rgb(255 255 255 / 88%);
+}
+
+.pannello-cerca .quante-riga {
+  color: rgb(255 255 255 / 85%);
+}
+
+.pannello-cerca .quante-stepper button {
+  background: rgb(255 255 255 / 16%);
+  border-color: rgb(255 255 255 / 28%);
+  color: #fff;
+}
+
+.pannello-cerca .quante-num {
+  color: #fff;
+}
+
+/* Modulo "118 / 191": i due campi in un'unica pastiglia con la barra in mezzo. */
+.riga-frazione {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+  margin-top: 0.7rem;
+}
+
+.frazione {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  background: var(--colore-superficie);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 14px;
+  padding: 0 0.5rem;
+}
+
+.frazione input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  padding: 0.7rem 0.2rem;
+}
+
+.frazione input:focus {
+  outline: none;
+}
+
+.barra-frazione {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--colore-testo-tenue);
+}
+
+.riga-frazione .cerca {
+  flex: none;
+  inline-size: 58px;
+  border-radius: 14px;
+  font-size: 1.3rem;
+}
+
+/* Candidati della ricerca, dentro il foglio. */
+#risultati {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quante-riga {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.2rem 0.2rem 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--colore-testo-tenue);
+}
+
+.quante-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quante-stepper button {
+  inline-size: 34px;
+  block-size: 34px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo);
+  border: 1px solid var(--colore-bordo);
+}
+
+.quante-num {
+  min-inline-size: 1.5rem;
+  text-align: center;
+  font-weight: 800;
+  color: var(--colore-testo);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.candidato {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: left;
+  background: var(--colore-superficie);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 15px;
+  padding: 0.5rem;
+  color: var(--colore-testo);
+}
+
+.candidato:hover {
+  background: var(--colore-superficie);
+  border-color: var(--colore-primario);
+}
+
+.candidato .mini {
+  flex: none;
+  inline-size: 44px;
+  block-size: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tipo-colore) 30%, var(--colore-superficie)) 0 8px,
+    color-mix(in srgb, var(--tipo-colore) 15%, var(--colore-superficie)) 8px 16px
+  );
+}
+
+.candidato .mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.candidato .mini .segnaposto-mini {
+  position: static;
+  inset: auto;
+  font-size: 1.2rem;
+  color: var(--tipo-colore);
+  font-weight: 800;
+}
+
+.candidato .testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.candidato .nome-carta {
+  font-size: 0.95rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.candidato .meta-carta {
+  font-size: 0.75rem;
+  color: var(--colore-testo-tenue);
+}
+
+.candidato .chips {
+  margin-top: 0.2rem;
+  display: flex;
+  gap: 0.3rem;
+}
+
+.candidato .aggiungi {
+  flex: none;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 12px;
+  background: var(--colore-primario);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+/* Toast: conferma effimera, sopra la tab bar. */
+.toast {
+  position: fixed;
+  inset-inline-start: 50%;
+  inset-block-end: calc(6rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 70;
+  max-inline-size: 90vw;
+  background: #12203f;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.7rem 1.1rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 35%);
+  text-align: center;
+}
+
+.toast.mostra {
+  animation: toast-su 2.2s ease forwards;
+}
+
+@keyframes foglio-su {
+  from {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-su {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
 }

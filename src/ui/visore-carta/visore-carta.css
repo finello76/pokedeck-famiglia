@@ -1,68 +1,214 @@
-:host {
+/* Stile di <visore-carta>.
+
+   NON sta in uno Shadow DOM: usa il DOM normale per farsi tingere dal colore
+   del tipo (`tipi.css`) nella cornice segnaposto, e va incluso da index.html.
+   Il visore è sempre scuro, in entrambi i temi, come una lightbox: la carta
+   risalta su fondo neutro. Sotto la carta niente testi — sono già stampati
+   sulla scansione — solo il contatore copie. */
+
+visore-carta {
   display: contents;
 }
 
-dialog {
-  border: none;
-  background: none;
-  padding: 0;
-  max-width: 100vw;
-  max-height: 100vh;
-  overflow: visible;
-}
-
-/* ::backdrop è lo sfondo che il browser disegna dietro un dialog modale:
-   non è un elemento che si può inserire, esiste solo come pseudo-elemento. */
-dialog::backdrop {
-  background: rgb(10 14 22 / 82%);
-  backdrop-filter: blur(2px);
-}
-
-figure {
+visore-carta dialog.finestra {
+  /* `position: fixed` a tutto schermo SEMPRE, non solo da modale: se in qualche
+     browser `showModal()` non aggancia il top-layer, il dialog resterebbe nel
+     flusso (posizione UA `absolute`) e finirebbe in fondo alla pagina — è il bug
+     "anteprima in basso". Fissato così copre comunque l'intera finestra. */
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  inline-size: 100vw;
+  block-size: 100dvh;
+  max-inline-size: 100vw;
+  max-block-size: 100dvh;
   margin: 0;
-  display: grid;
-  justify-items: center;
-  gap: 0.6rem;
+  padding: 0;
+  border: none;
+  background: #0d1017;
+  color: #fff;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* La tela avvolge immagine e girotondo così che il secondo possa stare al
-   centro esatto della prima, sovrapposto. */
-.tela {
-  position: relative;
+/* Il flex vale SOLO da aperto. Un dialog chiuso è nascosto dal foglio del
+   BROWSER (`dialog:not([open]) { display: none }`), che qualunque regola
+   d'autore con `display` scavalca: con `display: flex` incondizionato il
+   visore chiuso restava un pannello nero fisso sopra tutta l'app. È lo stesso
+   tranello di `[hidden]` già documentato in base.css. */
+visore-carta dialog.finestra[open] {
+  display: flex;
+}
+
+visore-carta dialog.finestra:not([open]) {
+  display: none;
+}
+
+/* ::backdrop è lo sfondo che il browser disegna dietro un dialog modale. */
+visore-carta dialog.finestra::backdrop {
+  background: rgb(5 7 13 / 90%);
+}
+
+/* --- Barra in alto --- */
+visore-carta .barra-alto {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(0.5rem + env(safe-area-inset-top, 0px)) 0.9rem 0.25rem;
+}
+
+visore-carta .barra-alto .chiudi,
+visore-carta .barra-alto .spazio {
+  inline-size: 42px;
+  block-size: 42px;
+  flex: none;
+}
+
+visore-carta .barra-alto .chiudi {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 14%);
+  color: #fff;
+  font-size: 1.1rem;
   display: grid;
   place-items: center;
+  cursor: pointer;
 }
 
-img {
-  /* La carta si adatta allo schermo mantenendo le proporzioni reali 63×88.
-     Su telefono in verticale comanda la larghezza, su PC l'altezza. */
-  max-width: min(92vw, 30rem);
-  max-height: 82vh;
-  width: auto;
-  height: auto;
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 55%);
-  background: #ffffff10;
+visore-carta .barra-alto .chiudi:hover {
+  background: rgb(255 255 255 / 24%);
 }
 
-.caricamento {
+visore-carta .barra-alto .posizione {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: rgb(255 255 255 / 70%);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Corpo: la carta al centro, il contatore in fondo --- */
+visore-carta .corpo-visore {
+  flex: 1;
+  min-block-size: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+visore-carta .tela {
+  position: relative;
+  flex: 1;
+  min-block-size: 0;
+  display: grid;
+  place-items: center;
+  /* Dà profondità al tilt della cornice. */
+  perspective: 900px;
+}
+
+@keyframes carta-entra {
+  from {
+    transform: translateY(26px) scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+visore-carta .tela.entra .cornice {
+  animation: carta-entra 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+visore-carta .cornice {
+  position: relative;
+  /* La carta più grande possibile senza uscire né di lato né in verticale:
+     le proporzioni reali 63×88 le tiene aspect-ratio, il lato lo sceglie il
+     vincolo più stretto. */
+  inline-size: min(88vw, calc((100dvh - 220px) * 63 / 88), 420px);
+  aspect-ratio: 63 / 88;
+  border-radius: 18px;
+  overflow: hidden;
+  /* Righe diagonali nel colore del tipo: riempiono la cornice mentre la
+     scansione ad alta risoluzione arriva (o restano, per le carte senza scan).
+     Il fallback `#8b93a7` nel var() è essenziale: senza, per una carta il cui
+     tipo non si risolve il `color-mix` diventa invalido e lo sfondo sparisce —
+     era la "cornice vuota". Sotto c'è comunque un colore solido di sicurezza. */
+  background-color: #232b3b;
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tipo-colore, #8b93a7) 34%, #1a2030) 0 14px,
+    color-mix(in srgb, var(--tipo-colore, #8b93a7) 20%, #1a2030) 14px 28px
+  );
+  box-shadow: 0 24px 60px -14px rgb(0 0 0 / 65%), 0 0 0 4px rgb(255 255 255 / 6%);
+  /* Il tilt lo scrive il JS in `transform`: la transizione lo ammorbidisce
+     quando il sensore salta o il puntatore esce. */
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+
+visore-carta .cornice img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+visore-carta .cornice img:not([src]) {
+  visibility: hidden;
+}
+
+/* Riflesso lucido che scorre col tilt (coordinate scritte dal JS). */
+visore-carta .lucido {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at var(--riflesso-x, 50%) var(--riflesso-y, 40%),
+    rgb(255 255 255 / 14%),
+    transparent 65%
+  );
+}
+
+/* Nome mostrato dentro la cornice quando la carta non ha scansione: mai una
+   cornice vuota. Vuoto (con immagine presente) resta invisibile. */
+visore-carta .nome-cornice {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 1rem;
+  color: rgb(255 255 255 / 88%);
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  white-space: pre-line;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 50%);
+}
+
+visore-carta .caricamento {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  /* Un velo leggero: se sotto c'è ancora la carta precedente, si capisce che
-     sta cambiando; se è vuoto, il girotondo resta visibile lo stesso. */
   background: rgb(10 14 22 / 35%);
-  border-radius: 12px;
+  z-index: 3;
 }
 
-.caricamento[hidden] {
+visore-carta .caricamento[hidden] {
   display: none;
 }
 
-.giro {
-  width: 2.5rem;
-  height: 2.5rem;
+visore-carta .giro {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
   border-radius: 50%;
   border: 4px solid rgb(255 255 255 / 25%);
   border-top-color: #fff;
@@ -75,93 +221,112 @@ img {
   }
 }
 
-/* Chi ha chiesto meno animazioni vede il girotondo fermo: la spia c'è ancora,
-   ma non ruota. */
 @media (prefers-reduced-motion: reduce) {
-  .giro {
+  visore-carta .giro {
     animation: none;
+  }
+
+  visore-carta .tela.entra .cornice {
+    animation: none;
+  }
+
+  visore-carta .cornice {
+    transition: none;
   }
 }
 
-figcaption {
-  color: #fff;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.95rem;
-  text-align: center;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 70%);
-  max-width: 92vw;
-}
-
-.chiudi {
-  position: fixed;
-  top: max(0.75rem, env(safe-area-inset-top));
-  right: max(0.75rem, env(safe-area-inset-right));
-  /* Bersaglio da 44px: la misura minima raccomandata per il tocco. */
-  width: 2.75rem;
-  height: 2.75rem;
-  /* Il reset `box-sizing` di base.css non attraversa lo Shadow DOM: senza
-     queste due righe il padding di default del browser (più largo che alto)
-     si somma a width/height e il cerchio diventa un ovale. */
-  box-sizing: border-box;
-  padding: 0;
-  border-radius: 50%;
-  border: none;
-  background: rgb(255 255 255 / 15%);
-  color: #fff;
-  font-size: 1.6rem;
-  /* Il glifo × non sta sulla linea di base come una lettera: centrarlo con
-     line-height era approssimativo, la griglia lo centra davvero. */
-  display: grid;
-  place-items: center;
-  line-height: 0;
-  cursor: pointer;
-}
-
-.chiudi:hover {
-  background: rgb(255 255 255 / 28%);
-}
-
-/* Frecce di scorrimento: ai lati dello schermo, sopra lo sfondo oscurato ma
-   senza coprire la carta. Su telefono il gesto naturale è lo swipe, ma restano
-   comode anche lì come alternativa al tocco. */
-.freccia {
-  position: fixed;
-  top: 50%;
+/* --- Frecce, ai lati della carta --- */
+visore-carta .tela .freccia {
+  position: absolute;
+  inset-block-start: 50%;
   transform: translateY(-50%);
-  box-sizing: border-box;
-  width: 2.75rem;
-  height: 2.75rem;
+  inline-size: 44px;
+  block-size: 44px;
   padding: 0;
-  border-radius: 50%;
   border: none;
-  background: rgb(255 255 255 / 15%);
-  color: #fff;
-  font-size: 2rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  color: #12203f;
+  font-size: 1.5rem;
+  font-weight: 900;
   display: grid;
   place-items: center;
   line-height: 0;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+  z-index: 4;
 }
 
-.freccia.prec {
-  left: max(0.75rem, env(safe-area-inset-left));
+visore-carta .tela .freccia.prec {
+  inset-inline-start: 0;
 }
 
-.freccia.succ {
-  right: max(0.75rem, env(safe-area-inset-right));
+visore-carta .tela .freccia.succ {
+  inset-inline-end: 0;
 }
 
-.freccia:hover:not(:disabled) {
-  background: rgb(255 255 255 / 28%);
-}
-
-/* Agli estremi la freccia resta al suo posto ma smorzata: sparire farebbe
-   saltare la carta di lato a ogni scorrimento. */
-.freccia:disabled {
+visore-carta .tela .freccia:disabled {
   opacity: 0.3;
   cursor: default;
 }
 
-.freccia[hidden] {
+visore-carta .tela .freccia[hidden] {
   display: none;
+}
+
+/* --- Contatore copie: unica cosa sotto la carta --- */
+visore-carta .copie-blocco {
+  flex: none;
+  margin-block-start: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: rgb(255 255 255 / 6%);
+  border-radius: 16px;
+  padding: 0.7rem 1rem;
+  max-inline-size: 420px;
+  inline-size: 100%;
+  margin-inline: auto;
+}
+
+visore-carta .copie-blocco .etichetta {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+visore-carta .copie-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+visore-carta .copie-stepper button {
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 13px;
+  background: rgb(255 255 255 / 14%);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+visore-carta .copie-stepper .piu {
+  background: var(--colore-primario);
+}
+
+visore-carta .copie-stepper button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+visore-carta .copie-num {
+  font-size: 1.4rem;
+  font-weight: 900;
+  min-inline-size: 1.4rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
