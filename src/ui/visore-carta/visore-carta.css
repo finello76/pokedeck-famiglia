@@ -147,11 +147,14 @@ visore-carta .cornice {
     color-mix(in srgb, var(--tipo-colore, #8b93a7) 34%, #1a2030) 0 14px,
     color-mix(in srgb, var(--tipo-colore, #8b93a7) 20%, #1a2030) 14px 28px
   );
-  box-shadow: 0 24px 60px -14px rgb(0 0 0 / 65%), 0 0 0 4px rgb(255 255 255 / 6%);
+  box-shadow: 0 24px 60px -14px rgb(0 0 0 / 65%);
   /* Il tilt lo scrive il JS in `transform`: la transizione lo ammorbidisce
      quando il sensore salta o il puntatore esce. */
   transition: transform 0.15s ease-out;
   will-change: transform;
+  /* Con la carta ruotata in 3D su un layer GPU proprio, questo evita una
+     riga di ~1px sul bordo (rasterizzazione del retro della superficie). */
+  backface-visibility: hidden;
 }
 
 visore-carta .cornice img {
@@ -244,13 +247,18 @@ visore-carta .giro {
 visore-carta .tela .freccia {
   position: absolute;
   inset-block-start: 50%;
-  transform: translateY(-50%);
+  /* `translateZ(0)` promuove la freccia a un layer GPU proprio: così si allinea
+     a quello della carta trasformata e sparisce la riga di ~1px sul bordo dove
+     si sovrappone alla carta (i due layer venivano rasterizzati con offset
+     sub-pixel diversi). */
+  transform: translateY(-50%) translateZ(0);
+  backface-visibility: hidden;
   inline-size: 44px;
   block-size: 44px;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgb(255 255 255 / 92%);
+  background: #ffffff;
   color: #12203f;
   font-size: 1.5rem;
   font-weight: 900;
