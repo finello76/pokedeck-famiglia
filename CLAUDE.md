@@ -170,12 +170,17 @@ Attenzione: gli id dei set TCGdex differiscono da quelli di pokemon-tcg-data
 - **v1 — Catalogo** (minimale, da chiudere in fretta): inserimento per set+numero con quantità,
   vista collezione filtrabile (supertipo/tipo/fase) e ricerca per nome, **contatore energie per
   tipo** (dato critico per il motore), IndexedDB + export/import JSON, PWA installabile e responsive.
-- **v1.1 — Valore economico**: prezzi via API esterna (Cardmarket EUR via pokemontcg.io, o
-  alternativa gratuita). Refresh manuale, cache locale con data, **degrado con grazia** se l'API tace.
+- **v1.1 — Valore economico**: *fatta*. Prezzi Cardmarket in EUR presi da TCGdex
+  (`pricing.cardmarket`), scaricati **solo** col pulsante "Calcola quotazione" sulle carte
+  a schermo, salvati in IndexedDB con la data e rimostrati offline (`src/data/prezzi.js`).
+  Tetto di 60 carte per volta: è una richiesta per carta, quindi si filtra prima — per questo
+  esiste il filtro per rarità (`src/data/rarita.js`), che riduce i 35 valori grezzi e mescolati
+  al francese di TCGdex a una dozzina di classi ordinate dal comune al più raro.
 - **v2 — Wizard mazzi + regole della casa**: il cuore del progetto (vedi sotto).
 - **v3 — Mini partita esplicativa**: simulazione guidata passo-passo di alcuni turni.
 
-I prezzi NON fanno parte della v1.
+I prezzi restano fuori dalla v1: sono l'unico punto in cui l'app chiama la rete di sua
+iniziativa, e non deve mai farlo da sola.
 
 ## Il motore (v2) — specifica
 

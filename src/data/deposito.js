@@ -17,13 +17,21 @@ const NOME_DB = 'pokedeck';
  * (nuovo store, nuovo indice): è ciò che fa scattare `onupgradeneeded`.
  * @type {number}
  */
-const VERSIONE_DB = 2;
+const VERSIONE_DB = 3;
 
 /** Store delle carte possedute. Chiave: `"<idSet>:<numero>"`. */
 export const STORE_COLLEZIONE = 'collezione';
 
 /** Store dei mazzi generati e salvati. Chiave: `id` (data di creazione). */
 export const STORE_MAZZI = 'mazzi';
+
+/**
+ * Store dei prezzi scaricati da TCGdex. Chiave: `"<idSet>:<numero>"`, come la
+ * collezione. Sta in un store SEPARATO e non dentro la riga della carta perché
+ * ha un ciclo di vita suo: si aggiorna quando lo chiedi, invecchia da solo, e
+ * cancellarlo tutto non deve mai poter toccare le quantità possedute.
+ */
+export const STORE_PREZZI = 'prezzi';
 
 /** @type {Promise<IDBDatabase>|null} */
 let connessione = null;
@@ -73,6 +81,12 @@ export function apri() {
       // cascata e non in un `else`.
       if (daVersione < 2) {
         db.createObjectStore(STORE_MAZZI, { keyPath: 'id' });
+      }
+
+      // Versione 3: i prezzi Cardmarket, scaricati su richiesta. Anche qui a
+      // cascata: chi arriva dalla v2 tiene collezione e mazzi.
+      if (daVersione < 3) {
+        db.createObjectStore(STORE_PREZZI, { keyPath: 'id' });
       }
     };
 

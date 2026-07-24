@@ -15,6 +15,11 @@ import {
   SET_ENERGIE_GENERICHE,
 } from '../data/collezione.js';
 import { scaricaFile, importa } from '../data/scambio.js';
+import {
+  aggiornaPrezzi,
+  prezziConosciuti,
+  MASSIMO_PER_VOLTA,
+} from '../data/prezzi.js';
 import { avviaBarraAggiornamento } from './barra-aggiornamento.js';
 import { avviaViste } from './viste.js';
 import { avviaTema } from './tema.js';
@@ -91,6 +96,11 @@ async function aggiornaCollezione() {
   griglia.voci = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);
   contatore.dati = stat.energie;
 
+  // I prezzi già scaricati si rimostrano subito, anche offline: sono l'ultima
+  // quotazione nota, con la sua data. Non si va in rete finché non lo chiede
+  // qualcuno col pulsante.
+  griglia.prezzi = await prezziConosciuti().catch(() => new Map());
+
   // Il riepilogo della collezione (conteggi, sezioni) lo mostra ora la griglia:
   // qui la riga serve solo per errori di caricamento, quindi resta nascosta.
   riepilogo.hidden = true;
@@ -123,6 +133,44 @@ async function cambiaQuantita(evento) {
 }
 griglia.addEventListener('quantita-cambiata', cambiaQuantita);
 visore.addEventListener('quantita-cambiata', cambiaQuantita);
+
+// "Calcola quotazione": l'unico punto in cui l'app va in rete di sua volontà.
+// La griglia dice quali carte sta mostrando, qui si scaricano i prezzi e le si
+// restituiscono. Il tetto per volta è di `data/prezzi.js`: una richiesta per
+// carta, e l'intera collezione sarebbero migliaia.
+let quotazioneInCorso = false;
+griglia.addEventListener('quotazione-richiesta', async (evento) => {
+  if (quotazioneInCorso) return;
+  const voci = evento.detail.voci.filter((v) => v.carta);
+
+  if (voci.length === 0) {
+    griglia.statoQuotazione = 'Nessuna carta da quotare fra quelle a schermo.';
+    return;
+  }
+  if (voci.length > MASSIMO_PER_VOLTA) {
+    griglia.statoQuotazione =
+      `Sono ${voci.length} carte: si quotano le prime ${MASSIMO_PER_VOLTA}. ` +
+      'Restringi coi filtri (per esempio per rarità) per avere il resto.';
+  }
+
+  quotazioneInCorso = true;
+  try {
+    const { falliti, quotate } = await aggiornaPrezzi(voci, {
+      avanzamento: (fatte, totale) => {
+        griglia.statoQuotazione = `Chiedo i prezzi… ${fatte}/${Math.min(totale, MASSIMO_PER_VOLTA)}`;
+      },
+    });
+    griglia.prezzi = await prezziConosciuti();
+    griglia.statoQuotazione =
+      `${quotate} carte quotate` +
+      (falliti ? `, ${falliti} non lette (rete assente?)` : '') +
+      '. Prezzi Cardmarket, indicativi.';
+  } catch (errore) {
+    griglia.statoQuotazione = `Quotazione non riuscita: ${errore.message}`;
+  } finally {
+    quotazioneInCorso = false;
+  }
+});
 
 document.querySelector('#bottone-esporta').addEventListener('click', async () => {
   try {

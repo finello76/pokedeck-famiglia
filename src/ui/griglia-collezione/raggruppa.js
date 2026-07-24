@@ -8,6 +8,8 @@
  * @module ui/griglia-collezione/raggruppa
  */
 
+import { classeRarita, classiPresenti } from '../../data/rarita.js';
+
 /** Filtri vuoti: `''` significa "tutti". */
 export const FILTRI_VUOTI = {
   categoria: '',
@@ -16,6 +18,7 @@ export const FILTRI_VUOTI = {
   testo: '',
   serie: '',
   set: '',
+  rarita: '',
 };
 
 /**
@@ -26,7 +29,7 @@ export const FILTRI_VUOTI = {
  * @returns {object[]}
  */
 export function filtra(voci, filtri) {
-  const { categoria, tipo, stadio, testo, serie, set } = { ...FILTRI_VUOTI, ...filtri };
+  const { categoria, tipo, stadio, testo, serie, set, rarita } = { ...FILTRI_VUOTI, ...filtri };
   const ago = testo.trim().toLowerCase();
 
   return (voci ?? []).filter((voce) => {
@@ -38,8 +41,9 @@ export function filtra(voci, filtri) {
     const { carta } = voce;
     // Carta di un set non più scaricato: si mostra solo quando non c'è nessun
     // filtro sui suoi dati, perché di lei non si sa niente.
-    if (!carta) return !categoria && !tipo && !stadio && !ago;
+    if (!carta) return !categoria && !tipo && !stadio && !ago && !rarita;
 
+    if (rarita && classeRarita(carta)?.codice !== rarita) return false;
     if (categoria && carta.categoria !== categoria) return false;
     if (tipo && !(carta.tipi ?? []).includes(tipo)) return false;
     if (stadio && carta.stadio !== stadio) return false;
@@ -124,6 +128,7 @@ export function raggruppa(voci) {
  *
  * @param {object[]} voci
  * @returns {{categorie: string[], tipi: string[], stadi: string[],
+ *   rarita: import('../../data/rarita.js').ClasseRarita[],
  *   serie: Array<{id: string, nome: string}>,
  *   set: Array<{id: string, nome: string, anno: number|null}>}}
  */
@@ -150,6 +155,10 @@ export function valoriDisponibili(voci) {
   return {
     categorie: [...categorie].sort(),
     tipi: [...tipi].sort(),
+    // Le rarità arrivano già ordinate dal comune al più raro: è l'ordine con
+    // cui si guarda una collezione, e non è alfabetico né deducibile dal testo
+    // grezzo del dataset (vedi data/rarita.js).
+    rarita: classiPresenti((voci ?? []).map((v) => v.carta)),
     // Alfabetico va bene: "Base" < "Livello 1" < "Livello 2" coincide con
     // l'ordine di gioco. Se comparissero altri stadi (MEGA, VMAX) servirebbe
     // un ordinamento esplicito.

@@ -12,6 +12,7 @@ concreto sotto mano.
 | 02 | [IndexedDB](02-indexeddb.md) | Com'è fatto un database dentro il browser? Object store, transazioni, versioni dello schema, e perché tutto è asincrono. |
 | 03 | [Web Components](03-web-components.md) | Come si costruisce un componente riutilizzabile senza framework? Custom element, Shadow DOM, ciclo di vita. |
 | 04 | [Immagini che non arrivano](04-immagini-che-mancano.md) | Cosa fa il browser quando un `<img>` fallisce, a cosa serve davvero `alt`, e come si disegna un segnaposto che eredita il colore dal CSS. |
+| 05 | [Dati che vengono da fuori](05-dati-da-fuori.md) | Come si aggiunge una chiamata di rete a un'app offline-first senza tradirla: `fetch` e i suoi errori silenziosi, cache in IndexedDB, migrazioni di schema. |
 
 ## Per chi è scritto
 

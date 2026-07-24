@@ -207,10 +207,35 @@ griglia-collezione {
   line-height: 1.4;
 }
 
+/* La quotazione è l'unica azione del pannello che esce su internet: sta sotto
+   a tutto, separata dai filtri, e si spiega da sé. */
+.zona-quotazione {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--colore-bordo);
+}
+
+.zona-quotazione button {
+  width: auto;
+}
+
+.stato-quotazione {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--colore-testo-tenue);
+  line-height: 1.45;
+}
+
 .riepilogo {
   margin: 0 0.15rem 0.8rem;
   font-size: 0.8rem;
   color: var(--colore-testo-tenue);
+}
+
+/* Il totale a schermo è un numero che si cerca con l'occhio, non una nota. */
+.valore-totale {
+  color: var(--colore-testo);
+  font-variant-numeric: tabular-nums;
 }
 
 .collegamento {
@@ -382,6 +407,28 @@ griglia-collezione {
   max-width: 3rem;
   height: auto;
   opacity: 0.75;
+}
+
+/* Il prezzo sta in basso a sinistra, dove non copre il numero di collezione
+   né il contatore delle copie. Verde solo quando c'è una cifra: un prezzo
+   assente non deve somigliare a un prezzo. */
+.badge-prezzo {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgb(16 94 62 / 88%);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-prezzo.senza {
+  background: rgb(15 20 35 / 62%);
+  font-weight: 600;
+  font-style: italic;
 }
 
 .badge-qty {
