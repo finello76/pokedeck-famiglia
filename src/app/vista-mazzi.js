@@ -10,6 +10,7 @@
 import { elencoCompleto, statistiche } from '../data/collezione.js';
 import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
 import { bilancia, squilibrio, squilibrati as mazziSquilibrati } from '../engine/bilancia.js';
+import { forza } from '../engine/forza.js';
 import { pianifica, rivaluta, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
@@ -206,12 +207,65 @@ function statoEquilibrio(piano) {
     : '';
 
   if (!squilibrati(piano)) {
-    return `<p class="aiuto">Mazzi equilibrati (forza ${punteggi.join(' · ')}).${spostate}</p>`;
+    return `<p class="aiuto">Mazzi equilibrati fra loro (${punteggi.join(' · ')}).${spostate}</p>`;
   }
-  return `<p class="errore">I mazzi non sono del tutto pari: forza ${punteggi.join(' · ')}.
+  return `<p class="errore">I mazzi non sono del tutto pari: ${punteggi.join(' · ')}.
     ${piano.mazzi[eq.migliore]?.nome} è più forte, soprattutto per le linee evolutive.${spostate}
     Con questa collezione può non esserci di meglio: prova a rigenerare, o passa una carta
     da un mazzo all'altro col pulsante ⇄.</p>`;
+}
+
+/**
+ * La forza di ogni mazzo sulla scala 0–100.
+ *
+ * È un'informazione diversa dall'equilibrio qui sopra, e va detta a parte:
+ * quella dice se i mazzi si somigliano **fra loro**, questa quanto valgono in
+ * assoluto. Due mazzi possono essere perfettamente pari e insieme troppo forti
+ * per il Kit Allenatore con cui gioca il terzo.
+ *
+ * @param {object} piano
+ * @param {object} opzioni
+ * @returns {string} HTML
+ */
+function schedaForza(piano, opzioni) {
+  const forze = piano.mazzi.map((m) => forza(m, { taglia: opzioni.taglia }));
+  if (!forze.length) return '';
+
+  const barre = forze
+    .map((f, i) => {
+      const nome = piano.mazzi[i]?.nome ?? `Mazzo ${i + 1}`;
+      const dettaglio = [
+        `offesa ${Math.round(f.offesa * 100)}`,
+        `resistenza ${Math.round(f.resistenza * 100)}`,
+        `evoluzioni ${Math.round(f.struttura * 100)}`,
+        `energie ${Math.round(f.motore * 100)}`,
+        `avvio ${Math.round(f.costanza * 100)}`,
+      ].join(' · ');
+      return `
+        <li>
+          <span class="forza-nome">${nome}</span>
+          <span class="forza-barra"><span style="inline-size:${f.totale}%"></span></span>
+          <span class="forza-valore">${f.totale}</span>
+          <span class="forza-dettaglio">${dettaglio}</span>
+        </li>`;
+    })
+    .join('');
+
+  // Se il dataset non ha i dati di attacco di abbastanza carte, il numero non
+  // va presentato come una misura: dirlo è meno grave che farlo credere.
+  const dubbio = forze.some((f) => !f.attendibile)
+    ? `<p class="aiuto">Di alcune carte il dataset non ha i dati degli attacchi:
+         la forza è approssimata per difetto.</p>`
+    : '';
+
+  return `
+    <div class="forza-mazzi no-stampa">
+      <h3>Quanto sono forti</h3>
+      <p class="aiuto">Scala 0–100, confrontabile fra mazzi di taglia diversa:
+        un mazzo da 15 e uno da 60 si leggono sullo stesso metro.</p>
+      <ul class="elenco-forza">${barre}</ul>
+      ${dubbio}
+    </div>`;
 }
 
 /**
@@ -245,6 +299,7 @@ function disegnaPiano(piano, opzioni) {
     }
     ${spiegazioneLineeEvolutive(piano)}
     ${statoEquilibrio(piano)}
+    ${schedaForza(piano, opzioni)}
     ${
       incompleti.length
         ? `<p class="errore">Attenzione: ${incompleti.length} mazzo/i non si è potuto completare

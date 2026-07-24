@@ -486,6 +486,60 @@ button:hover {
   margin-bottom: 0;
 }
 
+/* Quanto è forte ogni mazzo, sulla scala 0-100.
+   Griglia a quattro colonne invece di quattro <span> in fila: le barre devono
+   partire tutte dallo stesso punto anche quando i nomi hanno lunghezze diverse,
+   altrimenti confrontarle a occhio - che è tutto lo scopo - non funziona. */
+.forza-mazzi {
+  margin-top: var(--spazio);
+}
+
+.elenco-forza {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+}
+
+.elenco-forza li {
+  display: grid;
+  grid-template-columns: auto minmax(4rem, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.forza-nome {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.forza-barra {
+  block-size: 0.55rem;
+  background: var(--colore-superficie-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.forza-barra > span {
+  display: block;
+  block-size: 100%;
+  background: var(--colore-primario);
+  border-radius: 999px;
+}
+
+.forza-valore {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* Il dettaglio va a capo occupando tutta la riga: su telefono cinque voci
+   accanto alla barra la schiaccerebbero a niente. */
+.forza-dettaglio {
+  grid-column: 1 / -1;
+  color: var(--colore-testo-tenue);
+  font-size: 0.72rem;
+}
+
 /* Mazzi generati, affiancati quando c'è spazio. */
 .elenco-mazzi {
   display: grid;
