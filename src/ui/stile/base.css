@@ -553,8 +553,8 @@ button:hover {
   color: var(--colore-testo);
   box-shadow: var(--ombra);
   padding: var(--spazio);
-  width: min(92vw, 34rem);
-  max-height: 80vh;
+  width: min(94vw, 44rem);
+  max-height: 85vh;
   /* dialog ha margini auto: resta centrato anche su schermi piccoli */
 }
 
@@ -568,17 +568,24 @@ button:hover {
   padding: 0;
   display: grid;
   gap: 0.5rem;
-  max-height: 48vh;
+  max-height: 52vh;
   overflow-y: auto;
 }
 
+/* Ogni proposta è scansione + dati, come una card della collezione: fra due
+   Pokémon dello stesso tipo si sceglie guardando PS e costo degli attacchi,
+   e la foto serve poi a ritrovare la carta fisica nella scatola. */
 .dialogo-sostituzione .proposte button {
   display: grid;
-  gap: 0.15rem;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
   text-align: left;
+  padding: 0.55rem;
   background: var(--colore-fondo);
   color: var(--colore-testo);
   border: 1px solid var(--colore-bordo);
+  border-left: 4px solid var(--tipo-colore, var(--colore-bordo));
 }
 
 .dialogo-sostituzione .proposte button:hover {
@@ -586,18 +593,119 @@ button:hover {
   background: var(--colore-fondo);
 }
 
+.dialogo-sostituzione .foto-proposta {
+  position: relative;
+  display: block;
+  aspect-ratio: 63 / 88;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--tipo-tenue, var(--colore-superficie));
+}
+
+.dialogo-sostituzione .foto-proposta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Le carte sono verticali: si tiene la parte alta, dove ci sono nome e
+     illustrazione, invece di centrare su un ritaglio muto. */
+  object-position: center 18%;
+  display: block;
+}
+
+.dialogo-sostituzione .foto-proposta .segnaposto-mini {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--tipo-colore);
+}
+
+.dialogo-sostituzione .foto-proposta .segnaposto-mini svg {
+  width: 45%;
+  height: auto;
+  opacity: 0.75;
+}
+
+/* Quante copie sono ancora libere: è il vincolo che decide se lo scambio può
+   coprire tutte le copie o solo una parte. */
+.dialogo-sostituzione .libere-proposta {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  background: rgb(15 20 35 / 72%);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.1rem 0;
+}
+
+.dialogo-sostituzione .testo-proposta {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .dialogo-sostituzione .nome-proposta {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .dialogo-sostituzione .dettagli-proposta {
   font-size: 0.82rem;
   color: var(--colore-testo-tenue);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.dialogo-sostituzione .ps-proposta {
+  font-weight: 700;
+  color: var(--colore-testo);
+  font-variant-numeric: tabular-nums;
+}
+
+.dialogo-sostituzione .attacchi-proposta {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.dialogo-sostituzione .attacco-proposta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.dialogo-sostituzione .costo-proposta {
+  flex: none;
+  font-weight: 700;
+  color: var(--tipo-colore, var(--colore-testo-tenue));
+  font-variant-numeric: tabular-nums;
+}
+
+/* Il danno resta a destra anche coi nomi lunghi: è il numero che si confronta. */
+.dialogo-sostituzione .danno-proposta {
+  margin-left: auto;
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .dialogo-sostituzione .note-proposta {
   font-size: 0.78rem;
   color: var(--colore-primario);
+}
+
+/* Da tablet in su le proposte stanno su due colonne: la scelta si fa
+   confrontando, e confrontare significa vederne più d'una senza scorrere. */
+@media (min-width: 40rem) {
+  .dialogo-sostituzione .proposte {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Riga di bottoni (export/import). */

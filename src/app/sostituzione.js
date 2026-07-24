@@ -10,7 +10,8 @@
  */
 
 import { elencoCompleto } from '../data/collezione.js';
-import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
+import { indiceEvoluzioni, preEvoluzioniNonPokemon, urlImmagine } from '../data/dataset.js';
+import { segnaposto, seImmagineRotta } from '../ui/segnaposto.js';
 import { arricchisciProxy } from './foglio-proxy.js';
 import { disponibilitaResidua, alternativePer, applicaSostituzione } from '../engine/alternative.js';
 import { riallineaLinee } from '../engine/riallinea.js';
@@ -35,7 +36,7 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
   const voce = mazzo.carte[indice];
   if (!voce || voce.proxy) return;
 
-  const voci = await elencoCompleto();
+  const voci = await collezioneDelPiano(piano);
   const dispensa = disponibilitaResidua(voci, piano.mazzi);
   const proposte = alternativePer(voce, mazzo, dispensa).slice(0, MASSIMO_PROPOSTE);
 
@@ -61,23 +62,7 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
     }
     ${
       proposte.length
-        ? `<ul class="proposte">
-            ${proposte
-              .map(
-                (p, i) => `
-              <li>
-                <button type="button" data-proposta="${i}">
-                  <span class="nome-proposta">${escapeHtml(p.carta.nome)}</span>
-                  <span class="dettagli-proposta">
-                    ${escapeHtml([p.carta.stadio, (p.carta.tipi ?? []).join('/')].filter(Boolean).join(' · '))}
-                    · ${p.disponibili} libere
-                  </span>
-                  ${p.note.length ? `<span class="note-proposta">${escapeHtml(p.note.join(' · '))}</span>` : ''}
-                </button>
-              </li>`,
-              )
-              .join('')}
-          </ul>`
+        ? `<ul class="proposte">${proposte.map(rigaProposta).join('')}</ul>`
         : `<p class="stato">Nessuna carta libera della stessa categoria in collezione:
              tutte le copie sono già nei mazzi.</p>`
     }
@@ -98,6 +83,10 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
     dialogo.remove();
   };
 
+  for (const img of dialogo.querySelectorAll('.proposte img')) {
+    seImmagineRotta(img, null, 'segnaposto-mini');
+  }
+
   dialogo.querySelector('[data-annulla]').addEventListener('click', chiudi);
   dialogo.addEventListener('click', (evento) => {
     if (evento.target === dialogo) chiudi();
@@ -116,7 +105,7 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
       // La disponibilità si rilegge DOPO lo scambio: la carta appena uscita
       // dal mazzo è di nuovo libera, e può servire a riempire i buchi.
       riallineaLinee(mazzo, {
-        dispensa: disponibilitaResidua(await elencoCompleto(), piano.mazzi),
+        dispensa: disponibilitaResidua(await collezioneDelPiano(piano), piano.mazzi),
         indiceEvoluzioni: await indiceEvoluzioni(),
         nonPokemon: await preEvoluzioniNonPokemon(),
         budgetProxy: piano.opzioni?.proxyPokemon ? piano.opzioni.budgetProxy ?? 0 : 0,
@@ -139,6 +128,99 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
 
   dialogo.showModal();
   bloccaScorrimento();
+}
+
+/**
+ * La collezione come la vede questo piano: senza i set esclusi nel wizard.
+ *
+ * Serve perché l'esclusione non è un filtro di generazione ma una verità sulle
+ * carte disponibili: se il Kit Allenatore è in mano a qualcun altro, non può
+ * comparire nemmeno fra le sostituzioni proposte dopo.
+ *
+ * @param {object} piano
+ * @returns {Promise<object[]>}
+ */
+async function collezioneDelPiano(piano) {
+  const voci = await elencoCompleto();
+  const esclusi = new Set(piano.opzioni?.setEsclusi ?? []);
+  return esclusi.size ? voci.filter((v) => !esclusi.has(v.idSet)) : voci;
+}
+
+/**
+ * Una proposta di sostituzione: scansione grande più i dati che fanno decidere.
+ *
+ * Prima c'erano solo nome e stadio su una riga di testo, e la scelta si faceva
+ * al buio: fra due Pokémon dello stesso tipo la differenza sta nei PS e in
+ * quanto costa attaccare, non nel nome. Con la foto si riconosce anche la carta
+ * fisica da pescare dalla scatola, che è il gesto successivo.
+ *
+ * @param {import('../engine/alternative.js').Alternativa} p
+ * @param {number} i posizione nell'elenco, per ritrovare la scelta al click
+ * @returns {string} HTML
+ */
+function rigaProposta(p, i) {
+  const c = p.carta;
+  const tipo = c.tipi?.[0] ?? 'Incolore';
+  const src = urlImmagine(c, 'griglia');
+
+  return `
+    <li>
+      <button type="button" data-proposta="${i}" data-tipo="${escapeHtml(tipo)}"
+              title="Metti ${escapeHtml(c.nome)} nel mazzo">
+        <span class="foto-proposta">
+          ${src ? `<img src="${src}" alt="" loading="lazy" />` : segnaposto(c, 'segnaposto-mini')}
+          <span class="libere-proposta">${p.disponibili} liber${p.disponibili === 1 ? 'a' : 'e'}</span>
+        </span>
+        <span class="testo-proposta">
+          <span class="nome-proposta">${escapeHtml(c.nome)}</span>
+          <span class="dettagli-proposta">${dettagliCarta(c)}</span>
+          ${attacchiCarta(c)}
+          ${p.note.length ? `<span class="note-proposta">${escapeHtml(p.note.join(' · '))}</span>` : ''}
+        </span>
+      </button>
+    </li>`;
+}
+
+/**
+ * La riga di identità della carta: cosa è, di che tipo, quanto è resistente.
+ * @param {object} c
+ * @returns {string} HTML
+ */
+function dettagliCarta(c) {
+  if (c.categoria !== 'Pokémon') {
+    return `<span class="chip chip-evo">${escapeHtml(c.categoria ?? '')}</span>`;
+  }
+  const tipi = (c.tipi ?? [])
+    .map((t) => `<span class="chip chip-tipo-carta" data-tipo="${escapeHtml(t)}">${escapeHtml(t)}</span>`)
+    .join('');
+  const evo = c.evolveDa ? ` · da ${escapeHtml(c.evolveDa)}` : '';
+  return `${tipi} <span class="ps-proposta">${c.ps ?? '?'} PS</span> · ${escapeHtml(c.stadio ?? 'Base')}${evo}`;
+}
+
+/**
+ * Gli attacchi, con quante Energie costano e quanto fanno.
+ *
+ * Il costo si mostra come numero e non come pastiglie colorate: qui lo spazio è
+ * quello di un dialogo, e "3 Energie → 60" è la sola cosa che si confronta fra
+ * due carte candidate allo stesso posto.
+ *
+ * @param {object} c
+ * @returns {string} HTML
+ */
+function attacchiCarta(c) {
+  if (!c.attacchi?.length) return '';
+  const righe = c.attacchi
+    .slice(0, 2)
+    .map((a) => {
+      const costo = a.costo?.length ?? 0;
+      return `<span class="attacco-proposta">
+        <span class="costo-proposta">${costo || '—'}⚡</span>
+        ${escapeHtml(a.nome)}
+        ${a.danno ? `<span class="danno-proposta">${escapeHtml(String(a.danno))}</span>` : ''}
+      </span>`;
+    })
+    .join('');
+  return `<span class="attacchi-proposta">${righe}</span>`;
 }
 
 /**

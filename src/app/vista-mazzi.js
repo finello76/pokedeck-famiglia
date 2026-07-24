@@ -55,8 +55,44 @@ export async function preparaWizard() {
     carte: stat.totaleCarte,
     energie: stat.energie.totaleBase,
     orfani: (await import('../engine/analisi.js')).analizza(voci).orfani.length,
+    // I set presenti in collezione, per la domanda su cosa lasciare fuori. La
+    // domanda esiste perché una parte delle carte può essere già impegnata:
+    // il Kit Allenatore con cui gioca un altro membro della famiglia non è
+    // disponibile, anche se sta nella stessa scatola.
+    set: setInCollezione(voci),
   };
   await mostraSalvati();
+}
+
+/**
+ * I set da cui hai almeno una carta, dal più vecchio, con l'anno e quante ne hai.
+ *
+ * Stesso ordine del menu della collezione: un set si riconosce dall'epoca, e
+ * due elenchi degli stessi set in ordini diversi si contraddicono a vicenda.
+ *
+ * @param {object[]} voci risultato di `elencoCompleto()`
+ * @returns {Array<{id: string, nome: string, anno: number|null, carte: number}>}
+ */
+function setInCollezione(voci) {
+  const set = new Map();
+  for (const voce of voci) {
+    const suo = set.get(voce.idSet) ?? {
+      id: voce.idSet,
+      nome: voce.nomeSet ?? voce.idSet,
+      anno: voce.uscitaSet ? Number(String(voce.uscitaSet).slice(0, 4)) : null,
+      uscita: voce.uscitaSet ?? null,
+      carte: 0,
+    };
+    suo.carte += 1;
+    set.set(voce.idSet, suo);
+  }
+  return [...set.values()].sort(
+    (a, b) =>
+      // Senza data (Energie base) in fondo: in cima sembrerebbero antichissime.
+      Number(Boolean(b.uscita)) - Number(Boolean(a.uscita)) ||
+      String(a.uscita).localeCompare(String(b.uscita)) ||
+      a.nome.localeCompare(b.nome, 'it'),
+  );
 }
 
 /**
@@ -66,11 +102,24 @@ export async function preparaWizard() {
  */
 async function genera(risposte, seme = nuovoSeme()) {
   ultimeRisposte = risposte;
-  const voci = await elencoCompleto();
+  const tutte = await elencoCompleto();
 
-  if (voci.length === 0) {
+  // I set esclusi si tolgono QUI, prima del motore: per lui devono essere
+  // carte che non esistono. Filtrare dopo significherebbe generare mazzi con
+  // quelle carte e poi toglierle, lasciando buchi che nessuno ricuce.
+  const esclusi = new Set(risposte.setEsclusi ?? []);
+  const voci = esclusi.size ? tutte.filter((v) => !esclusi.has(v.idSet)) : tutte;
+
+  if (tutte.length === 0) {
     risultato.innerHTML =
       '<p class="errore">La collezione è vuota: cataloga qualche carta prima di generare i mazzi.</p>';
+    return;
+  }
+
+  if (voci.length === 0) {
+    risultato.hidden = false;
+    risultato.innerHTML = `<p class="errore">Hai escluso tutti i set che possiedi:
+      non resta nessuna carta con cui costruire i mazzi. Torna indietro e lasciane fuori meno.</p>`;
     return;
   }
 
@@ -80,6 +129,11 @@ async function genera(risposte, seme = nuovoSeme()) {
   // Helixfossile). Il motore resta puro: i dati glieli passa l'app.
   const opzioni = {
     ...opzioniDaRisposte(risposte),
+    // I nomi, non solo gli id: il piano si può riaprire fra un mese, e
+    // "sv03.5" non dice a nessuno quali carte erano fuori.
+    setEsclusiNomi: [...esclusi]
+      .map((id) => tutte.find((v) => v.idSet === id)?.nomeSet ?? id)
+      .sort((a, b) => a.localeCompare(b, 'it')),
     seme,
     indiceEvoluzioni: await indiceEvoluzioni(),
     nonPokemon: await preEvoluzioniNonPokemon(),
@@ -183,6 +237,12 @@ function disegnaPiano(piano, opzioni) {
         Come si gioca con ${opzioni.taglia} carte?
       </button>
     </p>
+    ${
+      opzioni.setEsclusiNomi?.length
+        ? `<p class="aiuto">Lasciati fuori: ${opzioni.setEsclusiNomi.join(', ')}.
+             Le loro carte non compaiono nei mazzi né fra le sostituzioni.</p>`
+        : ''
+    }
     ${spiegazioneLineeEvolutive(piano)}
     ${statoEquilibrio(piano)}
     ${

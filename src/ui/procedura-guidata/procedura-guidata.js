@@ -50,6 +50,28 @@ const DOMANDE = [
     ],
   },
   {
+    chiave: 'setEsclusi',
+    // L'unica domanda a scelta multipla: le altre si toccano e si va avanti,
+    // questa ha bisogno di un "Continua" perché non rispondere (nessun set
+    // escluso) è la risposta più comune, e va potuta dare esplicitamente.
+    tipo: 'multi',
+    testo: 'Ci sono set da lasciare fuori?',
+    aiuto:
+      'Le carte dei set che spunti non entreranno in nessun mazzo. Serve quando ' +
+      'quelle carte sono già impegnate: se tuo figlio gioca col suo Kit Allenatore, ' +
+      'quelle carte non le hai a disposizione.',
+    // Con un set solo in collezione non c'è niente da escludere: sarebbe una
+    // schermata per dire "togli tutto".
+    mostraSe: (contesto) => (contesto.set?.length ?? 0) > 1,
+    opzioni: (contesto) =>
+      (contesto.set ?? []).map((s) => ({
+        valore: s.id,
+        etichetta: s.nome,
+        dettaglio: `${s.carte} cart${s.carte === 1 ? 'a' : 'e'} in collezione`,
+        badge: s.anno ?? '·',
+      })),
+  },
+  {
     chiave: 'proxyEnergia',
     testo: 'Vuoi stampare le Energie mancanti?',
     aiuto:
@@ -122,8 +144,32 @@ export class ProceduraGuidata extends HTMLElement {
         this.#disegna();
         return;
       }
+      // Domanda a scelta multipla: il tocco accende o spegne una casella e la
+      // schermata resta dov'è. Si va avanti solo con "Continua".
+      if (bottone.dataset.azione === 'segno') {
+        bottone.classList.toggle('scelta');
+        bottone.setAttribute('aria-pressed', String(bottone.classList.contains('scelta')));
+        this.#aggiornaContinua();
+        return;
+      }
+      if (bottone.dataset.azione === 'continua') {
+        this.#rispondi(
+          [...this.querySelectorAll('.opzione.scelta')].map((b) => JSON.parse(b.dataset.valore)),
+        );
+        return;
+      }
       this.#rispondi(JSON.parse(bottone.dataset.valore));
     });
+  }
+
+  /** Il pulsante "Continua" dice quante caselle sono accese, o che non lo è nessuna. */
+  #aggiornaContinua() {
+    const bottone = this.querySelector('[data-azione="continua"]');
+    if (!bottone) return;
+    const quanti = this.querySelectorAll('.opzione.scelta').length;
+    bottone.textContent = quanti
+      ? `Continua senza ${quanti} set`
+      : 'Continua con tutti i set';
   }
 
   /** Le domande effettivamente da porre, viste le condizioni. */
@@ -134,10 +180,20 @@ export class ProceduraGuidata extends HTMLElement {
   /** @param {any} valore */
   #rispondi(valore) {
     const domanda = this.#attive[this.#passo];
+    // Nessuna domanda in corso: si è già risposto a tutte e i mazzi si stanno
+    // generando. Capita davvero, perché la generazione non è istantanea e chi
+    // non vede cambiare nulla ripreme — prima questo secondo tocco faceva
+    // esplodere il wizard invece di essere ignorato.
+    if (!domanda) return;
+
     this.#risposte[domanda.chiave] = valore;
     this.#passo += 1;
 
     if (this.#passo >= this.#attive.length) {
+      // Si ridisegna PRIMA di annunciare: la schermata deve dire subito che sta
+      // lavorando, altrimenti resta l'ultima domanda a schermo — con le sue
+      // opzioni ancora toccabili — per tutto il tempo della generazione.
+      this.#disegna();
       this.dispatchEvent(
         new CustomEvent('completata', { bubbles: true, detail: { ...this.#risposte } }),
       );
@@ -170,10 +226,18 @@ export class ProceduraGuidata extends HTMLElement {
       return;
     }
 
-    const opzioni = domanda.opzioni
+    const multipla = domanda.tipo === 'multi';
+    // Le opzioni possono essere una funzione: quelle dei set dipendono da cosa
+    // c'è in collezione, e non si possono scrivere nell'elenco delle domande.
+    const elencoOpzioni =
+      typeof domanda.opzioni === 'function' ? domanda.opzioni(this.#contesto) : domanda.opzioni;
+
+    const opzioni = elencoOpzioni
       .map(
         (o) => `
-        <button type="button" class="opzione" data-valore='${JSON.stringify(o.valore)}'>
+        <button type="button" class="opzione${multipla ? ' multipla' : ''}"
+                ${multipla ? 'data-azione="segno" aria-pressed="false"' : ''}
+                data-valore='${JSON.stringify(o.valore)}'>
           <span class="badge">${o.badge ?? '›'}</span>
           <span class="testi">
             <span class="etichetta">${o.etichetta}</span>
@@ -196,6 +260,7 @@ export class ProceduraGuidata extends HTMLElement {
       <h3>${domanda.testo}</h3>
       <p class="aiuto">${domanda.aiuto}</p>
       <div class="opzioni">${opzioni}</div>
+      ${multipla ? '<button type="button" class="continua" data-azione="continua">Continua con tutti i set</button>' : ''}
       ${this.#passo > 0 ? '<button type="button" class="indietro" data-azione="indietro">← Torna indietro</button>' : ''}
     `;
   }
@@ -224,5 +289,9 @@ export function opzioniDaRisposte(risposte) {
     // sola: "nessuna carta" è semplicemente budget zero.
     proxyPokemon: Number(risposte.budgetProxy) > 0,
     budgetProxy: Number(risposte.budgetProxy) || 0,
+    // Non è un'opzione del motore: le carte escluse non gli arrivano proprio,
+    // le toglie chi legge la collezione. Viaggia qui perché finisca nel piano
+    // salvato — riaprendolo, deve essere leggibile con quali carte è nato.
+    setEsclusi: Array.isArray(risposte.setEsclusi) ? risposte.setEsclusi : [],
   };
 }
