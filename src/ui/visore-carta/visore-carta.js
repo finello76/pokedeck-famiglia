@@ -34,6 +34,7 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
+import { bloccaScorrimento, sbloccaScorrimento } from '../../app/blocca-scroll.js';
 
 export class VisoreCarta extends HTMLElement {
   /** @type {HTMLDialogElement|null} */
@@ -156,11 +157,17 @@ export class VisoreCarta extends HTMLElement {
     });
     tela.addEventListener('pointerleave', () => this.#inclina(0, 0));
 
+    // A fine animazione d'ingresso si toglie `entra`: così l'animazione smette
+    // di applicarsi e il tilt (transform inline) riprende il comando.
+    tela.addEventListener('animationend', (evento) => {
+      if (evento.animationName === 'carta-entra') tela.classList.remove('entra');
+    });
+
     // `showModal()` blocca l'interazione ma NON lo scroll della pagina: la
     // classe su <html> lo ferma. `close` copre la chiusura con Esc — e lì
     // vanno staccati anche i sensori, che Esc non passa da `chiudi()`.
     this.#dialogo.addEventListener('close', () => {
-      document.documentElement.classList.remove('scorrimento-bloccato');
+      sbloccaScorrimento();
       this.#fermaMovimento();
     });
   }
@@ -183,16 +190,27 @@ export class VisoreCarta extends HTMLElement {
     }
   }
 
-  /** Attiva il giroscopio, se il dispositivo lo offre senza chiedere permessi. */
+  /** Attiva il giroscopio. */
   #avviaMovimento() {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     this.#base = null;
-    // Su iOS serve un permesso esplicito (requestPermission da un gesto): lì si
-    // rinuncia in silenzio e resta l'effetto col puntatore. Su Android e simili
-    // basta mettersi in ascolto.
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission !== 'function') {
-      window.addEventListener('deviceorientation', this.#suOrientamento);
+    if (typeof DeviceOrientationEvent === 'undefined') return;
+
+    const ascolta = () => window.addEventListener('deviceorientation', this.#suOrientamento);
+
+    // Su iOS/WebKit (anche Brave su iPhone) il giroscopio è dietro un permesso
+    // che va chiesto DA un gesto dell'utente: qui va bene, perché `mostra()`
+    // parte dal tocco sulla carta. Altrove basta mettersi in ascolto.
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then((esito) => {
+          if (esito === 'granted') ascolta();
+        })
+        .catch(() => {
+          /* permesso negato o fuori da un gesto: resta l'animazione d'ingresso */
+        });
+    } else {
+      ascolta();
     }
   }
 
@@ -229,7 +247,7 @@ export class VisoreCarta extends HTMLElement {
     } catch {
       this.#dialogo.show();
     }
-    document.documentElement.classList.add('scorrimento-bloccato');
+    bloccaScorrimento();
     this.#avviaMovimento();
 
     // Animazione d'ingresso: si toglie e rimette la classe per farla ripartire
@@ -360,7 +378,7 @@ export class VisoreCarta extends HTMLElement {
   /** @returns {void} */
   chiudi() {
     this.#dialogo?.close();
-    document.documentElement.classList.remove('scorrimento-bloccato');
+    sbloccaScorrimento();
     this.#fermaMovimento();
   }
 }

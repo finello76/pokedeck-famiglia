@@ -119,7 +119,12 @@ visore-carta .tela {
 }
 
 visore-carta .tela.entra .cornice {
-  animation: carta-entra 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  /* `backwards`, NON `both`: con `both` l'animazione "congela" il transform sul
+     fotogramma finale e, avendo priorità sullo stile inline, sovrascriveva per
+     sempre l'inclinazione scritta dal JS — la carta non si muoveva più. Con
+     `backwards` dopo la fine il controllo torna all'inline (il tilt). In più il
+     JS toglie la classe a fine animazione, per staccarla del tutto. */
+  animation: carta-entra 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
 }
 
 visore-carta .cornice {

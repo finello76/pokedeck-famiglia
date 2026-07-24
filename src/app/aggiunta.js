@@ -16,6 +16,7 @@
 
 import { cercaPerNumeroStampato, urlImmagine } from '../data/dataset.js';
 import { aggiungiCopie } from '../data/collezione.js';
+import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
 
 /**
  * Collega FAB e pannello.
@@ -47,14 +48,14 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
   function apri() {
     quante = 1;
     foglio.hidden = false;
-    document.documentElement.classList.add('scorrimento-bloccato');
+    bloccaScorrimento();
     aggiornaFab();
     campoNumero.focus();
   }
 
   function chiudi() {
     foglio.hidden = true;
-    document.documentElement.classList.remove('scorrimento-bloccato');
+    sbloccaScorrimento();
     form.reset();
     risultati.replaceChildren();
     mostraStato('');

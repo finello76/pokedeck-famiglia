@@ -17,6 +17,7 @@ import { riallineaLinee } from '../engine/riallinea.js';
 import { squilibrio } from '../engine/bilancia.js';
 import { rivaluta } from '../engine/pianifica.js';
 import { normalizzaNome } from '../engine/nomi.js';
+import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
 
 /** Quante proposte mostrare al massimo: oltre, la scelta diventa rumore. */
 const MASSIMO_PROPOSTE = 24;
@@ -87,13 +88,13 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
 
   document.body.append(dialogo);
   dialogo.addEventListener('close', () => {
-    document.documentElement.classList.remove('scorrimento-bloccato');
+    sbloccaScorrimento();
     dialogo.remove();
   });
   const chiudi = () => {
     dialogo.close();
     // Alcuni ambienti non emettono `close`: la pulizia si fa comunque.
-    document.documentElement.classList.remove('scorrimento-bloccato');
+    sbloccaScorrimento();
     dialogo.remove();
   };
 
@@ -137,7 +138,7 @@ export async function apriSostituzione(piano, mazzo, indice, alTermine) {
   }
 
   dialogo.showModal();
-  document.documentElement.classList.add('scorrimento-bloccato');
+  bloccaScorrimento();
 }
 
 /**
