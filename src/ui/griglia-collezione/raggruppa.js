@@ -124,7 +124,8 @@ export function raggruppa(voci) {
  *
  * @param {object[]} voci
  * @returns {{categorie: string[], tipi: string[], stadi: string[],
- *   serie: Array<{id: string, nome: string}>, set: Array<{id: string, nome: string}>}}
+ *   serie: Array<{id: string, nome: string}>,
+ *   set: Array<{id: string, nome: string, anno: number|null}>}}
  */
 export function valoriDisponibili(voci) {
   const categorie = new Set();
@@ -135,7 +136,10 @@ export function valoriDisponibili(voci) {
 
   for (const voce of voci ?? []) {
     if (voce.serie) serie.set(voce.serie.id, voce.serie.nome);
-    set.set(voce.idSet, voce.nomeSet ?? voce.idSet);
+    set.set(voce.idSet, {
+      nome: voce.nomeSet ?? voce.idSet,
+      uscita: voce.uscitaSet ?? null,
+    });
     const { carta } = voce;
     if (!carta) continue;
     categorie.add(carta.categoria);
@@ -150,8 +154,34 @@ export function valoriDisponibili(voci) {
     // l'ordine di gioco. Se comparissero altri stadi (MEGA, VMAX) servirebbe
     // un ordinamento esplicito.
     stadi: [...stadi].sort(),
-    // Serie e set NON si riordinano: arrivano già in ordine di uscita.
+    // Le serie NON si riordinano: arrivano già in ordine di uscita.
     serie: [...serie].map(([id, nome]) => ({ id, nome })),
-    set: [...set].map(([id, nome]) => ({ id, nome })),
+    // I set invece sì: nell'elenco delle voci arrivano raggruppati per serie e
+    // poi in ordine alfabetico, che dentro il menu non vuol dire niente. Un
+    // set si riconosce dall'epoca — "quello del 2016" — quindi si ordinano per
+    // data di uscita, dal più vecchio, come i raccoglitori.
+    set: [...set]
+      .map(([id, { nome, uscita }]) => ({
+        id,
+        nome,
+        anno: uscita ? Number(String(uscita).slice(0, 4)) : null,
+        uscita,
+      }))
+      .sort(ordinePerUscita),
   };
+}
+
+/**
+ * Ordina i set dal più vecchio. Quelli senza data (Energie base, dati vecchi)
+ * finiscono in fondo invece che all'inizio, dove sembrerebbero antichissimi.
+ *
+ * @param {{nome: string, uscita: string|null}} a
+ * @param {{nome: string, uscita: string|null}} b
+ * @returns {number}
+ */
+function ordinePerUscita(a, b) {
+  if (!a.uscita && !b.uscita) return a.nome.localeCompare(b.nome, 'it');
+  if (!a.uscita) return 1;
+  if (!b.uscita) return -1;
+  return a.uscita.localeCompare(b.uscita) || a.nome.localeCompare(b.nome, 'it');
 }

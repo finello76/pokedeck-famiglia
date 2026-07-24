@@ -158,6 +158,10 @@ export async function elencoCompleto() {
         // conteggio. Senza questo dato la griglia direbbe "mancano 12 carte"
         // di carte che nessuno può catalogare.
         ufficialiSet: suo?.ufficiali ?? null,
+        // Data di uscita del set (`1999-01-09`): serve a ordinare il menu dei
+        // set per epoca invece che per nome. La scrive `tools/aggiorna-anni.mjs`;
+        // sui dati vecchi può mancare, e allora quel set va in fondo.
+        uscitaSet: suo?.uscita ?? null,
       };
     }),
   );

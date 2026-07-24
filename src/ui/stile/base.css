@@ -983,9 +983,17 @@ button.secondario:hover {
 .candidato .mini .segnaposto-mini {
   position: static;
   inset: auto;
-  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
   color: var(--tipo-colore);
-  font-weight: 800;
+}
+
+.candidato .mini .segnaposto-mini svg {
+  width: 55%;
+  height: auto;
+  opacity: 0.75;
 }
 
 .candidato .testo {

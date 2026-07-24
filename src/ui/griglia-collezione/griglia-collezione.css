@@ -366,14 +366,22 @@ griglia-collezione {
   visibility: hidden;
 }
 
+/* Carta senza scansione: il disegnino tinto del tipo, non un punto
+   interrogativo. Il "?" faceva pensare a un errore dell'app invece che a una
+   carta di cui semplicemente non esiste la foto. */
 .segnaposto-mini {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 2rem;
-  font-weight: 800;
   color: var(--tipo-colore);
+}
+
+.segnaposto-mini svg {
+  width: 38%;
+  max-width: 3rem;
+  height: auto;
+  opacity: 0.75;
 }
 
 .badge-qty {

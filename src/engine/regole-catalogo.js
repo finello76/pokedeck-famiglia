@@ -38,6 +38,20 @@ import { formatoPer, alteraNumeriUfficiali, UFFICIALE } from './formati.js';
  */
 
 /**
+ * "2 mazzi da 15", "1 mazzo da 15".
+ *
+ * Le motivazioni sono fatte per essere lette ad alta voce prima di giocare: un
+ * "1 mazzi da 15" in mezzo alla frase toglie credibilità al numero che la
+ * precede, che è tutto quello che quella frase deve fare.
+ *
+ * @param {object} opzioni `{numeroMazzi, taglia}`
+ * @returns {string}
+ */
+function quantiMazzi({ numeroMazzi, taglia }) {
+  return `${numeroMazzi === 1 ? '1 mazzo' : `${numeroMazzi} mazzi`} da ${taglia}`;
+}
+
+/**
  * Le regole disponibili, in ordine di stampa.
  *
  * Ogni voce ha una `condizione(contesto)` che restituisce `null` se la regola
@@ -148,8 +162,8 @@ export const CATALOGO = [
           'Il costo di ogni attacco è ridotto di 1 Energia, fino a un minimo di 1. ' +
           'Un attacco che costa 3 Energie ne costa 2; uno che ne costa 1 resta a 1.',
         motivazione:
-          `Servirebbero circa ${Math.round(servono)} Energie per ${opzioni.numeroMazzi} mazzi ` +
-          `da ${opzioni.taglia}, e in collezione ce ne sono ${energie}. Senza questa ` +
+          `Servirebbero circa ${Math.round(servono)} Energie per ${quantiMazzi(opzioni)}, ` +
+          `e in collezione ce ne sono ${energie}. Senza questa ` +
           'riduzione i Pokémon resterebbero quasi sempre senza abbastanza Energie per attaccare.',
       };
     },
@@ -237,8 +251,8 @@ export const CATALOGO = [
           'Se dopo 20 minuti nessuno ha preso tutte le carte Premio, vince chi ne ha prese ' +
           'di più. A parità, vince chi ha più Pokémon ancora in gioco.',
         motivazione:
-          `Con ${analisi.energie.totaleBase} Energie per ${opzioni.numeroMazzi} mazzi da ` +
-          `${opzioni.taglia} carte può capitare che nessuno dei due riesca ad attaccare per ` +
+          `Con ${analisi.energie.totaleBase} Energie per ${quantiMazzi(opzioni)} ` +
+          'carte può capitare che nessuno dei due riesca ad attaccare per ' +
           'diversi turni: questa regola evita partite che non finiscono mai.',
       };
     },
@@ -264,8 +278,10 @@ export const CATALOGO = [
           'rimescolala nel mazzo e pescane una nuova, senza penalità per nessuno. ' +
           'Alla terza volta tieni la mano e peschi dal mazzo finché non trovi un ' +
           'Pokémon: parti da quello.',
-        motivazione: `Alcuni mazzi hanno pochi Pokémon Base (${dettaglio}): capiterà di ` +
-          'aprire mani senza nulla da mettere in gioco, e non è colpa di chi pesca.',
+        motivazione:
+          `${scarse.length === 1 ? 'Un mazzo ha' : 'Alcuni mazzi hanno'} pochi Pokémon Base ` +
+          `(${dettaglio}): capiterà di aprire mani senza nulla da mettere in gioco, ` +
+          'e non è colpa di chi pesca.',
       };
     },
   },
@@ -313,8 +329,8 @@ export const CATALOGO = [
           'Una volta per turno, ritirare il Pokémon attivo non costa Energie. ' +
           'Dalla seconda ritirata nello stesso turno si paga il costo normale.',
         motivazione:
-          `In collezione ci sono ${energie} Energie base per ${opzioni.numeroMazzi} mazzi ` +
-          `da ${opzioni.taglia}: pagare anche la ritirata lascerebbe i Pokémon senza ` +
+          `In collezione ci sono ${energie} Energie base per ${quantiMazzi(opzioni)}: ` +
+          'pagare anche la ritirata lascerebbe i Pokémon senza ' +
           'Energie per attaccare.',
       };
     },
@@ -339,7 +355,7 @@ export const CATALOGO = [
           'mano per pescarne una nuova dal mazzo.',
         motivazione:
           `In collezione ci sono solo ${allenatori} carte Allenatore per ` +
-          `${opzioni.numeroMazzi} mazzi da ${opzioni.taglia}: senza i loro effetti di ` +
+          `${quantiMazzi(opzioni)}: senza i loro effetti di ` +
           'pesca le mani piene di carte inutilizzabili resterebbero bloccate.',
       };
     },

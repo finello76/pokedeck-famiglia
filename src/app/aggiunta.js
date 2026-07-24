@@ -16,6 +16,7 @@
 
 import { cercaPerNumeroStampato, urlImmagine } from '../data/dataset.js';
 import { aggiungiCopie } from '../data/collezione.js';
+import { segnaposto, seImmagineRotta } from '../ui/segnaposto.js';
 import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
 
 /**
@@ -173,7 +174,7 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
 
     bottone.innerHTML = `
       <span class="mini" data-tipo="${escapeHtml(tipo)}">
-        ${src ? `<img src="${src}" alt="" />` : `<span class="segnaposto-mini">${carta.categoria === 'Energia' ? 'E' : '?'}</span>`}
+        ${src ? `<img src="${src}" alt="" />` : segnaposto(carta, 'segnaposto-mini')}
       </span>
       <span class="testo">
         <span class="nome-carta">${escapeHtml(carta.nome)}</span>
@@ -182,6 +183,8 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
       </span>
       <span class="aggiungi" aria-hidden="true">＋</span>
     `;
+
+    seImmagineRotta(bottone.querySelector('img'), carta, 'segnaposto-mini');
 
     bottone.addEventListener('click', async () => {
       try {

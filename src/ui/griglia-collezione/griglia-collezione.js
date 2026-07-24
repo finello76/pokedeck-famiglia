@@ -27,6 +27,7 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
+import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 import { FILTRI_VUOTI, filtra, raggruppa, valoriDisponibili } from './raggruppa.js';
 
 /**
@@ -180,11 +181,13 @@ export class GrigliaCollezione extends HTMLElement {
   #disegna() {
     const { categorie, tipi, stadi, serie, set } = valoriDisponibili(this.#voci);
 
+    // I set portano l'anno fra parentesi: due set possono avere nomi simili, e
+    // l'anno è il modo in cui ci si ricorda le carte che si hanno in mano.
     const opzioni = (valori, selezionato) =>
       valori
         .map(
-          ({ id, nome }) =>
-            `<option value="${id}"${id === selezionato ? ' selected' : ''}>${escapeHtml(nome)}</option>`,
+          ({ id, nome, anno }) =>
+            `<option value="${id}"${id === selezionato ? ' selected' : ''}>${escapeHtml(nome)}${anno ? ` (${anno})` : ''}</option>`,
         )
         .join('');
     const opzioniSemplici = (valori, selezionato) =>
@@ -391,7 +394,7 @@ export class GrigliaCollezione extends HTMLElement {
     if (!voce.carta) {
       card.dataset.tipo = 'Incolore';
       card.innerHTML = `
-        <div class="miniatura"><span class="segnaposto-mini" aria-hidden="true">?</span></div>
+        <div class="miniatura">${segnaposto(null, 'segnaposto-mini')}</div>
         <div class="corpo">
           <div class="nome-carta">${escapeHtml(voce.idSet)} n. ${escapeHtml(voce.numero)}</div>
           <div class="meta-carta">Set non più disponibile: riscarica i dati.</div>
@@ -439,18 +442,20 @@ export class GrigliaCollezione extends HTMLElement {
     `;
 
     const img = card.querySelector('img[data-src]');
-    if (img) osservatore.observe(img);
+    if (img) {
+      osservatore.observe(img);
+      seImmagineRotta(img, c, 'segnaposto-mini');
+    }
     return card;
   }
 
   /** L'immagine (in lazy-load) o il segnaposto tinto per le carte senza scan. */
   #htmlImmagine(c) {
     const src = urlImmagine(c, 'griglia');
-    if (!src) {
-      const sigla = c.categoria === 'Energia' ? 'E' : '?';
-      return `<span class="segnaposto-mini" aria-hidden="true">${sigla}</span>`;
-    }
-    return `<img data-src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />`;
+    if (!src) return segnaposto(c, 'segnaposto-mini');
+    // `alt=""`: il nome della carta è già scritto sotto la miniatura, e un
+    // testo alternativo comparirebbe a schermo se l'immagine non arrivasse.
+    return `<img data-src="${src}" alt="" />`;
   }
 
   /**

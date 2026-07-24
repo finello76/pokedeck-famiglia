@@ -108,6 +108,18 @@ async function genera(risposte, seme = nuovoSeme()) {
 }
 
 /**
+ * "1 mazzo" o "3 mazzi". Vale la pena di una funzione perché il numero lo
+ * sceglie l'utente e la frase compare in più punti: "1 mazzi" è il genere di
+ * dettaglio che fa sembrare l'app un prototipo.
+ *
+ * @param {number} quanti
+ * @returns {string}
+ */
+function contaMazzi(quanti) {
+  return quanti === 1 ? '1 mazzo' : `${quanti} mazzi`;
+}
+
+/**
  * Se i mazzi di questo piano sono troppo diversi fra loro.
  * @param {object} piano
  * @returns {boolean}
@@ -129,6 +141,10 @@ function squilibrati(piano) {
 function statoEquilibrio(piano) {
   const eq = piano.equilibrio;
   if (!eq?.punteggi?.length) return '';
+  // Con un mazzo solo non c'è niente da equilibrare: l'avversario ha il suo, e
+  // dirgli "mazzi equilibrati" mostrando un punteggio solo sarebbe una risposta
+  // a una domanda che nessuno ha fatto.
+  if (piano.mazzi.length < 2) return '';
 
   const punteggi = eq.punteggi.map((p, i) => `${piano.mazzi[i]?.nome ?? i + 1}: ${p.totale}`);
   const spostate = eq.scambi?.length
@@ -159,9 +175,9 @@ function disegnaPiano(piano, opzioni) {
   const intestazione = document.createElement('div');
   intestazione.className = 'no-stampa';
   intestazione.innerHTML = `
-    <h2>I mazzi</h2>
+    <h2>${piano.mazzi.length === 1 ? 'Il mazzo' : 'I mazzi'}</h2>
     <p class="aiuto">
-      ${piano.mazzi.length} mazzi da ${opzioni.taglia} carte.
+      ${contaMazzi(piano.mazzi.length)} da ${opzioni.taglia} carte.
       Pesca le carte elencate dalla tua collezione.
       <button type="button" class="collegamento" id="vai-formato">
         Come si gioca con ${opzioni.taglia} carte?
@@ -366,7 +382,7 @@ async function mostraSalvati() {
         <li>
           <span>
             ${new Date(p.creatoIl).toLocaleString('it-IT')} —
-            ${p.mazzi.length} mazzi da ${p.opzioni?.taglia ?? '?'} carte
+            ${contaMazzi(p.mazzi.length)} da ${p.opzioni?.taglia ?? '?'} carte
           </span>
           <span class="comandi-salvato">
             <button type="button" class="collegamento" data-apri="${p.id}">Apri</button>

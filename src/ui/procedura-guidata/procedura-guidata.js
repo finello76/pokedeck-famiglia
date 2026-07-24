@@ -33,12 +33,20 @@ const DOMANDE = [
   },
   {
     chiave: 'numeroMazzi',
-    testo: 'Quanti giocatori?',
-    aiuto: 'Viene generato un mazzo per giocatore, tutti insieme, così sono equilibrati fra loro.',
+    testo: 'Quanti mazzi servono?',
+    aiuto:
+      'Uno per giocatore: vengono generati tutti insieme, così sono equilibrati ' +
+      'fra loro. Se chi gioca con te ha già il suo mazzo, ne basta uno.',
     opzioni: [
-      { valore: 2, etichetta: '2 giocatori', badge: '2' },
-      { valore: 3, etichetta: '3 giocatori', badge: '3' },
-      { valore: 4, etichetta: '4 giocatori', badge: '4' },
+      {
+        valore: 1,
+        etichetta: 'Un mazzo solo',
+        dettaglio: 'Per giocare contro chi ha già un mazzo suo',
+        badge: '1',
+      },
+      { valore: 2, etichetta: '2 mazzi', dettaglio: 'Due giocatori', badge: '2' },
+      { valore: 3, etichetta: '3 mazzi', dettaglio: 'Tre giocatori', badge: '3' },
+      { valore: 4, etichetta: '4 mazzi', dettaglio: 'Quattro giocatori', badge: '4' },
     ],
   },
   {

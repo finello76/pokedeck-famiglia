@@ -56,8 +56,16 @@ scaricato set nuovi, aggiungere all'indice la serie di appartenenza:
 node tools/aggiorna-serie.mjs   # 18 richieste: scrive `serie` in data/set/indice.json
 ```
 
-Senza, i set nuovi finiscono nel gruppo "Altre serie" della vista collezione. Poi
-rigenerare anche l'indice delle evoluzioni:
+Senza, i set nuovi finiscono nel gruppo "Altre serie" della vista collezione. Poi la
+data di uscita, che l'API dà solo nel dettaglio del singolo set:
+
+```bash
+node tools/aggiorna-anni.mjs   # una richiesta per set: scrive `uscita` in data/set/indice.json
+```
+
+Senza, i set nuovi non hanno anno e finiscono in fondo al menu "Set" della collezione,
+che è ordinato dal più vecchio con l'anno fra parentesi. Poi rigenerare anche l'indice
+delle evoluzioni:
 
 ```bash
 node tools/genera-indice-evoluzioni.mjs   # ricostruisce data/evoluzioni.json

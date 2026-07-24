@@ -152,6 +152,14 @@ mazzo-generato .segnaposto-mini .nome-mini {
   overflow-wrap: anywhere;
 }
 
+/* Stesso riquadro quando è una scansione che non è arrivata: dentro c'è il
+   disegnino di `ui/segnaposto.js` invece del nome. */
+mazzo-generato .segnaposto-mini svg {
+  width: 55%;
+  height: auto;
+  opacity: 0.75;
+}
+
 mazzo-generato .quante-mini {
   position: absolute;
   inset-block-end: 0.2rem;

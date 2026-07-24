@@ -19,6 +19,7 @@ const voce = (idSet, numero, nome, extra = {}) => ({
   nomeSet: extra.nomeSet ?? idSet,
   serie: extra.serie ?? sv,
   totaleSet: extra.totaleSet ?? 100,
+  uscitaSet: extra.uscitaSet ?? null,
   carta: extra.carta === null ? null : {
     nome,
     categoria: extra.categoria ?? 'Pokémon',
@@ -28,10 +29,10 @@ const voce = (idSet, numero, nome, extra = {}) => ({
 });
 
 const collezione = () => [
-  voce('sv08', '001', 'Exeggcute', { nomeSet: 'Scintille Folgoranti', totaleSet: 191 }),
-  voce('sv08', '060', 'Magnezone', { nomeSet: 'Scintille Folgoranti', totaleSet: 191, stadio: 'Livello 2', tipi: ['Lampo'], quantita: 2 }),
-  voce('sv01', '054', 'Quaquaval', { nomeSet: 'Scarlatto e Violetto', totaleSet: 198, tipi: ['Acqua'] }),
-  voce('swsh9', '001', 'Exeggcute', { serie: sm, nomeSet: 'Astri Lucenti', totaleSet: 186 }),
+  voce('sv08', '001', 'Exeggcute', { nomeSet: 'Scintille Folgoranti', totaleSet: 191, uscitaSet: '2024-11-08' }),
+  voce('sv08', '060', 'Magnezone', { nomeSet: 'Scintille Folgoranti', totaleSet: 191, uscitaSet: '2024-11-08', stadio: 'Livello 2', tipi: ['Lampo'], quantita: 2 }),
+  voce('sv01', '054', 'Quaquaval', { nomeSet: 'Scarlatto e Violetto', totaleSet: 198, uscitaSet: '2023-03-31', tipi: ['Acqua'] }),
+  voce('swsh9', '001', 'Exeggcute', { serie: sm, nomeSet: 'Astri Lucenti', totaleSet: 186, uscitaSet: '2022-02-25' }),
 ];
 
 test('le serie restano nell\'ordine di arrivo, non in ordine alfabetico', () => {
@@ -84,13 +85,31 @@ test('una carta senza dati sopravvive solo se non filtri i suoi dati', () => {
 test('i menu dei filtri si riempiono dalla collezione intera', () => {
   const valori = valoriDisponibili(collezione());
   assert.deepEqual(valori.serie.map((s) => s.nome), ['Scarlatto e Violetto', 'Sole e Luna']);
-  assert.deepEqual(valori.set.map((s) => s.nome), [
-    'Scintille Folgoranti',
-    'Scarlatto e Violetto',
-    'Astri Lucenti',
+  // I set, a differenza delle serie, si riordinano: dal più vecchio, con
+  // l'anno che il menu mostra fra parentesi.
+  assert.deepEqual(valori.set.map((s) => `${s.nome} (${s.anno})`), [
+    'Astri Lucenti (2022)',
+    'Scarlatto e Violetto (2023)',
+    'Scintille Folgoranti (2024)',
   ]);
   assert.deepEqual(valori.stadi, ['Base', 'Livello 2']);
   assert.deepEqual(valori.tipi, ['Acqua', 'Erba', 'Lampo']);
+});
+
+test('i set senza data di uscita restano in fondo al menu', () => {
+  // Le Energie base non escono in nessun set, e i dati vecchi possono non
+  // avere ancora la data: messi in cima sembrerebbero antichissimi.
+  const valori = valoriDisponibili([
+    ...collezione(),
+    voce('@base', 'Erba', 'Energia Erba', { nomeSet: 'Energie base', categoria: 'Energia' }),
+  ]);
+  assert.deepEqual(valori.set.map((s) => s.nome), [
+    'Astri Lucenti',
+    'Scarlatto e Violetto',
+    'Scintille Folgoranti',
+    'Energie base',
+  ]);
+  assert.equal(valori.set.at(-1).anno, null, 'senza data non c\'è anno da mostrare');
 });
 
 test('le voci senza serie finiscono in un gruppo esplicito', () => {
