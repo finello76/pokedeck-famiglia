@@ -12,6 +12,7 @@
  */
 
 import { STORE_MAZZI, leggiTutto, leggi, scrivi, cancella } from './deposito.js';
+import { forza } from '../engine/forza.js';
 
 /**
  * Salva il risultato di una generazione.
@@ -37,6 +38,11 @@ export async function salvaPiano(piano, opzioni) {
       tipi: m.tipi,
       totale: m.totale,
       composizione: m.composizione,
+      // La forza si salva **calcolata**, non ricalcolabile. Le carte qui sotto
+      // non conservano `attacchi`, e senza attacchi `forza()` non misura
+      // niente: riaprendo un mazzo di un mese fa il numero sparirebbe proprio
+      // quando serve, cioè quando lo si tira fuori per giocarci.
+      forza: forza(m, { taglia: opzioni?.taglia ?? m.totale }),
       carte: m.carte.map((c) => ({
         quantita: c.quantita,
         idSet: c.carta.idSet ?? null,

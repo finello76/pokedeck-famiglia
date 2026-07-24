@@ -326,6 +326,100 @@ e la diagnosi giusta non sarebbe "il Kit è diventato forte".
 
 ---
 
+## 9. Centrare un bersaglio senza scrivere un ottimizzatore
+
+Misurare serve a decidere. La decisione qui è: *genera mazzi che valgano
+quanto il Kit di Alola*, cioè 31.
+
+L'istinto è scrivere un ottimizzatore: parti da un mazzo, scambia carte,
+ricalcola, ripeti finché il punteggio converge. È codice delicato — si blocca in
+minimi locali, oscilla, e ogni scambio può rompere una linea evolutiva.
+
+Non è servito, per un motivo che si vede solo **misurando prima di progettare**:
+`pianifica()` è già seminata, e semi diversi davano forze da 49 a 77 sulla stessa
+collezione. La dispersione naturale era molto più larga della precisione
+richiesta. Quindi:
+
+```js
+for (let giro = 0; giro < tentativi; giro++) {
+  const seme = semeIniziale + giro * 7919;
+  const piano = pianifica(voci, { ...opzioni, seme });
+  // …misura, tieni il più vicino, fermati se sei in tolleranza
+}
+```
+
+Otto tentativi, nessuna logica nuova sui mazzi. E c'è un vantaggio non ovvio:
+ogni piano proposto è un piano che il generatore **avrebbe potuto produrre da
+solo**. Un ottimizzatore che lima carte per far quadrare un numero produce mazzi
+che nessuna regola giustifica.
+
+> Il seme si incrementa di 7919 (un primo) invece che di 1. Così due ricerche
+> avviate da semi diversi esplorano zone diverse invece di sovrapporsi — che è
+> ciò che fa continuare a funzionare il pulsante "Rigenera diversi".
+
+### Il bug che solo l'app vera poteva mostrare
+
+Chiedendo mazzi da 31 usciva un piano con un mazzo a **`motore: 0`** — le sue
+Energie non alimentavano nessuno dei suoi Pokémon. Non era un errore di calcolo:
+la ricerca stava facendo *esattamente* quel che le era stato chiesto. Un mazzo
+rotto ha una forza bassa, e puntando in basso è il candidato ideale.
+
+È il classico effetto perverso di ottimizzare una metrica: **la metrica misura
+la forza, non la giocabilità**, e chi ottimizza sfrutta la differenza. La
+correzione non tocca la misura, aggiunge un vincolo:
+
+```js
+function meglio(a, b) {
+  if (a.giocabile !== b.giocabile) return a.giocabile;  // prima la giocabilità
+  return Math.abs(a.scarto) < Math.abs(b.scarto);       // poi la vicinanza
+}
+```
+
+Un ordinamento **lessicografico**: la vicinanza al bersaglio decide solo fra
+piani entrambi giocabili. Effetto misurato sulla collezione di casa: da un mazzo
+a `energie 0` a due mazzi a `energie 58` e `46`, al costo di un punto di
+distanza dal bersaglio.
+
+> Quando si ottimizza un punteggio, chiedersi sempre: *qual è il modo più stupido
+> di massimizzarlo?* Se esiste, prima o poi l'algoritmo lo troverà — e non lo
+> troverà nei test, lo troverà in produzione.
+
+### Onestà del risultato
+
+Con la collezione di casa il bersaglio 31 **non si raggiunge**: il meglio è 44.
+L'app lo dice, con la parola che serve:
+
+> Kit Allenatore Alola vale 31, i tuoi mazzi 44: un po' più forte. Avevi chiesto
+> alla pari, ma con questa collezione non si è riusciti ad avvicinarsi di più.
+
+Un'app che tacesse lascerebbe scoprire lo squilibrio perdendo una partita — cioè
+proprio il fallimento che tutta questa funzione doveva evitare.
+
+### Una nota su CSS e specificità
+
+La tacca del riferimento sulla barra sembrava funzionare, e non funzionava:
+
+```css
+.forza-barra > span { block-size: 100%; background: var(--colore-primario); }
+.tacca-riferimento  { inset-block: -0.2rem; background: var(--colore-testo); }
+```
+
+`.forza-barra > span` ha specificità **(0,1,1)**, `.tacca-riferimento` **(0,1,0)**:
+la regola del riempimento vince, e la tacca ereditava altezza e colore
+sbagliati. Si vedeva qualcosa, quindi a occhio sembrava a posto — l'ho scoperto
+solo misurando `getBoundingClientRect()` (8,8 px invece di 15,2).
+
+La soluzione non è `!important`, è togliere di mezzo il selettore discendente:
+il riempimento ha ora una classe sua, `.forza-riempimento`, e le due regole non
+si incontrano più.
+
+> Chi arriva da Angular ha l'incapsulamento di stile per default e questo
+> problema non lo incontra quasi mai. In CSS globale la regola pratica è:
+> **non selezionare per struttura ciò che puoi selezionare per nome**. Un
+> `> span` cattura anche gli span che aggiungerai fra sei mesi.
+
+---
+
 ## Esercizi
 
 1. **La scala satura.** Nei mazzi generati da una collezione moderna, `offesa`

@@ -514,13 +514,32 @@ button:hover {
 }
 
 .forza-barra {
+  position: relative;
   block-size: 0.55rem;
   background: var(--colore-superficie-2);
   border-radius: 999px;
-  overflow: hidden;
+  /* NON `overflow: hidden`: taglierebbe la tacca del riferimento, che sporge
+     apposta sopra e sotto la barra per restare visibile anche quando cade
+     dentro la parte piena. Gli angoli del riempimento se li arrotonda lui. */
 }
 
-.forza-barra > span {
+/* Dove sta il mazzo di riferimento: la partita e' pari se la barra ci arriva. */
+.tacca-riferimento {
+  position: absolute;
+  inset-block: -0.2rem;
+  inline-size: 2px;
+  background: var(--colore-testo);
+  border-radius: 1px;
+  /* Il posizionamento e' in percentuale, quindi al 100% la tacca uscirebbe di
+     due pixel: la si tira indietro di se stessa. */
+  translate: -1px 0;
+}
+
+/* Il riempimento ha una classe sua e non e' `.forza-barra > span`: quel
+   selettore prendeva anche la tacca del riferimento, e vincendo per
+   specificita' (0,1,1 contro 0,1,0) le imponeva altezza e colore del
+   riempimento. La tacca si vedeva, ma non come doveva. */
+.forza-riempimento {
   display: block;
   block-size: 100%;
   background: var(--colore-primario);

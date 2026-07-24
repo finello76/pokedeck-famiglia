@@ -50,6 +50,61 @@ const DOMANDE = [
     ],
   },
   {
+    chiave: 'riferimento',
+    testo: 'Contro quale mazzo si gioca?',
+    aiuto:
+      'Se chi gioca con te usa un mazzo già pronto, i mazzi generati possono ' +
+      'essere costruiti su misura per reggerlo. Senza un termine di paragone ' +
+      'vengono come vengono, e possono risultare molto più forti.',
+    // Senza catalogo la domanda non ha risposte: sarebbe una schermata con un
+    // pulsante solo.
+    mostraSe: (contesto) => (contesto.prefatti?.length ?? 0) > 0,
+    opzioni: (contesto) => [
+      {
+        valore: 'nessuno',
+        etichetta: 'Nessuno in particolare',
+        dettaglio: 'I mazzi vengono equilibrati solo fra loro, come prima',
+        badge: '·',
+      },
+      ...(contesto.prefatti ?? []).map((m) => ({
+        valore: m.id,
+        etichetta: m.nome,
+        dettaglio: `${m.taglia} carte · forza ${m.forza}`,
+        badge: String(m.forza),
+      })),
+    ],
+  },
+  {
+    chiave: 'bersaglio',
+    testo: 'Che partita vuoi?',
+    aiuto:
+      'I mazzi verranno rigenerati finché non valgono quanto hai chiesto. ' +
+      'Non sempre ci si riesce: dipende da cosa c\'è in collezione.',
+    // Dipende dalla risposta precedente, non dalla collezione: senza un mazzo
+    // di riferimento non c'è nessun "alla pari" rispetto a cosa.
+    mostraSe: (contesto, risposte) => risposte?.riferimento && risposte.riferimento !== 'nessuno',
+    opzioni: [
+      {
+        valore: 'pari',
+        etichetta: 'Alla pari',
+        dettaglio: 'Stessa forza: vince chi gioca meglio, non chi ha il mazzo migliore',
+        badge: '=',
+      },
+      {
+        valore: 'sotto',
+        etichetta: 'Un po\' più debole',
+        dettaglio: 'Per dare un vantaggio a chi sta imparando',
+        badge: '−',
+      },
+      {
+        valore: 'sopra',
+        etichetta: 'Un po\' più forte',
+        dettaglio: 'Per una sfida, o se chi gioca col mazzo pronto è più esperto',
+        badge: '+',
+      },
+    ],
+  },
+  {
     chiave: 'setEsclusi',
     // L'unica domanda a scelta multipla: le altre si toccano e si va avanti,
     // questa ha bisogno di un "Continua" perché non rispondere (nessun set
@@ -172,9 +227,21 @@ export class ProceduraGuidata extends HTMLElement {
       : 'Continua con tutti i set';
   }
 
-  /** Le domande effettivamente da porre, viste le condizioni. */
+  /**
+   * Le domande effettivamente da porre, viste le condizioni.
+   *
+   * `mostraSe` riceve anche le risposte già date, non solo la collezione: la
+   * domanda sul bersaglio esiste solo se prima si è scelto un mazzo di
+   * riferimento, e questo non si può sapere guardando la collezione.
+   *
+   * L'elenco si ricalcola a ogni accesso, quindi una risposta può far comparire
+   * o sparire una domanda successiva mentre si procede. Va bene perché le
+   * condizioni guardano solo **all'indietro**: una domanda non può dipendere da
+   * una risposta che non è ancora stata data, quindi il numero di passi già
+   * fatti non cambia mai sotto i piedi.
+   */
   get #attive() {
-    return DOMANDE.filter((d) => !d.mostraSe || d.mostraSe(this.#contesto));
+    return DOMANDE.filter((d) => !d.mostraSe || d.mostraSe(this.#contesto, this.#risposte));
   }
 
   /** @param {any} valore */
@@ -293,5 +360,13 @@ export function opzioniDaRisposte(risposte) {
     // le toglie chi legge la collezione. Viaggia qui perché finisca nel piano
     // salvato — riaprendolo, deve essere leggibile con quali carte è nato.
     setEsclusi: Array.isArray(risposte.setEsclusi) ? risposte.setEsclusi : [],
+    // Nemmeno questi sono opzioni del motore: `pianifica()` non sa cosa sia un
+    // mazzo di riferimento. Servono a `cercaPiano()`, che gli sta sopra, e
+    // viaggiano qui perché finiscano nel piano salvato — riaprendolo si deve
+    // poter leggere contro cosa era stato costruito.
+    riferimento: risposte.riferimento && risposte.riferimento !== 'nessuno'
+      ? risposte.riferimento
+      : null,
+    versoBersaglio: risposte.bersaglio ?? 'pari',
   };
 }
