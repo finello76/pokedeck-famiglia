@@ -29,7 +29,7 @@
 import { urlImmagine } from '../../data/dataset.js';
 import { formattaEuro, valoreDi } from '../../data/prezzi.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
-import { FILTRI_VUOTI, filtra, raggruppa, valoriDisponibili } from './raggruppa.js';
+import { FILTRI_VUOTI, filtra, progressoSet, raggruppa, valoriDisponibili } from './raggruppa.js';
 
 /**
  * Osservatore condiviso: carica l'immagine di una card solo quando sta per
@@ -608,15 +608,14 @@ function testaSet(set) {
       <span class="prog">${set.distinte} carte</span>`;
   }
 
-  const pct = Math.min(100, Math.round((set.distinte / set.totale) * 100));
-  const parziale = set.ufficiali !== null && set.ufficiali < set.totale;
+  const { riferimento, pct, parziale } = progressoSet(set);
   return `
     <span class="nome-set">${escapeHtml(set.nomeSet)}</span>
     <span class="barra"><span class="riempi" style="width:${pct}%"></span></span>
-    <span class="prog">${set.distinte}/${set.totale}</span>
+    <span class="prog">${set.distinte}/${riferimento}</span>
     ${
       parziale
-        ? `<span class="dati-parziali" title="Di questo set conosciamo solo ${set.ufficiali} carte su ${set.totale}: le altre non sono nei dati italiani di TCGdex.">parziali</span>`
+        ? `<span class="dati-parziali" title="Il set è numerato fino a ${set.totale}, ma le carte diverse note nei dati italiani di TCGdex sono ${set.ufficiali}: il conteggio è su quelle.">parziali</span>`
         : ''
     }`;
 }

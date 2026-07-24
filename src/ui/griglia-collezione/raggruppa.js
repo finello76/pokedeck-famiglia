@@ -121,6 +121,33 @@ export function raggruppa(voci) {
 }
 
 /**
+ * A che punto sei con un set: quante carte su quante, e in percentuale.
+ *
+ * Il denominatore **non** è sempre il totale stampato sulla carta. Nei Kit
+ * Allenatore i due divergono: il Kit Sole e Luna è numerato fino a 30, ma le
+ * carte diverse sono 19 (energie e Pozione ripetute). Con 30 al denominatore
+ * chi possiede il kit intero leggerebbe per sempre `19/30`, cioè "ti mancano
+ * 11 carte" che non esistono in nessun negozio. Quando i dati contengono meno
+ * carte del totale si conta su quelle, e la griglia lo dichiara con l'etichetta
+ * "parziali".
+ *
+ * @param {GruppoSet} set
+ * @returns {{riferimento: number, pct: number, parziale: boolean}}
+ * @example
+ * progressoSet({ distinte: 19, totale: 30, ufficiali: 19 });
+ * // → { riferimento: 19, pct: 100, parziale: true }
+ */
+export function progressoSet(set) {
+  const parziale = set.ufficiali !== null && set.ufficiali > 0 && set.ufficiali < set.totale;
+  const riferimento = parziale ? set.ufficiali : set.totale;
+  return {
+    riferimento,
+    pct: Math.min(100, Math.round((set.distinte / riferimento) * 100)),
+    parziale,
+  };
+}
+
+/**
  * I valori distinti presenti nella collezione, per riempire i menu a tendina.
  *
  * Si leggono dalle voci **non filtrate**: un menu che perde le sue voci mano a

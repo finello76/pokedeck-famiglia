@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { filtra, raggruppa, valoriDisponibili, FILTRI_VUOTI } from '../src/ui/griglia-collezione/raggruppa.js';
+import { filtra, progressoSet, raggruppa, valoriDisponibili, FILTRI_VUOTI } from '../src/ui/griglia-collezione/raggruppa.js';
 
 const sv = { id: 'sv', nome: 'Scarlatto e Violetto' };
 const sm = { id: 'sm', nome: 'Sole e Luna' };
@@ -52,6 +52,35 @@ test('dentro una serie le carte si dividono per set, coi conteggi', () => {
   assert.equal(scintille.copie, 3, 'di cui una in doppio');
   assert.equal(scintille.totale, 191, 'il riferimento per il completamento');
   assert.equal(primaSerie.distinte, 3, 'la serie somma i suoi set');
+});
+
+test('un set coi dati parziali si conta sulle carte che esistono davvero', () => {
+  // Kit Allenatore Sole e Luna: numerato fino a 30, ma le carte diverse sono
+  // 19 (energie e Pozione ripetute). Chi ha il kit intero deve leggere 19/19,
+  // non 19/30 con undici "mancanti" che non esistono da nessuna parte.
+  assert.deepEqual(progressoSet({ distinte: 19, totale: 30, ufficiali: 19 }), {
+    riferimento: 19,
+    pct: 100,
+    parziale: true,
+  });
+  // A metà kit il conteggio resta sulle 19 note.
+  assert.deepEqual(progressoSet({ distinte: 10, totale: 30, ufficiali: 19 }), {
+    riferimento: 19,
+    pct: 53,
+    parziale: true,
+  });
+});
+
+test('un set coi dati completi si conta sul totale ufficiale', () => {
+  // Qui il totale è quello stampato sulla carta: le segrete oltre la
+  // numerazione non devono gonfiare il denominatore.
+  assert.deepEqual(progressoSet({ distinte: 2, totale: 191, ufficiali: 191 }), {
+    riferimento: 191,
+    pct: 1,
+    parziale: false,
+  });
+  // Dato mancante (indice vecchio): si torna al totale, senza etichetta.
+  assert.equal(progressoSet({ distinte: 2, totale: 100, ufficiali: null }).riferimento, 100);
 });
 
 test('il filtro per serie tiene solo quella scelta', () => {
