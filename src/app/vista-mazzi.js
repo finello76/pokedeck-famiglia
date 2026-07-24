@@ -13,6 +13,7 @@ import { bilancia, squilibrio, squilibrati as mazziSquilibrati } from '../engine
 import { forza } from '../engine/forza.js';
 import { pianifica, rivaluta, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
+import { elencoPrefatti } from '../data/mazzi-prefatti.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
 import { apriSostituzione } from './sostituzione.js';
@@ -22,6 +23,7 @@ import '../ui/mazzo-generato/mazzo-generato.js';
 const wizard = document.querySelector('#wizard');
 const risultato = document.querySelector('#risultato-mazzi');
 const salvati = document.querySelector('#mazzi-salvati');
+const prefatti = document.querySelector('#mazzi-prefatti');
 const zonaWizard = document.querySelector('#zona-wizard');
 
 /** @type {object|null} ultimo piano mostrato */
@@ -63,6 +65,7 @@ export async function preparaWizard() {
     set: setInCollezione(voci),
   };
   await mostraSalvati();
+  await mostraPrefatti();
 }
 
 /**
@@ -478,6 +481,47 @@ function ricomincia() {
   risultato.hidden = true;
   zonaWizard.hidden = false;
   wizard.ricomincia();
+}
+
+/**
+ * I mazzi prefatti con la loro forza: il metro di paragone.
+ *
+ * Sta qui, sotto il wizard, e non in una vista sua: serve a leggere un numero
+ * prima o dopo aver generato dei mazzi, non è una schermata in cui si va.
+ *
+ * @returns {Promise<void>}
+ */
+async function mostraPrefatti() {
+  const mazzi = await elencoPrefatti();
+  // Senza catalogo la sezione non esiste: è un termine di paragone, non una
+  // funzione da cui dipende qualcosa.
+  prefatti.hidden = !mazzi.length;
+  if (!mazzi.length) return;
+
+  const righe = mazzi
+    .map((mazzo) => {
+      const f = forza(mazzo, { taglia: mazzo.taglia });
+      return `
+        <li>
+          <span class="forza-nome">${mazzo.nome}</span>
+          <span class="forza-barra"><span style="inline-size:${f.totale}%"></span></span>
+          <span class="forza-valore">${f.totale}</span>
+          <span class="forza-dettaglio">${mazzo.taglia} carte${
+            f.attendibile ? '' : ' · dati incompleti, valore approssimato'
+          }</span>
+        </li>`;
+    })
+    .join('');
+
+  prefatti.innerHTML = `
+    <h3>Mazzi di riferimento</h3>
+    <p class="aiuto">
+      Quanto valgono i mazzi già pronti, sulla stessa scala dei mazzi generati.
+      Servono a capire se una partita sarà pari: un mazzo generato molto più
+      forte del Kit con cui gioca l'altro non fa una partita.
+    </p>
+    <ul class="elenco-forza">${righe}</ul>
+  `;
 }
 
 /** Elenco dei mazzi già salvati, con anteprima e cancellazione. */

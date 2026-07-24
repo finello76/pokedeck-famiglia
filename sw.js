@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v34';
+const VERSIONE = 'v36';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -72,6 +72,7 @@ const GUSCIO = [
   './src/app/viste.js',
   './src/app/vista-mazzi.js',
   './src/data/mazzi-salvati.js',
+  './src/data/mazzi-prefatti.js',
   './src/engine/nomi.js',
   './src/engine/stadi.js',
   './src/engine/analisi.js',
@@ -106,6 +107,11 @@ const GUSCIO = [
   // L'indice delle evoluzioni: 22 KB, ma serve a ogni generazione di mazzi
   // (recupera i collegamenti che le singole stampe non dichiarano).
   './data/evoluzioni.json',
+  // Il catalogo dei mazzi prefatti: 50 KB, ed è il termine di paragone della
+  // forza. Va precaricato perché senza non si può dire se una partita sarà
+  // pari, e quella domanda ci si fa proprio quando si sta per giocare — cioè
+  // sul tavolo di cucina, non necessariamente in linea.
+  './data/mazzi-prefatti.json',
 ];
 
 self.addEventListener('install', (evento) => {

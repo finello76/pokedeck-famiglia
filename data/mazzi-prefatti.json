@@ -1,0 +1,1939 @@
+{
+  "generatoIl": "2026-07-24",
+  "mazzi": [
+    {
+      "id": "tk-sm-l",
+      "nome": "Kit Allenatore Lycanroc",
+      "prodotto": "Sole e Luna — Kit Allenatore: Lycanroc e Raichu di Alola (2017)",
+      "taglia": 30,
+      "carte": [
+        {
+          "carta": {
+            "numero": "1",
+            "nome": "Caterpie",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/1",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Erba"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Pausa",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Rosicchiamento",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/1"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "4",
+            "nome": "Trumbeak",
+            "categoria": "Pokémon",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/4",
+            "stadio": "Livello 1",
+            "evolveDa": "Pikipek",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 80,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Semitraglia",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": "20×"
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/107"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "11",
+            "nome": "Fletchling",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/11",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Ruggito",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Alabattito",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm2/109"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "12",
+            "nome": "Yungoos",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/12",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 70,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 10
+              },
+              {
+                "nome": "Morso",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/109"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "13",
+            "nome": "Fletchinder",
+            "categoria": "Pokémon",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/13",
+            "stadio": "Livello 1",
+            "evolveDa": "Fletchling",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 70,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Alabattito",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 20
+              },
+              {
+                "nome": "Ventagliente",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 40
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm2/110"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "14",
+            "nome": "Rockruff",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/14",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 10
+              },
+              {
+                "nome": "Sassata",
+                "costo": [
+                  "Lotta",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "smp/SM06"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "15",
+            "nome": "Pikipek",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/15",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Spaccaroccia",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": "10+"
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/106"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "16",
+            "nome": "Lycanroc",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/16",
+            "stadio": "Livello 1",
+            "evolveDa": "Rockruff",
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Artigli Pericolosi",
+                "costo": [
+                  "Lotta"
+                ],
+                "danno": "30+"
+              },
+              {
+                "nome": "Trappola",
+                "costo": [
+                  "Lotta",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 90
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm3/75"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "18",
+            "nome": "Makuhita",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/18",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 80,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Attacco a Sorpresa",
+                "costo": [
+                  "Lotta"
+                ],
+                "danno": 20
+              },
+              {
+                "nome": "Forza",
+                "costo": [
+                  "Lotta",
+                  "Incolore"
+                ],
+                "danno": 40
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/67"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "19",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/19",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "21",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/21",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "22",
+            "nome": "Toucannon",
+            "categoria": "Pokémon",
+            "rarita": "Rara",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/22",
+            "stadio": "Livello 2",
+            "evolveDa": "Trumbeak",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 140,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Echeggiavoce",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 60
+              },
+              {
+                "nome": "Cannonbecco",
+                "costo": [
+                  "Incolore",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 100
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/108"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "23",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/23",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "25",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/25",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "27",
+            "nome": "Malasada maxi",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/27",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "29",
+            "nome": "Rockruff",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/29",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 10
+              },
+              {
+                "nome": "Sassata",
+                "costo": [
+                  "Lotta",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "smp/SM06"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "30",
+            "nome": "Lycanroc",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/30",
+            "stadio": "Livello 1",
+            "evolveDa": "Rockruff",
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Artigli Pericolosi",
+                "costo": [
+                  "Lotta"
+                ],
+                "danno": "30+"
+              },
+              {
+                "nome": "Trappola",
+                "costo": [
+                  "Lotta",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 90
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm3/75"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "nome": "Energia Lotta",
+            "numero": "Lotta",
+            "idSet": "@base",
+            "categoria": "Energia",
+            "tipoEnergia": "Base",
+            "generica": true
+          },
+          "quantita": 13
+        }
+      ],
+      "fonte": "https://bulbapedia.bulbagarden.net/wiki/Sun_&_Moon_Trainer_Kit:_Lycanroc_&_Alolan_Raichu_(TCG)"
+    },
+    {
+      "id": "tk-sm-r",
+      "nome": "Kit Allenatore Raichu di Alola",
+      "prodotto": "Sole e Luna — Kit Allenatore: Lycanroc e Raichu di Alola (2017)",
+      "taglia": 30,
+      "carte": [
+        {
+          "carta": {
+            "numero": "4",
+            "nome": "Stufful",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/4",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 70,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 30
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/111"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "6",
+            "nome": "Golbat",
+            "categoria": "Pokémon",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/6",
+            "stadio": "Livello 1",
+            "evolveDa": "Zubat",
+            "tipi": [
+              "Psico"
+            ],
+            "ps": 80,
+            "ritirata": 0,
+            "attacchi": [
+              {
+                "nome": "Super Velenospiro",
+                "costo": [
+                  "Psico"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Acrobazia",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": "10+"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/55"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "11",
+            "nome": "Zubat",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/11",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Psico"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Sgomento",
+                "costo": [
+                  "Psico"
+                ],
+                "danno": null
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/54"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "13",
+            "nome": "Spearow",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/13",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Becchinsetto",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": "10+"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/97"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "14",
+            "nome": "Pikachu",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/14",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Shock statico",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": 10
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM157"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "15",
+            "nome": "Pozione",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/15",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "16",
+            "nome": "Grubbin",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/16",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Erba"
+            ],
+            "ps": 70,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Presa",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/13"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "17",
+            "nome": "Raichu di Alola",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/17",
+            "stadio": "Livello 1",
+            "evolveDa": "Pikachu",
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Attacco Rapido",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": "10+"
+              },
+              {
+                "nome": "Surfista Elettrico",
+                "costo": [
+                  "Lampo",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 70
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM65"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "18",
+            "nome": "Bewear",
+            "categoria": "Pokémon",
+            "rarita": "Rara",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/18",
+            "stadio": "Livello 1",
+            "evolveDa": "Stufful",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 130,
+            "ritirata": 3,
+            "attacchi": [
+              {
+                "nome": "Presa dell’Orso",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 40
+              },
+              {
+                "nome": "Troppoforte",
+                "costo": [
+                  "Incolore",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": "80+"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/112"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "19",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/19",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "21",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/21",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "22",
+            "nome": "Drowzee",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/22",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Psico"
+            ],
+            "ps": 70,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Psicoboom",
+                "costo": [
+                  "Psico"
+                ],
+                "danno": "10×"
+              },
+              {
+                "nome": "Bottintesta",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/59"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "23",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/23",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "25",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/25",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "26",
+            "nome": "Togedemaru",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/26",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 70,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Ricciolscudo",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Scarica",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": "30×"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM09"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "29",
+            "nome": "Pikachu",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/29",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Shock statico",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": 10
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM157"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "30",
+            "nome": "Raichu di Alola",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/30",
+            "stadio": "Livello 1",
+            "evolveDa": "Pikachu",
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Attacco Rapido",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": "10+"
+              },
+              {
+                "nome": "Surfista Elettrico",
+                "costo": [
+                  "Lampo",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 70
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM65"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "nome": "Energia Lampo",
+            "numero": "Lampo",
+            "idSet": "@base",
+            "categoria": "Energia",
+            "tipoEnergia": "Base",
+            "generica": true
+          },
+          "quantita": 9
+        },
+        {
+          "carta": {
+            "nome": "Energia Psico",
+            "numero": "Psico",
+            "idSet": "@base",
+            "categoria": "Energia",
+            "tipoEnergia": "Base",
+            "generica": true
+          },
+          "quantita": 4
+        }
+      ],
+      "fonte": "https://bulbapedia.bulbagarden.net/wiki/Sun_&_Moon_Trainer_Kit:_Lycanroc_&_Alolan_Raichu_(TCG)"
+    },
+    {
+      "id": "tk-sm-alola",
+      "nome": "Kit Allenatore Alola, i due mazzi uniti",
+      "prodotto": "Sole e Luna — Kit Allenatore: Lycanroc e Raichu di Alola (2017)",
+      "taglia": 60,
+      "unione": [
+        "tk-sm-l",
+        "tk-sm-r"
+      ],
+      "carte": [
+        {
+          "carta": {
+            "numero": "1",
+            "nome": "Caterpie",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/1",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Erba"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Pausa",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Rosicchiamento",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/1"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "4",
+            "nome": "Trumbeak",
+            "categoria": "Pokémon",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/4",
+            "stadio": "Livello 1",
+            "evolveDa": "Pikipek",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 80,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Semitraglia",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": "20×"
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/107"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "11",
+            "nome": "Fletchling",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/11",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Ruggito",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Alabattito",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm2/109"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "12",
+            "nome": "Yungoos",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/12",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 70,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 10
+              },
+              {
+                "nome": "Morso",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/109"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "13",
+            "nome": "Fletchinder",
+            "categoria": "Pokémon",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/13",
+            "stadio": "Livello 1",
+            "evolveDa": "Fletchling",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 70,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Alabattito",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 20
+              },
+              {
+                "nome": "Ventagliente",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 40
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm2/110"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "14",
+            "nome": "Rockruff",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/14",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 10
+              },
+              {
+                "nome": "Sassata",
+                "costo": [
+                  "Lotta",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "smp/SM06"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "15",
+            "nome": "Pikipek",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/15",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Spaccaroccia",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": "10+"
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/106"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "16",
+            "nome": "Lycanroc",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/16",
+            "stadio": "Livello 1",
+            "evolveDa": "Rockruff",
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Artigli Pericolosi",
+                "costo": [
+                  "Lotta"
+                ],
+                "danno": "30+"
+              },
+              {
+                "nome": "Trappola",
+                "costo": [
+                  "Lotta",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 90
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm3/75"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "18",
+            "nome": "Makuhita",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/18",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 80,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Attacco a Sorpresa",
+                "costo": [
+                  "Lotta"
+                ],
+                "danno": 20
+              },
+              {
+                "nome": "Forza",
+                "costo": [
+                  "Lotta",
+                  "Incolore"
+                ],
+                "danno": 40
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/67"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "19",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/19",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "21",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/21",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "22",
+            "nome": "Toucannon",
+            "categoria": "Pokémon",
+            "rarita": "Rara",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/22",
+            "stadio": "Livello 2",
+            "evolveDa": "Trumbeak",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 140,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Echeggiavoce",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 60
+              },
+              {
+                "nome": "Cannonbecco",
+                "costo": [
+                  "Incolore",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 100
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm1/108"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "23",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/23",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "25",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/25",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "27",
+            "nome": "Malasada maxi",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/27",
+            "idSet": "tk-sm-l"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "29",
+            "nome": "Rockruff",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/29",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": 10
+              },
+              {
+                "nome": "Sassata",
+                "costo": [
+                  "Lotta",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "smp/SM06"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "30",
+            "nome": "Lycanroc",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-l/30",
+            "stadio": "Livello 1",
+            "evolveDa": "Rockruff",
+            "tipi": [
+              "Lotta"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Artigli Pericolosi",
+                "costo": [
+                  "Lotta"
+                ],
+                "danno": "30+"
+              },
+              {
+                "nome": "Trappola",
+                "costo": [
+                  "Lotta",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 90
+              }
+            ],
+            "idSet": "tk-sm-l",
+            "datiDa": "sm3/75"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "nome": "Energia Lotta",
+            "numero": "Lotta",
+            "idSet": "@base",
+            "categoria": "Energia",
+            "tipoEnergia": "Base",
+            "generica": true
+          },
+          "quantita": 13
+        },
+        {
+          "carta": {
+            "numero": "4",
+            "nome": "Stufful",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/4",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 70,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Azione",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 30
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/111"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "6",
+            "nome": "Golbat",
+            "categoria": "Pokémon",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/6",
+            "stadio": "Livello 1",
+            "evolveDa": "Zubat",
+            "tipi": [
+              "Psico"
+            ],
+            "ps": 80,
+            "ritirata": 0,
+            "attacchi": [
+              {
+                "nome": "Super Velenospiro",
+                "costo": [
+                  "Psico"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Acrobazia",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": "10+"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/55"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "11",
+            "nome": "Zubat",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/11",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Psico"
+            ],
+            "ps": 50,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Sgomento",
+                "costo": [
+                  "Psico"
+                ],
+                "danno": null
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/54"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "13",
+            "nome": "Spearow",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/13",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Becchinsetto",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": "10+"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/97"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "14",
+            "nome": "Pikachu",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/14",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Shock statico",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": 10
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM157"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "15",
+            "nome": "Pozione",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/15",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "16",
+            "nome": "Grubbin",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/16",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Erba"
+            ],
+            "ps": 70,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Presa",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/13"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "17",
+            "nome": "Raichu di Alola",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/17",
+            "stadio": "Livello 1",
+            "evolveDa": "Pikachu",
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Attacco Rapido",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": "10+"
+              },
+              {
+                "nome": "Surfista Elettrico",
+                "costo": [
+                  "Lampo",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 70
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM65"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "18",
+            "nome": "Bewear",
+            "categoria": "Pokémon",
+            "rarita": "Rara",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/18",
+            "stadio": "Livello 1",
+            "evolveDa": "Stufful",
+            "tipi": [
+              "Incolore"
+            ],
+            "ps": 130,
+            "ritirata": 3,
+            "attacchi": [
+              {
+                "nome": "Presa dell’Orso",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 40
+              },
+              {
+                "nome": "Troppoforte",
+                "costo": [
+                  "Incolore",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": "80+"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/112"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "19",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/19",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "21",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/21",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "22",
+            "nome": "Drowzee",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/22",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Psico"
+            ],
+            "ps": 70,
+            "ritirata": 2,
+            "attacchi": [
+              {
+                "nome": "Psicoboom",
+                "costo": [
+                  "Psico"
+                ],
+                "danno": "10×"
+              },
+              {
+                "nome": "Bottintesta",
+                "costo": [
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 20
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "sm1/59"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "23",
+            "nome": "Hau",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/23",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "25",
+            "nome": "Mega Ball",
+            "categoria": "Allenatore",
+            "rarita": "Non comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/25",
+            "idSet": "tk-sm-r"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "26",
+            "nome": "Togedemaru",
+            "categoria": "Pokémon",
+            "rarita": "Comune",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/26",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 70,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Ricciolscudo",
+                "costo": [
+                  "Incolore"
+                ],
+                "danno": null
+              },
+              {
+                "nome": "Scarica",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": "30×"
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM09"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "29",
+            "nome": "Pikachu",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/29",
+            "stadio": "Base",
+            "evolveDa": null,
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 60,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Shock statico",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": 10
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM157"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "numero": "30",
+            "nome": "Raichu di Alola",
+            "categoria": "Pokémon",
+            "rarita": "Nessuna",
+            "immagine": "https://assets.tcgdex.net/it/tk/tk-sm-r/30",
+            "stadio": "Livello 1",
+            "evolveDa": "Pikachu",
+            "tipi": [
+              "Lampo"
+            ],
+            "ps": 110,
+            "ritirata": 1,
+            "attacchi": [
+              {
+                "nome": "Attacco Rapido",
+                "costo": [
+                  "Lampo"
+                ],
+                "danno": "10+"
+              },
+              {
+                "nome": "Surfista Elettrico",
+                "costo": [
+                  "Lampo",
+                  "Incolore",
+                  "Incolore"
+                ],
+                "danno": 70
+              }
+            ],
+            "idSet": "tk-sm-r",
+            "datiDa": "smp/SM65"
+          },
+          "quantita": 1
+        },
+        {
+          "carta": {
+            "nome": "Energia Lampo",
+            "numero": "Lampo",
+            "idSet": "@base",
+            "categoria": "Energia",
+            "tipoEnergia": "Base",
+            "generica": true
+          },
+          "quantita": 9
+        },
+        {
+          "carta": {
+            "nome": "Energia Psico",
+            "numero": "Psico",
+            "idSet": "@base",
+            "categoria": "Energia",
+            "tipoEnergia": "Base",
+            "generica": true
+          },
+          "quantita": 4
+        }
+      ]
+    }
+  ]
+}

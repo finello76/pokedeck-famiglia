@@ -1,0 +1,8 @@
+{
+  "id": "tk-sm-alola",
+  "nome": "Kit Allenatore Alola, i due mazzi uniti",
+  "prodotto": "Sole e Luna — Kit Allenatore: Lycanroc e Raichu di Alola (2017)",
+  "taglia": 60,
+  "note": "Non e' un prodotto: e' come si gioca in casa, unendo i due mazzetti da 30 per avere un mazzo da 60 con le regole vere. Si costruisce dai due elenchi invece di riscriverne le carte, cosi' una correzione a uno dei due si propaga qui da sola.",
+  "unione": ["tk-sm-l", "tk-sm-r"]
+}

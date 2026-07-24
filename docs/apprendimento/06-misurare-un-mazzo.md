@@ -251,6 +251,81 @@ colonne: non va aggiornato se un giorno se ne aggiunge una.
 
 ---
 
+## 8. Un metro va costruito, non trovato
+
+Una scala 0–100 non serve a niente finché non c'è qualcosa di noto da
+confrontarci. «Forza 74» non dice se la partita sarà bella; «74 contro il 31 del
+Kit di Alola» sì.
+
+Il metro sono i mazzi prefatti, e per costruirlo sono serviti tre pezzi che il
+dataset **non ha**.
+
+### Le quantità non stanno nel catalogo
+
+Un set TCGdex è un catalogo di carte, non un mazzo: dice che il Kit Lycanroc
+esiste, non che contiene 13 Energia Lotta. Peggio, TCGdex registra 18 delle 30
+carte — mancano proprio le Energie.
+
+La lista si scrive a mano in `tools/prefatti/`, **con la fonte dentro il file**:
+
+```json
+{ "id": "tk-sm-l", "taglia": 30,
+  "fonte": "https://bulbapedia.bulbagarden.net/wiki/Sun_&_Moon_Trainer_Kit:…",
+  "carte": [{ "numero": "1", "quantita": 1 }, …, { "energia": "Lotta", "quantita": 13 }] }
+```
+
+Un dato scritto a mano senza la sua provenienza è indistinguibile da un dato
+inventato — e qui l'invenzione non si vedrebbe, perché produrrebbe comunque un
+numero plausibile.
+
+### I dati di gioco stanno altrove, e vanno riconciliati
+
+Le carte dei Kit sono ristampe, e TCGdex non vi replica attacchi e PS. Ma quelle
+carte esistono complete nei set normali della stessa epoca, e si ritrovano per
+nome. Prima versione, ovvia:
+
+```js
+const gemella = carteDi(idSet).find((c) => normalizza(c.nome) === normalizza(carta.nome));
+```
+
+Sbagliata, e in un modo istruttivo. Il Lycanroc del Kit ha **110 PS**; la prima
+omonima trovata era il promo `smp/SM105`, che ne ha **120** — stesso nome,
+stampa diversa, e quindi anche attacchi diversi. Il Kit risultava più forte di
+quanto è stampato sulle sue carte.
+
+La correzione usa l'unico dato che il Kit dichiara sempre — i PS — come
+**chiave di riconciliazione**:
+
+```js
+const stessiPs = omonime.find((o) => carta.ps && o.carta.ps === carta.ps);
+const scelta = stessiPs ?? omonime[0];
+```
+
+E quando neanche i PS coincidono, il fatto finisce **nel dato**
+(`attacchiApprossimati: true`) e nell'output dello strumento, invece di restare
+un'ipotesi silenziosa. Con questa regola tutte e 24 le carte dei due Kit hanno
+trovato la stampa giusta, e il Lycanroc viene da `sm3/75`, 110 PS.
+
+> È il problema del *record linkage*, familiare a chi ha unito due tabelle su un
+> nome invece che su una chiave. La regola è la stessa ovunque: quando la chiave
+> non è univoca, si cerca un secondo attributo che discrimini, e si dichiara
+> quando non si è trovato.
+
+### Un dato generato va testato come codice
+
+`data/mazzi-prefatti.json` lo scrive uno strumento, quindi nessuno lo rilegge.
+`tests/mazzi-prefatti.test.js` controlla il file **committato**, non lo
+strumento: le quantità fanno la taglia, ogni Pokémon ha PS e attacchi, le
+Energie sono riconosciute da `eEnergiaBase()`, e la forza cade nell'intervallo
+atteso per un mazzo didattico (15–50).
+
+Quest'ultimo è il più utile ed è il meno ovvio: non verifica il catalogo,
+verifica che **la taratura di `forza()` non sia saltata**. Se un giorno un
+ritocco ai pesi facesse salire il Kit di Alola a 60, il test lo direbbe subito —
+e la diagnosi giusta non sarebbe "il Kit è diventato forte".
+
+---
+
 ## Esercizi
 
 1. **La scala satura.** Nei mazzi generati da una collezione moderna, `offesa`

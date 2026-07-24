@@ -1,0 +1,29 @@
+{
+  "id": "tk-sm-r",
+  "nome": "Kit Allenatore Raichu di Alola",
+  "prodotto": "Sole e Luna — Kit Allenatore: Lycanroc e Raichu di Alola (2017)",
+  "taglia": 30,
+  "fonte": "https://bulbapedia.bulbagarden.net/wiki/Sun_&_Moon_Trainer_Kit:_Lycanroc_&_Alolan_Raichu_(TCG)",
+  "note": "Come il gemello Lycanroc: i numeri sono slot del mazzo. Qui le Energie sono di due tipi, 9 Lampo e 4 Psico, e nel dataset ne compare una sola per tipo (numeri 2 e 20).",
+  "carte": [
+    { "numero": "4", "quantita": 1 },
+    { "numero": "6", "quantita": 1 },
+    { "numero": "11", "quantita": 1 },
+    { "numero": "13", "quantita": 1 },
+    { "numero": "14", "quantita": 1 },
+    { "numero": "15", "quantita": 1 },
+    { "numero": "16", "quantita": 1 },
+    { "numero": "17", "quantita": 1 },
+    { "numero": "18", "quantita": 1 },
+    { "numero": "19", "quantita": 1 },
+    { "numero": "21", "quantita": 1 },
+    { "numero": "22", "quantita": 1 },
+    { "numero": "23", "quantita": 1 },
+    { "numero": "25", "quantita": 1 },
+    { "numero": "26", "quantita": 1 },
+    { "numero": "29", "quantita": 1 },
+    { "numero": "30", "quantita": 1 },
+    { "energia": "Lampo", "quantita": 9 },
+    { "energia": "Psico", "quantita": 4 }
+  ]
+}
