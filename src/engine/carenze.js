@@ -15,6 +15,7 @@ import { classifica, eBase } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
 import { minimoBasi } from './proporzioni.js';
+import { scoperte } from './fabbisogno.js';
 
 /**
  * Che cosa non ha funzionato, in forma utilizzabile dal motore delle regole.
@@ -100,6 +101,25 @@ export function rilevaCarenze(mazzi, taglia, analisi, permessi = {}) {
         codice: 'energie-fuori-tipo',
         mazzo: mazzo.nome,
         dati: { fuoriTipo, tipi: mazzo.tipi },
+      });
+    }
+
+    // Il rovescio della medaglia, ed è il difetto più grave dei due: carte i
+    // cui attacchi chiedono un'Energia che nel mazzo non c'è. Non sono energie
+    // inutilizzabili, sono **Pokémon che non attaccano** — e finché si guardava
+    // solo `mazzo.tipi` nessuno se ne accorgeva, perché il tipo del Pokémon e
+    // il costo dei suoi attacchi non coincidono (Dialga è Drago e chiede
+    // Psico e Metallo).
+    const senzaEnergia = scoperte(mazzo);
+    if (senzaEnergia.length) {
+      carenze.push({
+        codice: 'carte-senza-energia',
+        mazzo: mazzo.nome,
+        dati: {
+          carte: senzaEnergia,
+          copie: senzaEnergia.reduce((s, c) => s + c.quantita, 0),
+          tipi: [...new Set(senzaEnergia.flatMap((c) => c.mancano))].sort(),
+        },
       });
     }
   }

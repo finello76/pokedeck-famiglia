@@ -18,6 +18,7 @@
 
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
 import { aggiungiAlMazzo, togliDalMazzo } from './mazzo.js';
+import { fabbisogno } from './fabbisogno.js';
 
 /**
  * @typedef {object} Proxy
@@ -45,31 +46,42 @@ export function proxyEnergia(mazzi, taglia) {
   const proxy = [];
 
   for (const mazzo of mazzi) {
-    const tipo = mazzo.tipi?.[0];
-    if (!tipo) continue;
+    // Si parte da ciò che le carte CHIEDONO, non dal tipo dichiarato del
+    // mazzo. Guardando `mazzo.tipi[0]` un mazzo "Lotta" con dentro uno
+    // Skarmory riceveva solo Energie Lotta, e lo Skarmory restava una carta
+    // che non attacca — che è il difetto da cui nasce `fabbisogno.js`.
+    const chiesti = fabbisogno(mazzo);
+    const totaleChiesto = Object.values(chiesti).reduce((s, n) => s + n, 0);
+    if (!totaleChiesto) continue;
 
-    // Il tipo si riconosce con tipoEnergia(), non guardando il nome: "Energia
-    // Combattimento" è di tipo Lotta, e il confronto sul nome la perderebbe.
-    const energieDelTipo = mazzo.carte
-      .filter((c) => eEnergiaBase(c.carta) && tipoEnergia(c.carta) === tipo)
-      .reduce((s, c) => s + c.quantita, 0);
+    // Un quarto del mazzo in Energie utili è il minimo per pagare gli attacchi
+    // con regolarità; si ripartisce fra i tipi in proporzione a quanto sono
+    // richiesti, così un tipo chiesto da una carta sola non si prende metà
+    // mazzo.
+    const bilancio = Math.round((mazzo.totale || taglia) / 4);
 
-    // Un quarto del mazzo in Energie del tipo giusto è il minimo per riuscire
-    // a pagare gli attacchi con regolarità.
-    const necessarie = Math.round((mazzo.totale || taglia) / 4);
-    const mancanti = necessarie - energieDelTipo;
-    if (mancanti <= 0) continue;
+    for (const [tipo, copie] of Object.entries(chiesti).sort((a, b) => b[1] - a[1])) {
+      // Il tipo si riconosce con tipoEnergia(), non guardando il nome: "Energia
+      // Combattimento" è di tipo Lotta, e il confronto sul nome la perderebbe.
+      const gia = mazzo.carte
+        .filter((c) => eEnergiaBase(c.carta) && tipoEnergia(c.carta) === tipo)
+        .reduce((s, c) => s + c.quantita, 0);
 
-    proxy.push({
-      genere: 'energia',
-      nome: `Energia ${tipo}`,
-      tipo,
-      mazzo: mazzo.nome,
-      quantita: mancanti,
-      motivo:
-        `Il mazzo è di tipo ${tipo} ma ha solo ${energieDelTipo} Energie di quel tipo ` +
-        `su ${necessarie} necessarie.`,
-    });
+      const necessarie = Math.max(1, Math.round((bilancio * copie) / totaleChiesto));
+      const mancanti = necessarie - gia;
+      if (mancanti <= 0) continue;
+
+      proxy.push({
+        genere: 'energia',
+        nome: `Energia ${tipo}`,
+        tipo,
+        mazzo: mazzo.nome,
+        quantita: mancanti,
+        motivo:
+          `${copie} cart${copie === 1 ? 'a' : 'e'} del mazzo chiedono Energia ${tipo}, ` +
+          `ma ce ne ${gia === 1 ? "è" : 'sono'} solo ${gia} su ${necessarie} necessarie.`,
+      });
+    }
   }
 
   return proxy;

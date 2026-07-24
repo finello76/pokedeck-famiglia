@@ -125,17 +125,41 @@ export const CATALOGO = [
       if (opzioni.proxyEnergia) return null;
       const fuoriTipo = carenze.filter((c) => c.codice === 'energie-fuori-tipo');
       const poche = carenze.filter((c) => c.codice === 'poche-energie');
-      if (!fuoriTipo.length && !poche.length) return null;
+      // Carte che non possono attaccare perché l'Energia che chiedono non è nel
+      // mazzo: è il caso che questa regola risolve più direttamente di tutti, e
+      // finché non veniva misurato la regola non si attivava proprio lì dove
+      // serviva. Una collezione senza nemmeno un'Energia Metallo mette in campo
+      // uno Skarmory che senza deroga resta a guardare per tutta la partita.
+      const scoperte = carenze.filter((c) => c.codice === 'carte-senza-energia');
+      if (!fuoriTipo.length && !poche.length && !scoperte.length) return null;
 
       const tipiPresenti = Object.keys(analisi.energie.perTipo ?? {});
+      // La motivazione cita le carte vere quando ce ne sono: "questa regola
+      // esiste perché Skarmory chiede Metallo e Metallo non ce n'è" è
+      // applicabile, "le energie sono poche" no.
+      const nomi = [...new Set(scoperte.flatMap((c) => c.dati.carte.map((x) => x.nome)))];
+      const tipiMancanti = [...new Set(scoperte.flatMap((c) => c.dati.tipi))];
+      const copie = scoperte.reduce((s, c) => s + c.dati.copie, 0);
+      // Si dice che l'Energia manca **nel mazzo**, non in collezione: quasi
+      // sempre in collezione c'è, ma è troppo poca per tutti i mazzi e a
+      // qualcuno non tocca. Scrivere "non ne hai" sarebbe falso, e chi legge il
+      // foglio con la scatola davanti se ne accorgerebbe subito.
+      const motivazione = nomi.length
+        ? `${copie} cart${copie === 1 ? 'a' : 'e'} nei mazzi ` +
+          `(${nomi.slice(0, 4).join(', ')}${nomi.length > 4 ? ` e altre ${nomi.length - 4}` : ''}) ` +
+          `attacc${copie === 1 ? 'a' : 'ano'} solo con Energia ${tipiMancanti.join(' o ')}, ` +
+          'e nel loro mazzo non è finita nessuna Energia di quel tipo: le ' +
+          `${analisi.energie.totaleBase} Energie base disponibili non bastano a coprire ` +
+          'tutti i mazzi. Senza questa regola resterebbero in campo senza poter fare niente.'
+        : `Ci sono ${analisi.energie.totaleBase} Energie base divise su ${tipiPresenti.length} ` +
+          `tipi (${tipiPresenti.join(', ')}): nessun tipo ne ha abbastanza per un mazzo ` +
+          'intero, quindi molti attacchi non si potrebbero mai pagare.';
+
       return {
         testo:
           'Qualunque carta Energia può essere assegnata a qualunque Pokémon e conta ' +
           'come Energia del tipo richiesto dall\'attacco.',
-        motivazione:
-          `Ci sono ${analisi.energie.totaleBase} Energie base divise su ${tipiPresenti.length} ` +
-          `tipi (${tipiPresenti.join(', ')}): nessun tipo ne ha abbastanza per un mazzo ` +
-          'intero, quindi molti attacchi non si potrebbero mai pagare.',
+        motivazione,
         permessi: { energiaUniversale: true },
       };
     },
