@@ -11,6 +11,7 @@ import { generaMazzi, scegliTipi } from '../src/engine/generazione.js';
 import { composizione, fettaPerMazzo, minimoBasi, piramide } from '../src/engine/proporzioni.js';
 import { Dispensa } from '../src/engine/dispensa.js';
 import { analizza } from '../src/engine/analisi.js';
+import { scoperte } from '../src/engine/fabbisogno.js';
 
 const pk = (nome, tipo, stadio = 'Base', evolveDa = null, quantita = 1, numero = nome) => ({
   carta: {
@@ -205,6 +206,73 @@ test('segnala il mazzo che non si riesce a completare', () => {
   });
   assert.ok(mazzi[0].totale < 15);
   assert.ok(carenze.some((c) => c.codice === 'mazzo-incompleto'));
+});
+
+test('le Energie vanno ai tipi che le carte chiedono, non al tipo del mazzo', () => {
+  // La regressione trovata con una collezione vera: un mazzo etichettato
+  // "Lotta" che conteneva un Exeggcute non riceveva Energie Erba nemmeno
+  // avendone in collezione, perché il riempimento guardava solo `mazzo.tipi`.
+  const voci = [
+    pk('Machop', 'Lotta', 'Base', null, 4),
+    pk('Exeggcute', 'Erba', 'Base', null, 2),
+    en('Lotta', 6),
+    en('Erba', 4),
+    al('Pozione', 6),
+  ];
+  const { mazzi } = generaMazzi(voci, { taglia: 15, numeroMazzi: 1 });
+  const mazzo = mazzi[0];
+  if (!mazzo.carte.some((c) => c.carta.nome === 'Exeggcute')) return; // non l'ha scelto: nulla da provare
+
+  assert.deepEqual(
+    scoperte(mazzo),
+    [],
+    'un Exeggcute nel mazzo senza Energia Erba è una carta che non attacca',
+  );
+});
+
+test('non sceglie carte che nessuna Energia posseduta può alimentare', () => {
+  // Skarmory chiede Metallo e in collezione non c'è nemmeno un'Energia
+  // Metallo: è una carta morta. Ci sono abbastanza Pokémon Lotta alimentabili
+  // per riempire il mazzo senza di lui — condizione necessaria, perché la
+  // penalità è una preferenza e non un divieto: quando non c'è altro, un mazzo
+  // con una carta che fa da muro è meglio di un mazzo incompleto.
+  const voci = [
+    pk('Machop', 'Lotta', 'Base', null, 4),
+    pk('Mankey', 'Lotta', 'Base', null, 4),
+    pk('Makuhita', 'Lotta', 'Base', null, 4),
+    pk('Skarmory', 'Metallo', 'Base', null, 4),
+    en('Lotta', 6),
+    al('Pozione', 6),
+  ];
+  const { mazzi } = generaMazzi(voci, { taglia: 15, numeroMazzi: 1 });
+  const skarmory = mazzi[0].carte.find((c) => c.carta.nome === 'Skarmory');
+  assert.ok(!skarmory, 'ha messo nel mazzo una carta che non potrà mai attaccare');
+});
+
+test('con l\'energia universale attiva le carte fuori tipo tornano ammissibili', () => {
+  // La penalità è una preferenza, non un divieto: se la regola della casa
+  // rende ogni Energia buona per ogni costo, Skarmory è giocabile e vietarlo
+  // impoverirebbe il mazzo senza motivo.
+  const voci = [pk('Skarmory', 'Metallo', 'Base', null, 4), en('Lotta', 6), al('Pozione', 6)];
+  const { mazzi } = generaMazzi(voci, {
+    taglia: 15,
+    numeroMazzi: 1,
+    permessi: { energiaUniversale: true },
+  });
+  assert.ok(mazzi[0].carte.some((c) => c.carta.nome === 'Skarmory'));
+});
+
+test('segnala le carte che restano senza l\'Energia che chiedono', () => {
+  const voci = [pk('Skarmory', 'Metallo', 'Base', null, 4), en('Lotta', 8), al('Pozione', 6)];
+  const { carenze } = generaMazzi(voci, {
+    taglia: 15,
+    numeroMazzi: 1,
+    permessi: { energiaUniversale: true },
+  });
+  const carenza = carenze.find((c) => c.codice === 'carte-senza-energia');
+  assert.ok(carenza, 'senza questa carenza la regola della casa non si attiva dove serve');
+  assert.deepEqual(carenza.dati.tipi, ['Metallo']);
+  assert.ok(carenza.dati.carte.some((c) => c.nome === 'Skarmory'));
 });
 
 test('una collezione vuota non fa esplodere il generatore', () => {
