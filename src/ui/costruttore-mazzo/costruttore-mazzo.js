@@ -23,6 +23,34 @@
 
 import { copieAncoraDisponibili } from '../../engine/mazzo-manuale.js';
 import { normalizzaNome } from '../../engine/nomi.js';
+import { urlImmagine } from '../../data/dataset.js';
+import { segnaposto, seImmagineRotta } from '../segnaposto.js';
+
+/**
+ * Carica le figure solo quando stanno per entrare nello schermo.
+ *
+ * Sostituisce `loading="lazy"`, che su un `<img>` inserito via `innerHTML`
+ * dentro uno Shadow DOM non si attiva mai — è la stessa scoperta fatta in
+ * `scheda-carta.js`, e vale identica qui. Con settantacinque righe a schermo
+ * caricarle tutte insieme sarebbe uno spreco su una connessione da telefono.
+ *
+ * `rootMargin` fa partire il caricamento 200px prima del bordo, così scorrendo
+ * la figura è già pronta.
+ */
+const osservatore = new IntersectionObserver(
+  (voci) => {
+    for (const voce of voci) {
+      if (!voce.isIntersecting) continue;
+      const img = voce.target;
+      if (img.dataset.src) {
+        img.src = img.dataset.src;
+        delete img.dataset.src;
+      }
+      osservatore.unobserve(img);
+    }
+  },
+  { rootMargin: '200px' },
+);
 
 /** Foglio di stile condiviso, caricato una volta sola. */
 const stile = new CSSStyleSheet();
@@ -183,6 +211,33 @@ export class CostruttoreMazzo extends HTMLElement {
       nuovo.setSelectionRange(nuovo.value.length, nuovo.value.length);
     });
 
+    // Le figure entrano in osservazione dopo il disegno, e quelle rotte
+    // ricadono sul segnaposto invece di lasciare un riquadro vuoto.
+    this.shadowRoot.querySelectorAll('img.figura').forEach((img) => {
+      const voce = this.#voci.find((v) => chiave(v) === img.closest('[data-apri]')?.dataset.apri);
+      if (voce) seImmagineRotta(img, voce.carta, 'figura segnaposto');
+      osservatore.observe(img);
+    });
+
+    // Toccando la figura si apre il visore a schermo intero. Non serve
+    // scriverlo: `carta-scelta` ha già un ascoltatore sul document, e
+    // `composed: true` è ciò che permette all'evento di uscire dallo Shadow
+    // DOM — senza, resterebbe intrappolato qui dentro e non lo sentirebbe
+    // nessuno.
+    this.shadowRoot.querySelectorAll('[data-apri]').forEach((bottone) =>
+      bottone.addEventListener('click', () => {
+        const voce = this.#voci.find((v) => chiave(v) === bottone.dataset.apri);
+        if (!voce) return;
+        this.dispatchEvent(
+          new CustomEvent('carta-scelta', {
+            bubbles: true,
+            composed: true,
+            detail: { carta: voce.carta, nomeSet: voce.nomeSet },
+          }),
+        );
+      }),
+    );
+
     this.shadowRoot.querySelectorAll('[data-azione]').forEach((bottone) =>
       bottone.addEventListener('click', () => {
         const k = bottone.dataset.carta;
@@ -213,8 +268,17 @@ export class CostruttoreMazzo extends HTMLElement {
         const scelte = this.#scelte.get(k) ?? 0;
         const ancora = copieAncoraDisponibili(v.carta, v.quantita, scelte);
         const tipo = v.carta?.tipi?.[0];
+        const src = urlImmagine(v.carta);
+        // `data-src` invece di `src`: la figura la carica l'osservatore quando
+        // la riga sta per entrare a schermo. Il segnaposto copre le carte senza
+        // scansione nel dataset (le Energie base generiche, per esempio).
+        const figura = src
+          ? `<img class="figura" data-src="${esc(src)}" alt="" width="40" height="56" />`
+          : segnaposto(v.carta, 'figura segnaposto');
         return `
           <li${scelte ? ' class="dentro"' : ''}>
+            <button type="button" class="apri" data-apri="${esc(chiave(v))}"
+                    aria-label="Guarda ${esc(v.carta?.nome)} in grande">${figura}</button>
             <span class="dati">
               <span class="nome">${esc(v.carta?.nome ?? '?')}</span>
               <span class="dettaglio">

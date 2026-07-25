@@ -62,6 +62,46 @@
   padding-inline-start: 0.5rem;
 }
 
+/* La figura della carta. Il rapporto 63x88 e' quello reale di una carta
+   Pokemon: qualunque altro la deformerebbe, e a colpo d'occhio si nota. */
+.apri {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  line-height: 0;
+  border-radius: 4px;
+}
+
+.apri:focus-visible {
+  outline: 2px solid var(--colore-primario);
+  outline-offset: 2px;
+}
+
+.figura {
+  inline-size: 40px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--colore-superficie-2);
+}
+
+/* Carta senza scansione nel dataset — le Energie base generiche, per esempio.
+   `segnaposto()` restituisce uno <span> con dentro un SVG, non un <img>:
+   `object-fit` non lo riguarda, e senza `display: flex` il glifo non si
+   centrerebbe nel riquadro. */
+.figura.segnaposto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--colore-testo-tenue);
+}
+
+.figura.segnaposto svg {
+  inline-size: 60%;
+}
+
 .dati {
   flex: 1;
   min-inline-size: 0;
