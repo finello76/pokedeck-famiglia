@@ -98,6 +98,54 @@ test('mette le Energie del tipo che le carte chiedono davvero', () => {
   assert.ok(lotta > acqua, `Lotta ${lotta} contro Acqua ${acqua}`);
 });
 
+test('mettendo un Livello 2 il completamento scende lungo tutta la linea', () => {
+  // La domanda che ha fatto nascere questa regola: "se metto una Fase 2, il
+  // sistema completa da solo?". Prima sì, ma solo per caso — funzionava perché
+  // i Base venivano aggiunti comunque, e bastava una Base più forte in
+  // collezione perché il Livello 2 restasse orfano.
+  const machamp = pk('Machamp', { stadio: 'Livello 2', evolveDa: 'Machoke', ps: 150, danno: 90 });
+  const conForti = [
+    { carta: pk('Machop', { ps: 50, danno: 10 }), quantita: 4 },
+    { carta: pk('Machoke', { stadio: 'Livello 1', evolveDa: 'Machop', ps: 90 }), quantita: 4 },
+    { carta: en('Lotta'), quantita: 20 },
+    { carta: al('Pozione'), quantita: 4 },
+    // Base molto più forti: senza una regola apposta vincono loro e il
+    // Machamp resta una carta morta.
+    ...[0, 1, 2, 3].map((i) => ({ carta: pk(`Forte${i}`, { ps: 180, danno: 120 }), quantita: 4 })),
+  ];
+  const partenza = mazzo([{ carta: machamp, quantita: 2 }]);
+  const finito = applica(partenza, completa(partenza, conForti, { taglia: 20 }).mosse);
+
+  const quante = (nome) =>
+    finito.carte.find((v) => v.carta.nome === nome)?.quantita ?? 0;
+  assert.ok(quante('Machoke') > 0, 'manca il gradino intermedio');
+  assert.ok(quante('Machop') > 0, 'manca la Base della linea');
+});
+
+test('la linea è una piramide, non una torre rovesciata', () => {
+  // Due Machamp su un solo Machoke sono un Machamp che non entra mai in gioco:
+  // stesso difetto della carta orfana, solo più difficile da vedere.
+  const machamp = pk('Machamp', { stadio: 'Livello 2', evolveDa: 'Machoke', ps: 150, danno: 90 });
+  const linea = [
+    { carta: pk('Machop'), quantita: 4 },
+    { carta: pk('Machoke', { stadio: 'Livello 1', evolveDa: 'Machop', ps: 90 }), quantita: 4 },
+    { carta: en('Lotta'), quantita: 20 },
+    { carta: al('Pozione'), quantita: 4 },
+  ];
+  const partenza = mazzo([{ carta: machamp, quantita: 2 }]);
+  const finito = applica(partenza, completa(partenza, linea, { taglia: 20 }).mosse);
+  const quante = (nome) => finito.carte.find((v) => v.carta.nome === nome)?.quantita ?? 0;
+
+  assert.ok(
+    quante('Machoke') >= quante('Machamp'),
+    `Machoke ${quante('Machoke')} sotto Machamp ${quante('Machamp')}`,
+  );
+  assert.ok(
+    quante('Machop') >= quante('Machoke'),
+    `Machop ${quante('Machop')} sotto Machoke ${quante('Machoke')}`,
+  );
+});
+
 test('un mazzo completato non ha problemi bloccanti', () => {
   // È la prova che conta: il pulsante deve produrre un mazzo giocabile, non
   // solo un mazzo della taglia giusta.

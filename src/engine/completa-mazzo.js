@@ -62,8 +62,15 @@ const nelMazzo = (mazzo, carta) =>
  * @returns {number}
  */
 function utilita(carta, mazzo, bisogni) {
-  const { basiMancanti, tipiScoperti, spazioEnergie, spazioAllenatori } = bisogni;
+  const { basiMancanti, tipiScoperti, spazioEnergie, spazioAllenatori, sbloccano } = bisogni;
   let p = 0;
+
+  // Carta che rende giocabile un'evoluzione già scelta: vale più di qualunque
+  // altra cosa, perché non aggiunge una carta buona — ne **resuscita una
+  // morta**. Senza questa regola, mettere un Livello 2 nel mazzo e premere
+  // "Completa" riempiva il mazzo di Base più forti e lasciava il Livello 2
+  // orfano: due carte che restano in mano tutta la partita.
+  if (sbloccano?.has(normalizzaNome(carta.nome))) p += 260;
 
   if (carta.categoria === 'Energia') {
     if (spazioEnergie <= 0) return -100;
@@ -89,9 +96,23 @@ function utilita(carta, mazzo, bisogni) {
 
   // Un'evoluzione senza la sua pre-evoluzione nel mazzo è una carta che resta
   // in mano: si prende solo se non c'è altro.
-  const presenti = new Set((mazzo.carte ?? []).map((v) => normalizzaNome(v.carta.nome)));
+  const copieDi = (nome) =>
+    (mazzo.carte ?? [])
+      .filter((v) => normalizzaNome(v.carta.nome) === normalizzaNome(nome))
+      .reduce((s, v) => s + v.quantita, 0);
+
   if (livello > 0) {
-    p += presenti.has(normalizzaNome(carta.evolveDa)) ? 90 * livello : -80;
+    const sotto = copieDi(carta.evolveDa);
+    if (!sotto) p -= 80;
+    else {
+      p += 90 * livello;
+      // Una piramide, non una torre rovesciata: le copie di un'evoluzione non
+      // devono superare quelle della carta da cui evolve. Senza questo freno il
+      // completamento produceva 4 Machoke e 1 Machop — tre Machoke che non
+      // entrano mai in gioco, cioè tre carte morte comprate con lo sconto di
+      // sembrare forti.
+      if (sotto <= copieDi(carta.nome)) p -= 150;
+    }
   }
 
   // Alimentabile con le Energie che il mazzo ha o avrà.
@@ -109,6 +130,38 @@ function utilita(carta, mazzo, bisogni) {
   );
   p += Math.min(30, resa / 2);
   return p;
+}
+
+/**
+ * I nomi delle carte che servono a rendere giocabile un'evoluzione già scelta.
+ *
+ * Sono le pre-evoluzioni **immediate** delle carte orfane del mazzo, non
+ * l'intera catena: chiamandola a ogni giro la catena si percorre da sola, un
+ * gradino per volta, e non serve conoscerla in anticipo. È anche l'unico modo
+ * corretto quando la stessa carta compare in linee diverse.
+ *
+ * @param {object} mazzo
+ * @returns {Set<string>} nomi normalizzati
+ */
+function daSbloccare(mazzo) {
+  const copie = new Map();
+  for (const voce of mazzo.carte ?? []) {
+    const k = normalizzaNome(voce.carta.nome);
+    copie.set(k, (copie.get(k) ?? 0) + voce.quantita);
+  }
+
+  const mancano = new Set();
+  for (const voce of mazzo.carte ?? []) {
+    if ((classifica(voce.carta).livello ?? 0) === 0) continue;
+    const serve = normalizzaNome(voce.carta.evolveDa);
+    if (!serve) continue;
+    // Non basta che la pre-evoluzione ci sia: dev'essercene **almeno quante**
+    // sono le copie che ci stanno sopra. Due Machamp su un solo Machoke sono
+    // un Machamp che non entra mai in gioco, ed è lo stesso difetto della
+    // carta orfana, solo più difficile da vedere.
+    if ((copie.get(serve) ?? 0) < voce.quantita) mancano.add(serve);
+  }
+  return mancano;
 }
 
 /**
@@ -186,6 +239,10 @@ export function completa(mazzo, disponibili, { taglia }) {
       // I tipi che le carte già scelte chiedono: le Energie si aggiungono per
       // quelli, non per il tipo dichiarato del mazzo.
       tipiScoperti: new Set(Object.keys(fabbisogno(lavoro))),
+      // I nomi che mancano per rendere giocabili le evoluzioni già nel mazzo.
+      // Si ricalcola a ogni giro, e questo lo fa **scendere lungo la catena**:
+      // messo Machamp serve Machoke; aggiunto Machoke serve Machop.
+      sbloccano: daSbloccare(lavoro),
       spazioEnergie: quota.energie - dentro.energie,
       spazioAllenatori: quota.allenatori - dentro.allenatori,
     };
