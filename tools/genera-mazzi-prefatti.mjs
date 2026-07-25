@@ -31,6 +31,7 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { misurabile, ritrovaDati, setDoveCercare } from './lib/ristampe.mjs';
 
 const RADICE = process.cwd();
 const CARTELLA_ELENCHI = join(RADICE, 'tools', 'prefatti');
@@ -38,14 +39,6 @@ const CARTELLA_SET = join(RADICE, 'data', 'set');
 const USCITA = join(RADICE, 'data', 'mazzi-prefatti.json');
 
 const leggi = (percorso) => JSON.parse(readFileSync(percorso, 'utf8'));
-
-/** Toglie accenti e maiuscole, per confrontare "Raichu di Alola" con "raichu di alola". */
-const normalizza = (testo) =>
-  String(testo ?? '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
 
 const indice = leggi(join(CARTELLA_SET, 'indice.json'));
 const cacheSet = new Map();
@@ -59,39 +52,6 @@ function carteDi(id) {
     );
   }
   return cacheSet.get(id);
-}
-
-/** Se una carta ha abbastanza dati per essere misurata da `forza()`. */
-const misurabile = (carta) =>
-  carta.categoria !== 'Pokémon' ||
-  (carta.ps && (carta.attacchi ?? []).some((a) => (a.costo ?? []).length));
-
-/**
- * I set in cui cercare una ristampa, dal più promettente in giù.
- *
- * Prima quelli della **stessa serie** del Kit, ordinati per data: un Kit di
- * Sole e Luna ristampa carte di Sole e Luna, e cercare lì per primo evita di
- * pescare un omonimo di vent'anni prima con un altro attacco. Poi tutti gli
- * altri, come rete di sicurezza.
- *
- * I Kit stanno in una serie tutta loro (`tk`), quindi la serie di riferimento
- * si deduce dal prefisso dell'id: `tk-sm-l` → `sm`.
- *
- * @param {string} idKit
- * @returns {string[]}
- */
-function setDoveCercare(idKit) {
-  const serie = idKit.split('-')[1];
-  const perData = (a, b) => String(a.uscita).localeCompare(String(b.uscita));
-  const stessaEpoca = indice.set
-    .filter((s) => s.serie?.id === serie)
-    .sort(perData)
-    .map((s) => s.id);
-  const resto = indice.set
-    .filter((s) => s.serie?.id !== serie && s.serie?.id !== 'tk')
-    .sort(perData)
-    .map((s) => s.id);
-  return [...stessaEpoca, ...resto];
 }
 
 /**
@@ -108,45 +68,21 @@ function setDoveCercare(idKit) {
 function completa(carta, idKit) {
   if (misurabile(carta)) return { carta, presa: null };
 
-  // Si raccolgono TUTTE le omonime prima di scegliere. Cercare la prima e
-  // fermarsi sembrava più semplice e sbagliava: il Lycanroc del Kit ha 110 PS,
-  // il promo SM105 che si trovava per primo ne ha 120 — stesso nome, stampa
-  // diversa, e quindi anche attacchi diversi. I PS sono l'unico dato che il
-  // Kit dichiara sempre, quindi sono il modo per riconoscere la stampa giusta.
-  const omonime = [];
-  for (const idSet of setDoveCercare(idKit)) {
-    for (const c of carteDi(idSet)) {
-      if (normalizza(c.nome) === normalizza(carta.nome) && misurabile(c)) {
-        omonime.push({ carta: c, idSet });
-      }
-    }
-  }
-  if (!omonime.length) return { carta, presa: null };
+  // La ricerca vera sta in `lib/ristampe.mjs`, condivisa con
+  // `completa-ristampe.mjs`. Due implementazioni della stessa ricerca
+  // divergono alla prima correzione, e questa ne ha già avuta una importante:
+  // la preferenza per l'omonima con gli **stessi PS**, senza la quale il
+  // Lycanroc del Kit (110 PS) prendeva gli attacchi del promo SM105 (120 PS).
+  const candidate = setDoveCercare(idKit, indice).flatMap((idSet) =>
+    carteDi(idSet).map((c) => ({ carta: c, idSet })),
+  );
+  const dati = ritrovaDati(carta, candidate);
+  if (!dati) return { carta, presa: null };
 
-  const stessiPs = omonime.find((o) => carta.ps && o.carta.ps === carta.ps);
-  const scelta = stessiPs ?? omonime[0];
-  const gemella = scelta.carta;
-
+  const { approssimati, ...campi } = dati;
   return {
-    carta: {
-      ...carta,
-      // I dati della carta vera hanno la precedenza: si riempie solo ciò che
-      // manca. Sovrascrivere i PS con quelli dell'omonima faceva risultare il
-      // Lycanroc del Kit più robusto di quanto sia stampato sulla carta.
-      ps: carta.ps ?? gemella.ps,
-      attacchi: gemella.attacchi,
-      ritirata: carta.ritirata ?? gemella.ritirata,
-      stadio: carta.stadio ?? gemella.stadio,
-      evolveDa: carta.evolveDa ?? gemella.evolveDa,
-      tipi: carta.tipi?.length ? carta.tipi : gemella.tipi,
-      // Da dove vengono i dati di gioco: senza, fra un anno nessuno saprebbe
-      // dire se questo Golbat è quello giusto.
-      datiDa: `${scelta.idSet}/${gemella.numero}`,
-      // Quando nemmeno i PS coincidono, gli attacchi sono un'**approssimazione**
-      // presa da un'altra stampa. Va dichiarato nel dato, non lasciato intuire.
-      ...(stessiPs ? {} : { attacchiApprossimati: true }),
-    },
-    presa: scelta.idSet,
+    carta: { ...carta, ...campi, ...(approssimati ? { attacchiApprossimati: true } : {}) },
+    presa: dati.datiDa.split('/')[0],
   };
 }
 

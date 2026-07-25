@@ -494,6 +494,75 @@ come scappatoia per lo stesso problema; qui non serve nessuna scappatoia.
 
 ---
 
+## 11. Riparare i dati alla fonte, non nel punto in cui fanno male
+
+Per tre sezioni questo documento ha detto «i set Kit Allenatore non hanno gli
+attacchi» come se fosse un fatto immutabile, e ha costruito difese intorno:
+`copertura`, `attendibile`, il messaggio «punteggio approssimato». Difese
+giuste — ma il buco resta, e si ripresenta in ogni funzione nuova. Il
+costruttore manuale mostrava `offesa 0` su un mazzo di Lycanroc e Raichu.
+
+Il conto vero: **204 Pokémon su 12.877**, l'1,6%. Ma non sparsi a caso —
+concentrati nei Kit, cioè nelle carte con cui si gioca davvero. Un difetto
+dell'1,6% che colpisce il 100% dei casi d'uso.
+
+E quelle carte **esistono complete altrove**: sono ristampe.
+
+### Dove metterlo
+
+Tre posti possibili, e due sbagliati:
+
+| dove | cosa comporta |
+|---|---|
+| in `forza()` | il motore dovrebbe leggere il dataset, e `src/engine/` non tocca dati per principio |
+| a runtime in `dataset.js` | cercare un omonimo vuol dire scorrere tutti i set: 6,4 MB scaricati per leggere un attacco, in un'app che carica un set per volta *apposta* |
+| **in uno strumento di sviluppo** | la ricerca si fa una volta, il risultato è un file da 42 KB |
+
+`tools/completa-ristampe.mjs` produce `data/ristampe.json`, e
+`dataset.js` lo applica **al caricamento del set** — non alla singola lettura.
+Così ogni consumatore (griglia, motore, costruttore) vede le stesse carte senza
+doversi ricordare di chiamare qualcosa: la riparazione sta nel punto in cui i
+dati entrano nell'app, non in ognuno dei punti in cui servono.
+
+### Due errori commessi rifacendolo, entrambi nel merge
+
+**Primo: rompere una scelta già presa, rifattorizzando.** La logica esisteva già
+dentro `genera-mazzi-prefatti.mjs`. Estraendola in `tools/lib/ristampe.mjs` per
+non averne due copie, ho cambiato senza accorgermene la struttura del ciclo: da
+«raccogli tutte le omonime, poi preferisci quella con gli stessi PS» a «per ogni
+set, cerca». Sembra equivalente e non lo è — la preferenza per i PS diventa
+locale al set, e il Lycanroc del Kit (110 PS) è tornato a prendere gli attacchi
+del promo da 120 solo perché quel set viene prima nell'elenco.
+
+> Se ne sono accorti i **dati**, non un test: il file rigenerato aveva 59 righe
+> diverse. Quando un refactor tocca un generatore, il diff dell'output è il test
+> di regressione più economico che esista.
+
+**Secondo: `.length` non è «utilizzabile».** Il merge teneva gli attacchi
+originali quando c'erano:
+
+```js
+attacchi: carta.attacchi?.length ? carta.attacchi : dati.attacchi
+```
+
+Solo che le carte dei Kit hanno un array **pieno di voci senza nome e senza
+costo**. Presenti, quindi vincevano; e inservibili, perché `forza()` misura il
+danno *per Energia spesa*. A schermo comparivano attacchi `undefined 0E 10`. Il
+criterio giusto non è «ne ha» ma «ne ha di misurabili»:
+
+```js
+const suoiUsabili = (carta.attacchi ?? []).some((a) => (a.costo ?? []).length);
+```
+
+> È lo stesso errore della sezione 4 — dato mancante ≠ zero — travestito da
+> controllo di presenza. `array.length > 0` risponde a «esiste?», quasi mai a
+> «serve?».
+
+Dopo la correzione: 24 carte dei Kit su 24 con attacchi utilizzabili, `offesa`
+da 0 a 33, e il messaggio «punteggio approssimato» sparito.
+
+---
+
 ## Esercizi
 
 1. **La scala satura.** Nei mazzi generati da una collezione moderna, `offesa`

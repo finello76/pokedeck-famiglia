@@ -77,6 +77,20 @@ Il file ha forma `{da: {...}, nonPokemon: [...]}`: `nonPokemon` sono le pre-evol
 che in realtà sono carte Allenatore (i fossili — Omanyte "evolve" da *Vecchio
 Helixfossile*), che il motore non deve stampare come Pokémon.
 
+Infine i dati di gioco che TCGdex non replica sulle ristampe:
+
+```bash
+node tools/completa-ristampe.mjs   # scrive data/ristampe.json
+```
+
+TCGdex tratta alcune stampe come ristampe e non vi mette PS e attacchi: 204 Pokémon su
+12.877, ma **quasi tutti nei set Kit Allenatore**, cioè proprio i mazzi con cui si gioca
+in casa. Senza, `engine/forza.js` non sa misurare quelle carte e mostra "offesa 0". Lo
+strumento le ritrova per nome nelle altre stampe (163 su 204; le restanti sono carte
+uniche — V UNIONE, TURBO — che non esistono altrove) e `data/dataset.js` le riapplica al
+caricamento del set. La ricerca **non** si fa a runtime: cercare un omonimo richiede di
+scorrere tutti i set, e la PWA ne carica uno per volta apposta.
+
 **Numero di build.** `version.json` mostra in fondo alla pagina un numero che cresce a
 ogni commit, per capire se GitHub Pages ha pubblicato la versione nuova. Lo aggiorna da
 solo il hook `pre-commit`; per attivarlo in un clone nuovo, una volta sola:

@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v39';
+const VERSIONE = 'v40';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -113,6 +113,10 @@ const GUSCIO = [
   // L'indice delle evoluzioni: 22 KB, ma serve a ogni generazione di mazzi
   // (recupera i collegamenti che le singole stampe non dichiarano).
   './data/evoluzioni.json',
+  // I dati di gioco che TCGdex non replica sulle ristampe: 42 KB, e senza di
+  // essi le carte dei Kit Allenatore risultano prive di attacchi — cioè
+  // proprio i mazzi con cui si gioca in casa.
+  './data/ristampe.json',
   // Il catalogo dei mazzi prefatti: 50 KB, ed è il termine di paragone della
   // forza. Va precaricato perché senza non si può dire se una partita sarà
   // pari, e quella domanda ci si fa proprio quando si sta per giocare — cioè
