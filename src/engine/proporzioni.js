@@ -22,8 +22,42 @@ export const TAGLIE = {
   standard: 60,
 };
 
-/** Quota ideale, prima di scontrarsi con la realtà. */
-const IDEALE = { pokemon: 1 / 3, energie: 1 / 3, allenatori: 1 / 3 };
+/**
+ * Quota del mazzo da riservare alle Energie, per unità di costo medio degli
+ * attacchi.
+ *
+ * Da cui: attacchi che costano 2 → ~22% di Energie (13 carte su 60, la
+ * proporzione dei mazzi veri); attacchi che costano 3 → ~33%.
+ *
+ * **Sta qui e la importa `forza.js`**, non il contrario, e non è un dettaglio
+ * di organizzazione. Prima la costante viveva solo dentro `forza.js` mentre
+ * `proporzioni.js` costruiva i mazzi con un terzo fisso di Energie: il
+ * generatore e il misuratore seguivano due regole diverse sulla stessa cosa, e
+ * ogni mazzo generato buttava via un quarto del proprio `motore` per
+ * costruzione — circa 5 punti di forza, sempre, senza che nessuno sbagliasse
+ * niente. Una regola sola, in un posto solo, è l'unico modo perché non
+ * ricapiti.
+ */
+export const QUOTA_ENERGIE_PER_COSTO = 0.11;
+
+/**
+ * Limiti entro cui tenere la quota di Energie, qualunque cosa dicano i conti.
+ *
+ * Servono contro i dati strani: una collezione di sole carte senza costo
+ * dichiarato darebbe una quota assurda, e un mazzo con il 5% o il 60% di
+ * Energie non è giocabile in nessuno dei due sensi.
+ */
+// Il pavimento è **la quota di un attacco da una sola Energia**, non un numero
+// scelto a parte: un costo medio sotto 1 non esiste (un costo è un elenco con
+// almeno un elemento), quindi qui sotto ci si arriva solo con dati assenti — e
+// in quel caso `composizione()` usa già la mediana come valore predefinito.
+// Metterlo più in alto, come era all'inizio, avrebbe ricreato in piccolo lo
+// stesso disaccordo che questa modifica elimina.
+const ENERGIE_MIN = QUOTA_ENERGIE_PER_COSTO;
+const ENERGIE_MAX = 0.4;
+
+/** Quota dei Pokémon, prima di scontrarsi con la realtà. */
+const QUOTA_POKEMON = 1 / 3;
 
 /**
  * Minimo di Pokémon Base perché la mano iniziale ne contenga quasi certamente uno.
@@ -36,7 +70,13 @@ const IDEALE = { pokemon: 1 / 3, energie: 1 / 3, allenatori: 1 / 3 };
  * @returns {number}
  */
 export function minimoBasi(taglia) {
-  return Math.max(2, Math.round(taglia * 0.25));
+  // Un quarto fino a 30 carte, un quinto oltre. Sopra le 30 la quota fissa
+  // chiedeva 15 Base su 60 — i mazzi veri ne hanno 8-12 — e quei 3-4 slot in
+  // più sono esattamente la differenza fra un mazzo con due linee evolutive
+  // complete e uno con una sola. La probabilità di aprire regge lo stesso:
+  // con 12 Base su 60 e una mano da 7 si parte l'80% delle volte.
+  const quota = taglia > 30 ? 0.2 : 0.25;
+  return Math.max(2, Math.round(taglia * quota));
 }
 
 /**
@@ -50,6 +90,12 @@ export function minimoBasi(taglia) {
  * @param {number} taglia carte totali del mazzo
  * @param {{pokemon: number, energie: number, allenatori: number}} disponibili
  *   copie utilizzabili da **questo** mazzo (già divise fra i mazzi)
+ * @param {object} [opzioni]
+ * @param {number} [opzioni.costoMedio=2] quanto costano in media gli attacchi
+ *   delle carte con cui si sta costruendo, da `costoMedioAttacchi()`. Decide
+ *   quante Energie servono: un mazzo di attacchi da una Energia ne vuole molte
+ *   meno di uno di attacchi da tre. Il valore predefinito è la mediana del
+ *   dataset
  * @returns {{pokemon: number, energie: number, allenatori: number, mancanti: number}}
  *   `mancanti` è quanto non si riesce a riempire in nessun modo
  * @example
@@ -57,11 +103,22 @@ export function minimoBasi(taglia) {
  * composizione(15, { pokemon: 8, energie: 9, allenatori: 2 });
  * // → { pokemon: 5, energie: 8, allenatori: 2, mancanti: 0 }
  */
-export function composizione(taglia, disponibili) {
+export function composizione(taglia, disponibili, opzioni = {}) {
+  const costoMedio = opzioni.costoMedio ?? 2;
+  const parteEnergie = Math.min(
+    ENERGIE_MAX,
+    Math.max(ENERGIE_MIN, costoMedio * QUOTA_ENERGIE_PER_COSTO),
+  );
+  const pokemon = Math.round(taglia * QUOTA_POKEMON);
+  const energie = Math.round(taglia * parteEnergie);
   const quota = {
-    pokemon: Math.round(taglia * IDEALE.pokemon),
-    energie: Math.round(taglia * IDEALE.energie),
-    allenatori: taglia - Math.round(taglia * IDEALE.pokemon) - Math.round(taglia * IDEALE.energie),
+    pokemon,
+    energie,
+    // Gli Allenatori prendono ciò che resta, ed è voluto: nei mazzi veri sono
+    // la parte più grande (30-38 su 60). Qui non ci arriveranno quasi mai —
+    // una collezione di famiglia ne ha pochi — ma quando ci sono devono poter
+    // riempire il mazzo invece di lasciare il posto a Energie che nessuno usa.
+    allenatori: taglia - pokemon - energie,
   };
 
   const esito = {
@@ -112,11 +169,16 @@ export function fettaPerMazzo(totali, numeroMazzi) {
  * @param {number} taglia
  * @returns {[number, number, number]} copie consigliate per livello
  * @example
- * piramide(60); // [3, 2, 1]
+ * piramide(60); // [4, 3, 2]
  * piramide(15); // [2, 1, 1]
  */
 export function piramide(taglia) {
-  if (taglia >= 40) return [3, 2, 1];
+  // Il 60 vuole 4-3-2, la forma dei mazzi veri. Prima restituiva 3-2-1 come il
+  // 30: in un mazzo doppio la stessa linea si pesca la metà delle volte, quindi
+  // una linea non raddoppiata è una linea che quasi non entra in gioco. Il ramo
+  // c'era già ma dava lo stesso risultato di quello sotto, cioè non faceva
+  // niente.
+  if (taglia >= 40) return [4, 3, 2];
   if (taglia >= 25) return [3, 2, 1];
   if (taglia >= 18) return [2, 2, 1];
   return [2, 1, 1];

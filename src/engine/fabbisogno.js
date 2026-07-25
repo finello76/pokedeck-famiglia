@@ -119,6 +119,40 @@ export function scoperte(mazzo) {
 }
 
 /**
+ * Quanto costa in media attaccare, con queste carte.
+ *
+ * Si guarda la media dei costi di **tutti** gli attacchi di ogni Pokémon, non
+ * quello dell'attacco migliore: il fabbisogno di Energie di una carta è quanto
+ * serve a farla funzionare, non quanto basta al suo colpo più economico. È la
+ * stessa scelta fatta in `forza.js`, ed è nata da lì — prendere il costo
+ * dell'attacco più redditizio faceva risultare che al mazzo bastassero
+ * pochissime Energie.
+ *
+ * Gli attacchi senza costo si ignorano: sono dati mancanti, non attacchi
+ * gratis.
+ *
+ * @param {Array<{carta: object, quantita: number}>} voci
+ * @returns {number} costo medio, o 2 se non c'è niente da misurare (è la
+ *   mediana del dataset: l'ipotesi meno impegnativa possibile)
+ * @example
+ * costoMedioAttacchi(collezione); // 1.9
+ */
+export function costoMedioAttacchi(voci) {
+  let somma = 0;
+  let copie = 0;
+  for (const { carta, quantita } of voci ?? []) {
+    if (carta?.categoria !== 'Pokémon') continue;
+    const costi = (carta.attacchi ?? [])
+      .map((a) => a.costo?.length ?? 0)
+      .filter((c) => c > 0);
+    if (!costi.length) continue;
+    somma += (costi.reduce((s, c) => s + c, 0) / costi.length) * quantita;
+    copie += quantita;
+  }
+  return copie ? somma / copie : 2;
+}
+
+/**
  * I tipi di Energia base che una collezione può davvero fornire.
  *
  * Serve al generatore per non scegliere carte che nessuna Energia posseduta

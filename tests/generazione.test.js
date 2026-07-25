@@ -94,13 +94,21 @@ test('la fetta divide le scorte fra i mazzi', () => {
 });
 
 test('la piramide si scala con la taglia', () => {
-  assert.deepEqual(piramide(60), [3, 2, 1]);
+  // Il 60 vuole 4-3-2, non 3-2-1 come il 30: in un mazzo doppio la stessa
+  // linea si pesca la metà delle volte, quindi non raddoppiarla significa
+  // metterci una linea che quasi non entra in gioco.
+  assert.deepEqual(piramide(60), [4, 3, 2]);
+  assert.deepEqual(piramide(30), [3, 2, 1]);
   assert.deepEqual(piramide(15), [2, 1, 1]);
 });
 
-test('il minimo di Base cresce con il mazzo', () => {
+test('il minimo di Base cresce con il mazzo, ma meno che in proporzione', () => {
+  // Un quarto fino a 30, un quinto oltre: 15 Base su 60 (la vecchia quota
+  // fissa) sono più di quante ne abbia un mazzo vero, e quei 3 slot sono la
+  // differenza fra due linee evolutive complete e una sola.
   assert.equal(minimoBasi(15), 4);
-  assert.equal(minimoBasi(60), 15);
+  assert.equal(minimoBasi(30), 8);
+  assert.equal(minimoBasi(60), 12);
 });
 
 // --- scelta dei tipi ---

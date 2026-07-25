@@ -25,6 +25,7 @@ import { classifica } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
 import { eEnergiaBase, tipoEnergia } from '../data/energie.js';
 import { formatoPer } from './formati.js';
+import { QUOTA_ENERGIE_PER_COSTO } from './proporzioni.js';
 
 /**
  * I valori che valgono 100 su ciascun indicatore.
@@ -68,14 +69,11 @@ export const PESI = {
  */
 export const COPERTURA_MINIMA = 0.6;
 
-/**
- * Quota di Energie sul mazzo che si considera giusta, per unità di costo medio
- * degli attacchi.
- *
- * Da cui: attacchi che costano 2 → ~22% di Energie (13 carte su 60, che è la
- * proporzione dei mazzi veri); attacchi che costano 3 → ~33%.
- */
-const QUOTA_ENERGIE_PER_COSTO = 0.11;
+// La quota di Energie giusta per unità di costo degli attacchi vive in
+// `proporzioni.js`, che è il modulo che COSTRUISCE i mazzi. Qui si importa e
+// basta: quando la stessa regola stava scritta in due posti, il generatore
+// riempiva di Energie un terzo del mazzo e questa funzione ne voleva il 22% —
+// ogni mazzo generato perdeva un quarto del proprio `motore` per costruzione.
 
 /**
  * Il danno di un attacco come numero.

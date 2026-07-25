@@ -23,7 +23,7 @@ import { normalizzaNome } from './nomi.js';
 import { eEnergiaBase, tipoEnergia } from '../data/energie.js';
 import { MAX_COPIE } from './formati.js';
 import { minimoBasi, composizione } from './proporzioni.js';
-import { fabbisogno, tipiRichiesti, tipiPresenti } from './fabbisogno.js';
+import { fabbisogno, tipiRichiesti, tipiPresenti, costoMedioAttacchi } from './fabbisogno.js';
 import { copieAncoraDisponibili } from './mazzo-manuale.js';
 
 /**
@@ -206,17 +206,21 @@ export function completa(mazzo, disponibili, { taglia }) {
   };
   const totale = () => lavoro.carte.reduce((s, v) => s + v.quantita, 0);
 
-  const quota = composizione(taglia, {
-    pokemon: (disponibili ?? [])
-      .filter((v) => v.carta?.categoria === 'Pokémon')
-      .reduce((s, v) => s + v.quantita, 0),
-    energie: (disponibili ?? [])
-      .filter((v) => v.carta?.categoria === 'Energia')
-      .reduce((s, v) => s + v.quantita, 0),
-    allenatori: (disponibili ?? [])
-      .filter((v) => v.carta?.categoria === 'Allenatore')
-      .reduce((s, v) => s + v.quantita, 0),
-  });
+  // Stesso criterio del generatore: quante Energie servono lo decide il costo
+  // degli attacchi delle carte con cui si sta costruendo, non una quota fissa.
+  const conta = (categoria) =>
+    (disponibili ?? [])
+      .filter((v) => v.carta?.categoria === categoria)
+      .reduce((s, v) => s + v.quantita, 0);
+  const quota = composizione(
+    taglia,
+    {
+      pokemon: conta('Pokémon'),
+      energie: conta('Energia'),
+      allenatori: conta('Allenatore'),
+    },
+    { costoMedio: costoMedioAttacchi(disponibili) },
+  );
 
   // Fino a `taglia` giri: ogni giro aggiunge una carta, quindi non può servirne
   // di più. Il tetto è una rete di sicurezza contro un bug, non un limite atteso.

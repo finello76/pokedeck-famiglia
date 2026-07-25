@@ -563,6 +563,77 @@ da 0 a 33, e il messaggio «punteggio approssimato» sparito.
 
 ---
 
+## 12. Quando chi costruisce e chi misura non sono d'accordo
+
+`proporzioni.js` riempiva i mazzi con **un terzo di Energie**. `forza.js` li
+giudicava volendone **costo medio × 0,11** — il 22% con attacchi da due Energie.
+Due regole diverse sulla stessa cosa, scritte in due momenti diversi, ciascuna
+sensata da sola.
+
+L'effetto non è un errore visibile da nessuna parte: è una perdita costante.
+
+| costo medio | costruito | voluto | `adeguatezza` |
+|---|---|---|---|
+| 1,5 | 33 % | 17 % | 0,49 |
+| 2,0 | 33 % | 22 % | **0,74** |
+| 2,5 | 33 % | 28 % | 0,89 |
+
+Nel caso tipico ogni mazzo generato buttava via **un quarto del proprio
+`motore`**, che col peso 0,20 fa cinque punti di forza. Sempre, su tutti i
+mazzi, senza che nessun modulo sbagliasse i propri conti: si contraddicevano, e
+vinceva quello che misura.
+
+### La correzione non è "usare lo stesso numero"
+
+La tentazione è copiare `0.11` anche in `proporzioni.js`. Sarebbe lo stesso bug
+con un anno di ritardo: due copie di una costante divergono alla prima
+taratura. La costante ora **vive in `proporzioni.js`** — il modulo che
+costruisce — e `forza.js` la importa. La direzione conta: chi misura si adegua a
+chi costruisce, non il contrario, perché la proporzione di un mazzo è una scelta
+di progetto e il punteggio è la sua verifica.
+
+E la quota non è più fissa: `composizione()` riceve il costo medio degli
+attacchi delle carte con cui sta costruendo (`costoMedioAttacchi()`), quindi un
+mazzo di attacchi da una Energia ne riceve poche e uno di attacchi da tre ne
+riceve molte. Sulla collezione di casa il costo medio è **1,89** → 21% di
+Energie invece del 33%.
+
+### Il test che lo blocca non confronta le costanti
+
+Sarebbe una tautologia: sono la stessa variabile importata, l'uguaglianza è
+garantita dal linguaggio. Il test confronta il **risultato**:
+
+```js
+const quota = composizione(taglia, abbondanza, { costoMedio: costo });
+const m = mazzoConQuellaComposizione(quota);
+assert.ok(forza(m, { taglia }).motore > 0.85);
+```
+
+Cioè: *un mazzo costruito secondo le nostre proporzioni dev'essere giudicato
+bene dal nostro misuratore*. Vale su 4 taglie × 3 costi, e continuerebbe a
+valere anche se un domani le due formule divergessero di nuovo per altra strada.
+
+> Scrivendolo ha subito trovato un residuo: il pavimento della quota Energie era
+> al 15% mentre con attacchi da una sola Energia ne bastava l'11% — lo stesso
+> disaccordo, in piccolo, appena reintrodotto da un numero messo lì per
+> prudenza. Ora il pavimento **è** la quota di un attacco da una Energia.
+
+### Due correzioni minori, trovate rileggendo
+
+`piramide()` aveva un ramo morto: `taglia >= 40` e `taglia >= 25` restituivano
+entrambi `[3, 2, 1]`. Il primo `if` non faceva niente da sempre. Il 60 ora vuole
+`[4, 3, 2]`: in un mazzo doppio la stessa linea si pesca la metà delle volte,
+quindi non raddoppiarla significa metterci una linea che quasi non entra in
+gioco.
+
+`minimoBasi()` chiedeva il 25% fisso, cioè **15 Pokémon Base su 60** — i mazzi
+veri ne hanno 8-12. Quei tre slot sono esattamente la differenza fra un mazzo
+con due linee evolutive complete e uno con una sola. Ora è un quinto sopra le 30
+carte, e la probabilità di aprire regge lo stesso (12 Base su 60, mano da 7:
+80%).
+
+---
+
 ## Esercizi
 
 1. **La scala satura.** Nei mazzi generati da una collezione moderna, `offesa`

@@ -245,6 +245,39 @@ test('forzaMedia riassume un piano, e basta un mazzo cieco a renderlo inattendib
   assert.equal(forzaMedia([]).media, 0);
 });
 
+test('il generatore e il misuratore vogliono la stessa quota di Energie', async () => {
+  // La regressione che questo test blocca: `proporzioni.js` costruiva i mazzi
+  // con un terzo di Energie mentre `forza()` ne voleva il 22%, e ogni mazzo
+  // generato perdeva un quarto del proprio `motore` per costruzione — cinque
+  // punti di forza, sempre, senza che nessuno sbagliasse niente.
+  //
+  // Non si confrontano le costanti (sarebbe una tautologia: sono la stessa
+  // variabile importata) ma il **risultato**: un mazzo composto secondo
+  // `composizione()` dev'essere giudicato bene da `forza()`.
+  const { composizione } = await import('../src/engine/proporzioni.js');
+
+  for (const taglia of [15, 20, 30, 60]) {
+    for (const costo of [1, 2, 3]) {
+      const quota = composizione(
+        taglia,
+        { pokemon: 999, energie: 999, allenatori: 999 },
+        { costoMedio: costo },
+      );
+      const m = mazzo([
+        { carta: pk('Attaccante', { costo, danno: 40 }), quantita: quota.pokemon },
+        { carta: en('Lotta'), quantita: quota.energie },
+        { carta: { nome: 'Mega Ball', numero: '1', categoria: 'Allenatore' }, quantita: quota.allenatori },
+      ]);
+      const { motore } = forza(m, { taglia });
+      assert.ok(
+        motore > 0.85,
+        `taglia ${taglia}, costo ${costo}: motore ${motore.toFixed(2)} — ` +
+          'le proporzioni di costruzione non soddisfano il misuratore',
+      );
+    }
+  }
+});
+
 test('confronta traduce lo scarto in una frase da leggere prima di giocare', () => {
   assert.equal(confronta(45, 45).verso, 'pari');
   assert.equal(confronta(49, 45).verso, 'pari', 'sotto i 5 punti non si sente giocando');

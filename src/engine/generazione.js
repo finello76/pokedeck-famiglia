@@ -15,7 +15,7 @@ import { analizza } from './analisi.js';
 import { Dispensa } from './dispensa.js';
 import { classifica, SCALA } from './stadi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
-import { fabbisogno, tipiDisponibili } from './fabbisogno.js';
+import { fabbisogno, tipiDisponibili, costoMedioAttacchi } from './fabbisogno.js';
 import { composizione, fettaPerMazzo, piramide } from './proporzioni.js';
 import { Casuale } from './casuale.js';
 import { aggiungiAlMazzo } from './mazzo.js';
@@ -233,7 +233,9 @@ export function generaMazzi(voci, opzioni) {
   // collezione con pochi Pokémon riceverebbe due soli slot e il budget di
   // stampa non avrebbe dove spendersi.
   fetta.pokemon += budgetPerMazzo;
-  const quota = composizione(taglia, fetta);
+  // Il costo medio degli attacchi decide quante Energie servono: si misura
+  // sulla collezione intera, prima che i mazzi comincino a consumarla.
+  const quota = composizione(taglia, fetta, { costoMedio: costoMedioAttacchi(voci) });
 
   // I tipi si scelgono sapendo quali sanno evolvere: si guarda l'intera
   // collezione, prima che i mazzi comincino a consumarla.
