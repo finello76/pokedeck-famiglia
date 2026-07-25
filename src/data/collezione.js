@@ -91,6 +91,43 @@ export async function impostaQuantita(idSet, numero, quantita) {
 }
 
 /**
+ * Mette una carta nella lista dei desideri, o la toglie.
+ *
+ * Un desiderio è una riga come le altre con `desiderata: true`: la carta **non
+ * la possiedi**, e `quantita` dice quante ne vorresti. Le due cose si
+ * escludono — o ce l'hai o la vuoi — perché è così che si legge una lista
+ * della spesa, e perché due numeri per riga ("ne ho 1, ne voglio 4") sono più
+ * difficili da mostrare di quanto valgano.
+ *
+ * Non serve nessuna migrazione dello store: IndexedDB conserva oggetti liberi,
+ * e un campo in più non tocca né la versione né gli indici. Le righe vecchie
+ * semplicemente non ce l'hanno, e `desiderata` assente vale "posseduta".
+ *
+ * @param {string} idSet
+ * @param {string|number} numero
+ * @param {number} [quante=1] quante copie se ne vorrebbero
+ * @returns {Promise<void>}
+ * @example
+ * await impostaDesiderio('sv08', 118, 2);  // ne vorrei due
+ * await impostaDesiderio('sv08', 118, 0);  // non la voglio più
+ */
+export async function impostaDesiderio(idSet, numero, quante = 1) {
+  const id = chiave(idSet, numero);
+  if (quante <= 0) {
+    await cancella(STORE_COLLEZIONE, id);
+    return;
+  }
+  await scrivi(STORE_COLLEZIONE, {
+    id,
+    idSet,
+    numero: String(numero),
+    quantita: Math.floor(quante),
+    desiderata: true,
+    aggiornatoIl: new Date().toISOString(),
+  });
+}
+
+/**
  * Aggiunge copie a quelle già possedute (o crea la riga se manca).
  *
  * @param {string} idSet
@@ -102,7 +139,11 @@ export async function impostaQuantita(idSet, numero, quantita) {
  */
 export async function aggiungiCopie(idSet, numero, copie = 1) {
   const esistente = await leggi(STORE_COLLEZIONE, chiave(idSet, numero));
-  const nuova = (esistente?.quantita ?? 0) + copie;
+  // Aggiungere copie a una carta desiderata vuol dire che l'hai comprata: il
+  // desiderio si azzera e si riparte da zero copie possedute. Sommare alle
+  // copie "desiderate" farebbe risultare posseduto ciò che non hai mai avuto.
+  const partenza = esistente?.desiderata ? 0 : (esistente?.quantita ?? 0);
+  const nuova = partenza + copie;
   await impostaQuantita(idSet, numero, nuova);
   return Math.max(0, nuova);
 }
@@ -123,13 +164,22 @@ export function rimuovi(idSet, numero) {
  * @returns {Promise<Array<{id: string, idSet: string, numero: string, quantita: number, carta: object|null, nomeSet: string}>>}
  *   Le righe con `carta === null` sono carte di set non più scaricati: si
  *   mostrano lo stesso, segnalate, invece di sparire senza spiegazione.
+ *
+ * @param {object} [opzioni]
+ * @param {boolean} [opzioni.conDesideri=false] se includere le carte della
+ *   lista desideri. **Escluse per difetto**, ed è la scelta che rende sicura
+ *   tutta la funzione: un desiderio è una carta che NON hai, e ogni consumatore
+ *   che somma `quantita` — il motore, le statistiche, il costruttore di mazzi,
+ *   le sostituzioni — conterebbe carte inesistenti senza accorgersene. Chi le
+ *   vuole (la griglia del catalogo, l'export) lo chiede
  */
-export async function elencoCompleto() {
-  const [righe, set, serie] = await Promise.all([
+export async function elencoCompleto({ conDesideri = false } = {}) {
+  const [tutte, set, serie] = await Promise.all([
     leggiTutto(STORE_COLLEZIONE),
     elencoSet(),
     elencoSerie(),
   ]);
+  const righe = conDesideri ? tutte : tutte.filter((r) => !r.desiderata);
   const infoSet = new Map(set.map((s) => [s.id, s]));
   // Posizione della serie nell'indice: le serie sono in ordine di uscita, e la
   // griglia le mostra così. Ordinarle per nome metterebbe "Sole e Luna" prima
@@ -237,6 +287,9 @@ export function scriviMoltePer(voci) {
       idSet: v.idSet,
       numero: String(v.numero),
       quantita: Math.floor(v.quantita),
+      // Il campo si scrive solo quando c'è: le righe possedute restano
+      // identiche a prima, e `desiderata` assente vale "posseduta".
+      ...(v.desiderata ? { desiderata: true } : {}),
       aggiornatoIl: adesso,
     })),
   );

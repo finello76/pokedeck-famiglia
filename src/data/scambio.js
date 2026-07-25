@@ -19,7 +19,10 @@ const VERSIONE_FORMATO = 1;
  * @returns {Promise<object>}
  */
 export async function esporta() {
-  const righe = await elencoCompleto();
+  // Con i desideri: sono dati che hai inserito a mano come tutti gli altri, e
+  // perderli spostando la collezione su un altro telefono sarebbe una perdita
+  // silenziosa — te ne accorgeresti solo davanti allo scaffale del negozio.
+  const righe = await elencoCompleto({ conDesideri: true });
   return {
     formato: 'pokedeck-famiglia',
     versione: VERSIONE_FORMATO,
@@ -28,6 +31,10 @@ export async function esporta() {
       idSet: r.idSet,
       numero: r.numero,
       quantita: r.quantita,
+      // Presente solo sui desideri: le righe normali restano identiche a
+      // prima, quindi i file esportati con le versioni vecchie si rileggono
+      // senza conversioni.
+      ...(r.desiderata ? { desiderata: true } : {}),
       // Solo per leggibilità umana: all'import viene ignorato, perché la
       // verità sta nel dataset. Se un nome cambia, l'import resta valido.
       nome: r.carta?.nome ?? null,
@@ -91,7 +98,14 @@ export function validaImport(dati) {
     if (!Number.isFinite(quantita) || quantita <= 0) {
       throw new Error(`Carta n. ${indice + 1} (${c.idSet}:${c.numero}): quantità non valida.`);
     }
-    voci.push({ idSet: String(c.idSet), numero: String(c.numero), quantita });
+    voci.push({
+      idSet: String(c.idSet),
+      numero: String(c.numero),
+      quantita,
+      // I file esportati prima della lista desideri non hanno il campo: assente
+      // vuol dire posseduta, che e' il comportamento di sempre.
+      ...(c.desiderata ? { desiderata: true } : {}),
+    });
   });
 
   return voci;

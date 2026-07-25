@@ -19,6 +19,13 @@ export const FILTRI_VUOTI = {
   serie: '',
   set: '',
   rarita: '',
+  /**
+   * Lista desideri: `''` tutte, `'solo'` solo i desideri, `'escludi'` solo il
+   * posseduto. Tre stati e non una spunta, perché "mostra anche i desideri" e
+   * "mostrami la lista della spesa" sono due domande diverse, e la seconda è
+   * quella che si fa in negozio.
+   */
+  desiderio: '',
 };
 
 /**
@@ -29,10 +36,18 @@ export const FILTRI_VUOTI = {
  * @returns {object[]}
  */
 export function filtra(voci, filtri) {
-  const { categoria, tipo, stadio, testo, serie, set, rarita } = { ...FILTRI_VUOTI, ...filtri };
+  const { categoria, tipo, stadio, testo, serie, set, rarita, desiderio } = {
+    ...FILTRI_VUOTI,
+    ...filtri,
+  };
   const ago = testo.trim().toLowerCase();
 
   return (voci ?? []).filter((voce) => {
+    // Come serie e set, si legge dalla riga e non dalla carta: vale anche per
+    // le carte di un set non più scaricato.
+    if (desiderio === 'solo' && !voce.desiderata) return false;
+    if (desiderio === 'escludi' && voce.desiderata) return false;
+
     // Serie e set si possono filtrare anche senza i dati della carta: sono
     // scritti sulla riga di collezione, non dentro la carta.
     if (serie && (voce.serie?.id ?? '') !== serie) return false;

@@ -67,6 +67,9 @@ export async function preparaWizard() {
     // I mazzi contro cui si può scegliere di giocare, già misurati: il wizard
     // mostra la forza accanto al nome, perché "Kit Lycanroc" da solo non aiuta
     // a decidere e il numero sì.
+    // Quante carte desiderate: la domanda "uso anche i desideri?" ha senso
+    // solo se ce ne sono.
+    desideri: (await elencoCompleto({ conDesideri: true })).filter((v) => v.desiderata).length,
     prefatti: (await elencoPrefatti()).map((m) => ({
       id: m.id,
       nome: m.nome,
@@ -116,7 +119,7 @@ function setInCollezione(voci) {
  */
 async function genera(risposte, seme = nuovoSeme()) {
   ultimeRisposte = risposte;
-  const tutte = await elencoCompleto();
+  const tutte = await elencoCompleto({ conDesideri: Boolean(opzioniDaRisposte(risposte).usaDesideri) });
 
   // I set esclusi si tolgono QUI, prima del motore: per lui devono essere
   // carte che non esistono. Filtrare dopo significherebbe generare mazzi con

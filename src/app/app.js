@@ -86,12 +86,16 @@ function mostraStato(elemento, testo, errore = false) {
  * @returns {Promise<void>}
  */
 async function aggiornaCollezione() {
-  const voci = await elencoCompleto();
-  const stat = await statistiche(voci);
+  // La griglia mostra anche i desideri, contrassegnati; tutto il resto —
+  // statistiche, conteggio energie, carte mancanti — lavora solo su ciò che si
+  // possiede davvero, o direbbe di avere carte che non hai.
+  const voci = await elencoCompleto({ conDesideri: true });
+  const possedute = voci.filter((v) => !v.desiderata);
+  const stat = await statistiche(possedute);
 
   // Il confronto con la collezione di riferimento lo fa il livello dati: la
   // griglia riceve una funzione e non sa da dove arrivino le carte.
-  griglia.caricaMancanti = (idSet) => carteMancanti(idSet, voci);
+  griglia.caricaMancanti = (idSet) => carteMancanti(idSet, possedute);
   // Le energie base generiche non vanno nella griglia: non hanno scansione né
   // numero di collezione e si contano già nel contatore dedicato qui sotto.
   griglia.voci = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);

@@ -316,6 +316,14 @@ export class GrigliaCollezione extends HTMLElement {
             </select>
           </div>
           <div>
+            <label for="filtro-desiderio">Lista desideri</label>
+            <select id="filtro-desiderio" data-filtro="desiderio">
+              <option value=""${this.#filtri.desiderio === '' ? ' selected' : ''}>tutto</option>
+              <option value="solo"${this.#filtri.desiderio === 'solo' ? ' selected' : ''}>solo i desideri</option>
+              <option value="escludi"${this.#filtri.desiderio === 'escludi' ? ' selected' : ''}>solo ciò che ho</option>
+            </select>
+          </div>
+          <div>
             <label for="filtro-rarita">Rarità</label>
             <select id="filtro-rarita" data-filtro="rarita">
               <option value="">tutte</option>${rarita
@@ -440,7 +448,12 @@ export class GrigliaCollezione extends HTMLElement {
    */
   #card(voce, mancante = false) {
     const card = document.createElement('article');
-    card.className = mancante ? 'carta-griglia mancante' : 'carta-griglia';
+    // Tre stati, non due: posseduta, desiderata, e "manca al set" (che è una
+    // carta di cui l'app sa l'esistenza ma che tu non hai mai né avuto né
+    // chiesto). Il desiderio è una scelta tua, quindi si vede di più.
+    card.className = 'carta-griglia';
+    if (mancante) card.classList.add('mancante');
+    if (voce.desiderata) card.classList.add('desiderata');
     // idSet/numero/quantita servono al visore per mostrare e modificare le copie
     // possedute mentre la carta è aperta a schermo intero.
     card._voce = {
@@ -471,8 +484,11 @@ export class GrigliaCollezione extends HTMLElement {
     card.dataset.tipo = tipo;
 
     const numero = String(c.numero ?? voce.numero ?? '').split('/')[0];
-    const badge =
-      mancante || !voce.quantita
+    // Sul desiderio il numero non dice "ne ho", dice "ne vorrei": la stellina
+    // lo distingue senza bisogno di leggere una legenda.
+    const badge = voce.desiderata
+      ? `<span class="badge-qty badge-desiderio" title="Nella lista desideri">★${voce.quantita}</span>`
+      : mancante || !voce.quantita
         ? ''
         : `<span class="badge-qty">×${voce.quantita}</span>`;
     const prezzo = this.#badgePrezzo(voce);

@@ -15,7 +15,7 @@
  */
 
 import { cercaPerNumeroStampato, urlImmagine } from '../data/dataset.js';
-import { aggiungiCopie } from '../data/collezione.js';
+import { aggiungiCopie, impostaDesiderio } from '../data/collezione.js';
 import { segnaposto, seImmagineRotta } from '../ui/segnaposto.js';
 import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
 
@@ -41,6 +41,9 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
   /** Quante copie aggiunge un tocco su un candidato. */
   let quante = 1;
 
+  /** Se il tocco mette la carta nella lista desideri invece che in collezione. */
+  let desiderio = false;
+
   const suCatalogo = () => (location.hash.slice(1) || 'catalogo') === 'catalogo';
   const aggiornaFab = () => {
     fab.hidden = !(suCatalogo() && foglio.hidden);
@@ -48,6 +51,9 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
 
   function apri() {
     quante = 1;
+    // Si riparte sempre da "ce l'ho": è il caso normale, e ricordare l'ultima
+    // scelta farebbe catalogare come desiderate le carte che si hanno in mano.
+    desiderio = false;
     foglio.hidden = false;
     bloccaScorrimento();
     aggiornaFab();
@@ -130,13 +136,23 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     }
   }
 
-  /** Il piccolo stepper "Copie da aggiungere". */
+  /**
+   * Lo stepper delle copie e la scelta fra "ce l'ho" e "la voglio".
+   *
+   * Le due cose stanno insieme perché sono la stessa domanda — *quante e in che
+   * senso* — e separarle avrebbe voluto dire due pannelli per un gesto solo,
+   * proprio nel punto in cui si hanno le carte in mano e si va di fretta.
+   */
   function selettoreQuante() {
     const riga = document.createElement('div');
     riga.className = 'quante-riga';
     riga.innerHTML = `
-      <span>Copie da aggiungere</span>
+      <div class="quante-modo" role="group" aria-label="Cosa stai aggiungendo">
+        <button type="button" class="modo${desiderio ? '' : ' attivo'}" data-modo="ho">Ce l'ho</button>
+        <button type="button" class="modo${desiderio ? ' attivo' : ''}" data-modo="voglio">La voglio</button>
+      </div>
       <div class="quante-stepper">
+        <span class="quante-etichetta">${desiderio ? 'Ne vorrei' : 'Copie'}</span>
         <button type="button" class="meno" aria-label="Una in meno">−</button>
         <span class="quante-num">${quante}</span>
         <button type="button" class="piu" aria-label="Una in più">+</button>
@@ -151,7 +167,27 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
       quante += 1;
       num.textContent = quante;
     });
+    riga.querySelectorAll('[data-modo]').forEach((bottone) =>
+      bottone.addEventListener('click', () => {
+        desiderio = bottone.dataset.modo === 'voglio';
+        // Si ridisegnano i candidati, non solo questa riga: cambia anche il
+        // verbo sul tasto di ogni carta, e lasciarlo vecchio sarebbe il modo
+        // più facile di catalogare come posseduta una carta che non hai.
+        riga.replaceWith(selettoreQuante());
+        for (const b of risultati.querySelectorAll('.candidato')) aggiornaVerbo(b);
+      }),
+    );
     return riga;
+  }
+
+  /**
+   * Aggiorna il simbolo del tasto di una riga-candidato secondo il modo.
+   * @param {HTMLElement} bottone
+   */
+  function aggiornaVerbo(bottone) {
+    const segno = bottone.querySelector('.aggiungi');
+    if (segno) segno.textContent = desiderio ? '★' : '＋';
+    bottone.classList.toggle('candidato-desiderio', desiderio);
   }
 
   /**
@@ -181,16 +217,23 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
         <span class="meta-carta">${escapeHtml(set.nome)} · n. ${escapeHtml(numero)}</span>
         <span class="chips">${chip}</span>
       </span>
-      <span class="aggiungi" aria-hidden="true">＋</span>
+      <span class="aggiungi" aria-hidden="true">${desiderio ? '★' : '＋'}</span>
     `;
+    if (desiderio) bottone.classList.add('candidato-desiderio');
 
     seImmagineRotta(bottone.querySelector('img'), carta, 'segnaposto-mini');
 
     bottone.addEventListener('click', async () => {
       try {
-        const totale = await aggiungiCopie(set.id, carta.numero, quante);
-        await onAggiornata();
-        onMessaggio(`${carta.nome}: ora ne hai ${totale}.`);
+        if (desiderio) {
+          await impostaDesiderio(set.id, carta.numero, quante);
+          await onAggiornata();
+          onMessaggio(`${carta.nome}: nella lista desideri (${quante}).`);
+        } else {
+          const totale = await aggiungiCopie(set.id, carta.numero, quante);
+          await onAggiornata();
+          onMessaggio(`${carta.nome}: ora ne hai ${totale}.`);
+        }
         // Pronti per la prossima carta senza chiudere il pannello.
         risultati.replaceChildren();
         form.reset();

@@ -344,6 +344,25 @@ griglia-collezione {
   opacity: 0.55;
 }
 
+/* Carta della lista desideri: non ce l'hai, la vuoi.
+   Il bordo tratteggiato dice "non è ancora tua" senza spegnere la carta come
+   fa `.mancante` — un desiderio l'hai scelto tu, quindi deve saltare all'occhio
+   invece di sbiadire. Il colore è quello dei proxy: entrambi vogliono dire
+   "questa carta non è nella scatola". */
+.carta-griglia.desiderata {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--colore-proxy) 55%, transparent);
+  background: color-mix(in srgb, var(--colore-proxy) 6%, var(--colore-superficie));
+}
+
+/* Due classi e non una: `.badge-qty` piu' avanti in questo foglio imposta gia'
+   uno sfondo, e a parita' di specificita' vince chi viene dopo. `.badge-qty
+   .badge-desiderio` sale a (0,2,0) e vince a prescindere dall'ordine. */
+.badge-qty.badge-desiderio {
+  background: var(--colore-proxy);
+  color: #fff;
+}
+
 .apri-carta {
   display: block;
   width: 100%;

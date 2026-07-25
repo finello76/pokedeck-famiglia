@@ -127,6 +127,29 @@ const DOMANDE = [
       })),
   },
   {
+    chiave: 'usaDesideri',
+    testo: 'Uso anche le carte che desideri?',
+    aiuto:
+      'Le carte della lista desideri non ce le hai: i mazzi che le usano non ' +
+      'si possono costruire davvero. Servono a vedere quanto migliorerebbero ' +
+      'giocando, cioè se valga la pena comprarle.',
+    mostraSe: (contesto) => (contesto.desideri ?? 0) > 0,
+    opzioni: [
+      {
+        valore: false,
+        etichetta: 'No, solo le carte che ho',
+        dettaglio: 'Il mazzo si costruisce davvero, prendendo le carte dalla scatola',
+        badge: '✓',
+      },
+      {
+        valore: true,
+        etichetta: 'Sì, anche i desideri',
+        dettaglio: 'Per vedere che mazzo verrebbe fuori comprandole',
+        badge: '★',
+      },
+    ],
+  },
+  {
     chiave: 'proxyEnergia',
     testo: 'Vuoi stampare le Energie mancanti?',
     aiuto:
@@ -360,6 +383,10 @@ export function opzioniDaRisposte(risposte) {
     // le toglie chi legge la collezione. Viaggia qui perché finisca nel piano
     // salvato — riaprendolo, deve essere leggibile con quali carte è nato.
     setEsclusi: Array.isArray(risposte.setEsclusi) ? risposte.setEsclusi : [],
+    // Le carte desiderate non le possiedi: entrano nel motore solo se lo hai
+    // chiesto, e il piano salvato deve ricordarlo o riaprendolo sembrerebbe
+    // costruibile con la scatola che hai in casa.
+    usaDesideri: Boolean(risposte.usaDesideri),
     // Nemmeno questi sono opzioni del motore: `pianifica()` non sa cosa sia un
     // mazzo di riferimento. Servono a `cercaPiano()`, che gli sta sopra, e
     // viaggiano qui perché finiscano nel piano salvato — riaprendolo si deve

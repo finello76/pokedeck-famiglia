@@ -1111,11 +1111,51 @@ button.secondario:hover {
   gap: 0.5rem;
 }
 
+/* "Ce l'ho" / "La voglio": due stati esclusivi, quindi due pulsanti in una
+   pastiglia invece di una spunta. Una spunta "e' un desiderio" si legge solo
+   dopo averla trovata; qui la scelta e' sempre visibile e dice quale delle due
+   e' attiva senza dover interpretare niente. */
+.quante-modo {
+  display: flex;
+  flex: none;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 28%);
+}
+
+.quante-modo .modo {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 0;
+  background: transparent;
+  color: rgb(255 255 255 / 80%);
+  cursor: pointer;
+}
+
+.quante-modo .modo.attivo {
+  background: rgb(255 255 255 / 22%);
+  color: #fff;
+}
+
+.quante-etichetta {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-inline-end: 0.2rem;
+}
+
+/* Candidato in modo desiderio: il tasto diventa una stella viola, lo stesso
+   colore usato per i proxy e per le carte desiderate nella griglia. */
+.candidato-desiderio .aggiungi {
+  color: var(--colore-proxy);
+}
+
 .quante-riga {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
   padding: 0.2rem 0.2rem 0.3rem;
   font-size: 0.82rem;
   font-weight: 700;
