@@ -18,6 +18,7 @@
 import { elencoCompleto } from '../data/collezione.js';
 import { forza, confronta } from '../engine/forza.js';
 import { diagnostica, GRAVITA } from '../engine/mazzo-manuale.js';
+import { completa, correggi, applica } from '../engine/completa-mazzo.js';
 import { TAGLIE } from '../engine/proporzioni.js';
 import { elencoPrefatti } from '../data/mazzi-prefatti.js';
 import { salvaPiano } from '../data/mazzi-salvati.js';
@@ -30,6 +31,12 @@ let prefatti = [];
 
 /** @type {number} taglia a cui punta il mazzo in costruzione */
 let taglia = 30;
+
+/** @type {Array<{carta: object, quantita: number}>} la collezione, per completare */
+let disponibili = [];
+
+/** @type {number|null} la forza migliore raggiungibile con questa collezione */
+let tetto = null;
 
 /**
  * Prepara la vista: carica collezione e riferimenti.
@@ -45,6 +52,7 @@ export async function preparaPersonalizzato() {
       carta, così vedi cosa cambia davvero — e gli avvisi ti dicono cosa non
       torna senza impedirti di procedere.
     </p>
+    <p class="aiuto" id="tetto-personalizzato"></p>
     <div class="riga-taglia">
       <label for="taglia-personalizzato">Il mazzo deve avere</label>
       <select id="taglia-personalizzato">
@@ -55,15 +63,31 @@ export async function preparaPersonalizzato() {
     </div>
     <div id="esito-personalizzato"></div>
     <div class="azioni">
+      <button type="button" id="completa-personalizzato">Completa il mazzo</button>
+      <button type="button" id="verifica-personalizzato" class="secondario">Verifica</button>
       <button type="button" id="salva-personalizzato" class="secondario">Salva questo mazzo</button>
       <button type="button" id="svuota-personalizzato" class="secondario">Svuota</button>
     </div>
+    <div id="proposta-personalizzato"></div>
     <p id="stato-personalizzato" class="stato" hidden></p>
     <costruttore-mazzo id="costruttore"></costruttore-mazzo>
   `;
 
   const costruttore = sezione.querySelector('#costruttore');
-  costruttore.voci = await elencoCompleto();
+  const voci = await elencoCompleto();
+  costruttore.voci = voci;
+  // `idSet` e `numero` si prendono dalla RIGA, non dalla carta: il dataset non
+  // li mette dentro la carta, e senza di loro la chiave usata per applicare le
+  // mosse sarebbe "undefined/undefined" per tutte — le mosse si calcolavano
+  // giuste e poi non si applicavano a niente.
+  disponibili = voci
+    .filter((v) => v.carta)
+    .map((v) => ({
+      carta: { ...v.carta, idSet: v.idSet, numero: v.numero },
+      quantita: v.quantita,
+    }));
+  tetto = forzaMassima();
+  mostraTetto();
 
   prefatti = (await elencoPrefatti()).map((m) => ({
     nome: m.nome,
@@ -72,15 +96,61 @@ export async function preparaPersonalizzato() {
 
   sezione.querySelector('#taglia-personalizzato').addEventListener('change', (evento) => {
     taglia = Number(evento.target.value);
+    // Il tetto dipende dalla taglia: un 60 puo' arrivare piu' in alto di un 15.
+    tetto = forzaMassima();
+    mostraTetto();
     disegnaEsito(costruttore);
   });
   sezione.querySelector('#svuota-personalizzato').addEventListener('click', () => {
     costruttore.svuota();
   });
   sezione.querySelector('#salva-personalizzato').addEventListener('click', () => salva(costruttore));
+  sezione
+    .querySelector('#completa-personalizzato')
+    .addEventListener('click', () => proponi(costruttore, 'completa'));
+  sezione
+    .querySelector('#verifica-personalizzato')
+    .addEventListener('click', () => verifica(costruttore));
 
   costruttore.addEventListener('scelta-cambiata', () => disegnaEsito(costruttore));
   disegnaEsito(costruttore);
+}
+
+/**
+ * La forza migliore che questa collezione può dare, a questa taglia.
+ *
+ * Si calcola completando un mazzo **vuoto**: `completa()` sceglie a ogni giro
+ * la carta che serve di più, quindi il mazzo che ne esce è il meglio che il
+ * motore sa fare con quelle carte. Non è un massimo dimostrato — servirebbe
+ * provare tutte le combinazioni, che sono astronomiche — ma è un tetto onesto e
+ * **coerente col pulsante**: è esattamente il mazzo che "Completa" produrrebbe
+ * partendo da zero, quindi il numero non promette niente di irraggiungibile.
+ *
+ * @returns {number|null}
+ */
+function forzaMassima() {
+  if (!disponibili.length) return null;
+  const vuoto = { nome: 'Massimo', carte: [] };
+  const { mosse } = completa(vuoto, disponibili, { taglia });
+  return forza(applica(vuoto, mosse), { taglia }).totale;
+}
+
+/**
+ * Scrive a schermo il tetto raggiungibile.
+ *
+ * È la risposta alla domanda che chi costruisce si fa per prima — *fin dove
+ * posso arrivare con le carte che ho?* — e senza di essa il punteggio non ha
+ * scala: 40 è tanto o poco dipende solo da quanto si poteva fare.
+ *
+ * @returns {void}
+ */
+function mostraTetto() {
+  const p = sezione.querySelector('#tetto-personalizzato');
+  if (!p) return;
+  p.innerHTML = tetto
+    ? `Con le carte che hai, un mazzo da ${taglia} arriva al massimo a ` +
+      `<strong>forza ${tetto}</strong>.`
+    : '';
 }
 
 /**
@@ -164,7 +234,7 @@ function disegnaEsito(costruttore) {
               : ''
           }
         </span>
-        <span class="forza-valore">${f.totale}</span>
+        <span class="forza-valore">${f.totale}${tetto ? ` <small>/ ${tetto}</small>` : ''}</span>
         <span class="forza-dettaglio">${dettaglio}</span>
       </li>
     </ul>
@@ -198,6 +268,136 @@ function riga(avviso) {
     ? `<br /><span class="carte-avviso">${avviso.carte.join(' · ')}</span>`
     : '';
   return `<p class="${classe}">${avviso.testo}${elenco}</p>`;
+}
+
+/**
+ * Propone di completare o correggere il mazzo, e mostra cosa succederebbe.
+ *
+ * Le mosse si **mostrano prima** di applicarle. Un pulsante che riempie il
+ * mazzo da solo e in silenzio è magia, e la magia non insegna niente a chi sta
+ * imparando a costruire mazzi: qui ogni carta aggiunta porta con sé il perché.
+ *
+ * @param {HTMLElement} costruttore
+ * @param {'completa'|'correggi'} modo
+ * @returns {void}
+ */
+function proponi(costruttore, modo) {
+  const zona = sezione.querySelector('#proposta-personalizzato');
+  const attuale = mazzoCorrente(costruttore);
+  const funzione = modo === 'correggi' ? correggi : completa;
+  const esito = funzione(attuale, disponibili, { taglia });
+  const mosse = esito.mosse ?? [];
+
+  if (!mosse.length) {
+    zona.innerHTML = `<p class="aiuto">${
+      modo === 'correggi'
+        ? 'Non c\'è niente da correggere.'
+        : 'Il mazzo è già completo, o fra le carte rimaste non ce n\'è nessuna utile.'
+    }</p>`;
+    return;
+  }
+
+  const dopo = applica(attuale, mosse);
+  const f = forza(dopo, { taglia });
+
+  zona.innerHTML = `
+    <div class="proposta">
+      <p><strong>${modo === 'correggi' ? 'Correzione proposta' : 'Completamento proposto'}</strong>
+         — il mazzo passerebbe a <strong>${f.totale}</strong> di forza.</p>
+      <ul class="elenco-mosse">
+        ${mosse
+          .map(
+            (m) => `<li class="${m.verso}">
+              <span class="segno">${m.verso === 'togli' ? '−' : '+'}${m.quante}</span>
+              <span class="nome">${m.carta.nome}</span>
+              <span class="perche">${m.motivo}</span>
+            </li>`,
+          )
+          .join('')}
+      </ul>
+      ${
+        esito.mancanti
+          ? `<p class="errore">Restano ${esito.mancanti} carte scoperte: la collezione non basta
+               per un mazzo da ${taglia}.</p>`
+          : ''
+      }
+      <div class="azioni">
+        <button type="button" data-applica>Applica</button>
+        <button type="button" class="secondario" data-annulla>Lascia stare</button>
+      </div>
+    </div>`;
+
+  zona.querySelector('[data-applica]').addEventListener('click', () => {
+    const scelte = costruttore.scelte;
+    for (const mossa of mosse) {
+      const k = `${mossa.carta.idSet}/${mossa.carta.numero}`;
+      const ora = scelte.get(k) ?? 0;
+      const nuova = mossa.verso === 'togli' ? ora - mossa.quante : ora + mossa.quante;
+      if (nuova > 0) scelte.set(k, nuova);
+      else scelte.delete(k);
+    }
+    costruttore.scelte = scelte;
+    zona.innerHTML = '';
+    disegnaEsito(costruttore);
+  });
+  zona.querySelector('[data-annulla]').addEventListener('click', () => {
+    zona.innerHTML = '';
+  });
+}
+
+/**
+ * Verifica il mazzo e, se non va, chiede come correggerlo.
+ *
+ * La domanda è il punto: correggere d'ufficio significherebbe riscrivere il
+ * mazzo di qualcun altro, e in questo progetto un mazzo fuori regolamento è
+ * spesso una scelta — le regole della casa nascono da lì.
+ *
+ * @param {HTMLElement} costruttore
+ * @returns {void}
+ */
+function verifica(costruttore) {
+  const zona = sezione.querySelector('#proposta-personalizzato');
+  const mazzo = mazzoCorrente(costruttore);
+  const avvisi = diagnostica(mazzo, { taglia });
+  const bloccanti = avvisi.filter((a) => a.gravita === GRAVITA.BLOCCANTE);
+
+  // Su un mazzo vuoto `diagnostica()` tace apposta — non c'è niente da dire a
+  // chi non ha ancora scelto — ma qui il silenzio verrebbe letto come "tutto a
+  // posto", che su zero carte è la risposta sbagliata alla domanda giusta.
+  if (!mazzo.totale) {
+    zona.innerHTML = '<p class="aiuto">Il mazzo è vuoto: non c\'è ancora niente da verificare.</p>';
+    return;
+  }
+  if (!avvisi.length) {
+    zona.innerHTML = '<p class="aiuto">Verifica superata: il mazzo si può giocare così com\'è.</p>';
+    return;
+  }
+  if (!bloccanti.length) {
+    zona.innerHTML = `<p class="aiuto">Nessun problema che impedisca di giocare.
+      Rest${avvisi.length === 1 ? 'a 1 osservazione' : `ano ${avvisi.length} osservazioni`},
+      elencat${avvisi.length === 1 ? 'a' : 'e'} qui sopra: puoi ignorarl${
+        avvisi.length === 1 ? 'a' : 'e'
+      }.</p>`;
+    return;
+  }
+
+  zona.innerHTML = `
+    <div class="proposta">
+      <p class="errore"><strong>Verifica non superata:</strong> ${bloccanti.length}
+         problem${bloccanti.length === 1 ? 'a impedisce' : 'i impediscono'} di giocare questo mazzo.</p>
+      <ul>${bloccanti.map((a) => `<li>${a.testo}</li>`).join('')}</ul>
+      <p class="aiuto">Come vuoi sistemarli?</p>
+      <div class="azioni">
+        <button type="button" data-auto>Correggi tu</button>
+        <button type="button" class="secondario" data-manuale>Faccio io</button>
+      </div>
+    </div>`;
+
+  zona.querySelector('[data-auto]').addEventListener('click', () => proponi(costruttore, 'correggi'));
+  zona.querySelector('[data-manuale]').addEventListener('click', () => {
+    zona.innerHTML =
+      '<p class="aiuto">Va bene: i problemi restano elencati qui sopra, con le carte a cui si riferiscono.</p>';
+  });
 }
 
 /**
@@ -235,5 +435,5 @@ async function salva(costruttore) {
 // l'intera collezione, e chi apre l'app sul catalogo non deve pagarne il costo.
 // Stessa scelta fatta per il wizard in `vista-mazzi.js`.
 document.addEventListener('vista-cambiata', (evento) => {
-  if (evento.detail.nome === 'mazzi') preparaPersonalizzato();
+  if (evento.detail.nome === 'personalizzato') preparaPersonalizzato();
 });

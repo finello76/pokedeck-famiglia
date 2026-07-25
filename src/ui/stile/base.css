@@ -559,6 +559,52 @@ button:hover {
   font-size: 0.72rem;
 }
 
+/* Proposta di completamento o correzione: si mostra PRIMA di applicarla, quindi
+   deve staccare dal resto senza sembrare un errore. */
+.proposta {
+  margin: var(--spazio) 0;
+  padding: var(--spazio);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+  background: var(--colore-superficie-2);
+}
+
+.elenco-mosse {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.elenco-mosse li {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  gap: 0.2rem 0.5rem;
+  padding: 0.3rem 0;
+  border-block-start: 1px solid var(--colore-bordo);
+}
+
+.elenco-mosse .segno {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--colore-primario);
+}
+
+.elenco-mosse .togli .segno {
+  color: var(--colore-attenzione);
+}
+
+.elenco-mosse .nome {
+  font-weight: 600;
+}
+
+/* Il perche' va a capo sotto il nome: e' una frase intera, e affiancarla al
+   nome la spezzerebbe in due parole per riga su telefono. */
+.elenco-mosse .perche {
+  grid-column: 2;
+  font-size: 0.75rem;
+  color: var(--colore-testo-tenue);
+}
+
 /* Costruttore del mazzo personalizzato: scelta della taglia. */
 .riga-taglia {
   display: flex;
