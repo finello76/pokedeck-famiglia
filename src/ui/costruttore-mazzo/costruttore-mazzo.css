@@ -1,0 +1,120 @@
+/* Il componente vive in Shadow DOM, quindi questi selettori non escono di qui.
+   Le custom property invece ATTRAVERSANO il confine: sono ereditate dal
+   documento, ed è il modo previsto per far entrare un tema dentro un
+   componente incapsulato. Chi arriva da Angular riconoscerà `::ng-deep`, ma
+   qui non serve nessuna scappatoia. */
+
+:host {
+  display: block;
+}
+
+.ricerca {
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.etichetta-ricerca {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--colore-testo-tenue);
+  margin-bottom: 0.3rem;
+}
+
+.ricerca input {
+  inline-size: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo, 12px);
+}
+
+.titolo-gruppo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--colore-testo-tenue);
+  margin: 0.9rem 0 0.4rem;
+}
+
+.elenco {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.elenco li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.2rem;
+  border-block-end: 1px solid var(--colore-bordo);
+}
+
+/* Le carte già nel mazzo si distinguono con un filetto laterale invece che con
+   uno sfondo: lo sfondo pieno, ripetuto su venti righe, rende l'elenco
+   illeggibile su schermo piccolo. */
+.elenco li.dentro {
+  border-inline-start: 3px solid var(--colore-primario);
+  padding-inline-start: 0.5rem;
+}
+
+.dati {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.nome {
+  display: block;
+  font-weight: 600;
+  /* I nomi lunghi ("Macchinario Tecnico: Fluorite") non devono allargare la
+     riga oltre lo schermo e far comparire lo scorrimento orizzontale. */
+  overflow-wrap: anywhere;
+}
+
+.dettaglio {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--colore-testo-tenue);
+}
+
+.comandi {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+}
+
+.comandi button {
+  inline-size: 2.2rem;
+  block-size: 2.2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--colore-testo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* 2,2rem è la misura minima comoda da toccare col pollice: sotto, sul telefono
+   si sbaglia bottone e si tolgono carte per errore. */
+.comandi button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.conta {
+  min-inline-size: 1.6rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.aiuto {
+  color: var(--colore-testo-tenue);
+  font-size: 0.8rem;
+}

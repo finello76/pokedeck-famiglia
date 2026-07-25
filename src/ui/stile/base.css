@@ -559,6 +559,35 @@ button:hover {
   font-size: 0.72rem;
 }
 
+/* Costruttore del mazzo personalizzato: scelta della taglia. */
+.riga-taglia {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+.riga-taglia select {
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+}
+
+/* Le carte citate da un avviso: piu' piccole del testo che le introduce, perche'
+   sono l'elenco puntato di una frase, non una frase a se'. */
+.carte-avviso {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  opacity: 0.9;
+  overflow-wrap: anywhere;
+}
+
 /* Mazzi generati, affiancati quando c'è spazio. */
 .elenco-mazzi {
   display: grid;

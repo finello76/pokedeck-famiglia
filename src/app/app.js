@@ -26,6 +26,7 @@ import { avviaTema } from './tema.js';
 import { avviaAggiunta } from './aggiunta.js';
 import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
+import './vista-personalizzato.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
 import { carteMancanti } from '../data/completamento.js';

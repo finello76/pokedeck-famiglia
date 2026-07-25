@@ -420,6 +420,80 @@ si incontrano più.
 
 ---
 
+## 10. Misurare mentre si costruisce
+
+Il costruttore manuale (`src/app/vista-personalizzato.js`) è la stessa misura di
+prima usata al contrario: invece di generare un mazzo e dirti quanto vale, ti
+lascia scegliere e ti mostra il numero muoversi carta per carta. Tre decisioni
+di progetto che valgono più del codice.
+
+### Avvisi, non divieti
+
+Il costruttore potrebbe impedire la quinta copia di una carta, o di scendere
+sotto il minimo di Base. Non lo fa, e non è pigrizia: in questo progetto
+**violare il regolamento in modo consapevole è la funzione principale** — le
+regole della casa nascono esattamente da lì. Un costruttore che impedisce di
+sbagliare impedirebbe anche di giocare come si gioca in casa.
+
+Restano però due conversazioni diverse, e `GRAVITA` le tiene distinte:
+
+| gravità | significa | esempio |
+|---|---|---|
+| `bloccante` | il mazzo **non è giocabile** così | nessun Pokémon Base, nessuna Energia |
+| `avviso` | si gioca, ma sappi che | 2 Base su 30, evoluzioni orfane |
+
+Ogni avviso porta con sé **le carte a cui si riferisce**. «Ci sono evoluzioni
+orfane» non si può correggere; «Machamp (serve Machoke)» sì. È la differenza fra
+un messaggio e un'istruzione.
+
+### Il bug del 100%
+
+Con due carte scelte, l'app annunciava: *«Solo 1 Pokémon Base su 30 carte: con
+una mano da 7 hai il 100% di poter cominciare»*. Vero e assurdo insieme —
+pescando 7 carte da un mazzo di 2 le peschi tutte.
+
+```js
+probabilitaAlmenoUna(totale, basi, mano)              // sbagliato
+probabilitaAlmenoUna(Math.max(totale, taglia), basi, mano)  // giusto
+```
+
+La domanda non è «che probabilità ho **adesso**», ma «che probabilità avrò col
+mazzo finito». Mentre si costruisce, lo stato corrente non è mai la cosa da
+misurare — e questo vale ben oltre le carte Pokémon.
+
+### Il tetto che nascondeva due categorie su tre
+
+L'elenco mostrava al massimo 60 righe, ordinate Pokémon → Allenatori → Energie.
+Con una collezione da 128 carte il risultato è che si vedevano **solo Pokémon**:
+Energie e Allenatori cadevano oltre il taglio e sparivano, senza nessun indizio
+che esistessero. Cioè le carte che si aggiungono più spesso.
+
+La correzione è di una riga concettuale — il tetto diventa **per categoria**
+invece che complessivo — ma la lezione è sul modo di trovarla: non l'ha trovata
+un test, l'ha trovata provare a costruire un mazzo vero e non riuscire ad
+aggiungere un'Energia.
+
+> **Regola pratica**: un limite di visualizzazione applicato a una lista
+> *ordinata per categoria* non tronca «gli ultimi elementi», tronca **le ultime
+> categorie**. Se l'ordinamento raggruppa, il limite deve raggruppare con lui.
+
+### Shadow DOM e temi
+
+`<costruttore-mazzo>` vive in Shadow DOM: i suoi selettori CSS non escono e
+quelli del documento non entrano. Ma le **custom property attraversano il
+confine**, perché sono ereditate:
+
+```css
+.comandi button { background: var(--colore-superficie-2); }
+```
+
+Quel valore arriva da `:root` in `base.css`, quindi il componente segue il tema
+chiaro/scuro senza saperne niente. È il meccanismo previsto per far entrare un
+tema in un componente incapsulato — chi arriva da Angular conosce `::ng-deep`
+come scappatoia per lo stesso problema; qui non serve nessuna scappatoia.
+
+---
+
 ## Esercizi
 
 1. **La scala satura.** Nei mazzi generati da una collezione moderna, `offesa`
