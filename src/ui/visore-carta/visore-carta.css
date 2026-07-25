@@ -10,7 +10,24 @@ visore-carta {
   display: contents;
 }
 
+/* Niente selezione del testo dentro il visore.
+
+   Su telefono qualunque pressione un po' lunga — cioè il gesto naturale per
+   guardare meglio una carta, o l'attesa prima di scorrere — faceva partire la
+   selezione: tutto il pannello si tingeva del colore di evidenziazione e
+   compariva il menu "Copia". Qui non c'è niente da copiare: i testi sono
+   stampati sulla scansione, sotto c'è solo il contatore delle copie.
+
+   `-webkit-touch-callout` è a parte e serve su iOS: senza, la pressione lunga
+   sull'immagine apre comunque il menu "Salva immagine".
+
+   Vale per il visore e non per l'app intera apposta: nelle liste e nelle schede
+   selezionare il nome di una carta per cercarlo altrove è legittimo. */
 visore-carta dialog.finestra {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+
   /* `position: fixed` a tutto schermo SEMPRE, non solo da modale: se in qualche
      browser `showModal()` non aggancia il top-layer, il dialog resterebbe nel
      flusso (posizione UA `absolute`) e finirebbe in fondo alla pagina — è il bug
