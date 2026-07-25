@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v41';
+const VERSIONE = 'v42';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 

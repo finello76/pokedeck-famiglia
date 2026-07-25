@@ -22,9 +22,9 @@
  */
 
 import { copieAncoraDisponibili } from '../../engine/mazzo-manuale.js';
-import { normalizzaNome } from '../../engine/nomi.js';
 import { urlImmagine } from '../../data/dataset.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
+import { FILTRI_VUOTI, filtra, valoriDisponibili } from '../griglia-collezione/raggruppa.js';
 
 /**
  * Carica le figure solo quando stanno per entrare nello schermo.
@@ -52,21 +52,35 @@ const osservatore = new IntersectionObserver(
   { rootMargin: '200px' },
 );
 
-/** Foglio di stile condiviso, caricato una volta sola. */
+/**
+ * Fogli di stile del componente, caricati una volta sola.
+ *
+ * Sono **due**, e il secondo è `tipi.css`: le pastiglie dei tipi elementali si
+ * colorano con `--tipo-colore`, definita da regole `[data-tipo='Fuoco']`. Le
+ * custom property attraversano il confine dello Shadow DOM per eredità, ma le
+ * **regole che le impostano** no — devono trovare un elemento nello stesso
+ * albero. Senza adottare anche questo foglio, le pastiglie uscirebbero tutte
+ * grigie.
+ */
 const stile = new CSSStyleSheet();
-fetch(new URL('./costruttore-mazzo.css', import.meta.url))
-  .then((r) => r.text())
-  .then((css) => stile.replaceSync(css))
-  .catch(() => {
-    /* senza CSS resta usabile, solo spoglio */
-  });
+const stileTipi = new CSSStyleSheet();
+const caricaIn = (foglio, url) =>
+  fetch(url)
+    .then((r) => r.text())
+    .then((css) => foglio.replaceSync(css))
+    .catch(() => {
+      /* senza CSS resta usabile, solo spoglio */
+    });
+caricaIn(stile, new URL('./costruttore-mazzo.css', import.meta.url));
+caricaIn(stileTipi, new URL('../stile/tipi.css', import.meta.url));
 
 /**
- * Quante carte mostrare **per categoria** prima di chiedere di filtrare.
+ * Quante carte mostrare **per categoria** prima di fermarsi.
  *
- * Una collezione può avere migliaia di righe, e disegnarle tutte rende il
- * telefono inutilizzabile mentre si scrive nel campo di ricerca. Il tetto non
- * nasconde niente: si alza scrivendo due lettere.
+ * Serve solo contro le collezioni enormi: disegnare migliaia di righe rende il
+ * telefono inutilizzabile. Su una collezione di famiglia non scatta mai, ed è
+ * voluto — il tetto è l'ultima difesa, non lo strumento con cui si trova una
+ * carta. Per quello ci sono i filtri.
  *
  * Il tetto è per categoria e non complessivo, ed è una correzione, non un
  * dettaglio. Con un tetto unico su un elenco ordinato Pokémon → Allenatori →
@@ -74,7 +88,7 @@ fetch(new URL('./costruttore-mazzo.css', import.meta.url))
  * Allenatori finivano oltre il taglio e sparivano del tutto. Cioè proprio le
  * carte che si aggiungono più spesso, e senza nessun indizio che esistessero.
  */
-const TETTO_PER_CATEGORIA = 25;
+const TETTO_PER_CATEGORIA = 150;
 
 /** Le categorie, nell'ordine in cui si costruisce un mazzo. */
 const CATEGORIE = ['Pokémon', 'Allenatore', 'Energia'];
@@ -88,8 +102,20 @@ export class CostruttoreMazzo extends HTMLElement {
   #voci = [];
   /** @type {Map<string, number>} chiave carta → copie scelte */
   #scelte = new Map();
-  /** @type {string} */
-  #filtro = '';
+  /**
+   * I filtri, nella stessa forma usata dalla griglia del catalogo.
+   *
+   * Non si riscrive nessuna logica di filtraggio: `filtra()` e
+   * `valoriDisponibili()` arrivano da `griglia-collezione/raggruppa.js`. Due
+   * implementazioni dello stesso filtro divergono alla prima aggiunta, e
+   * soprattutto si comporterebbero **diversamente sulle stesse carte** — che
+   * per chi usa l'app è un difetto, non un dettaglio interno.
+   *
+   * @type {typeof FILTRI_VUOTI}
+   */
+  #filtri = { ...FILTRI_VUOTI };
+  /** @type {boolean} se il pannello dei filtri avanzati è aperto */
+  #avanzatiAperti = false;
 
   /** @param {object[]} valore */
   set voci(valore) {
@@ -127,7 +153,7 @@ export class CostruttoreMazzo extends HTMLElement {
   connectedCallback() {
     if (!this.shadowRoot) {
       this.attachShadow({ mode: 'open' });
-      this.shadowRoot.adoptedStyleSheets = [stile];
+      this.shadowRoot.adoptedStyleSheets = [stileTipi, stile];
     }
     this.#disegna();
   }
@@ -146,15 +172,12 @@ export class CostruttoreMazzo extends HTMLElement {
    * sparire ciò che hai appena messo nel mazzo, e non si potrebbe più toglierlo.
    */
   #daMostrare() {
-    const cerca = normalizzaNome(this.#filtro);
-    const corrisponde = (v) =>
-      !cerca ||
-      normalizzaNome(v.carta?.nome).includes(cerca) ||
-      normalizzaNome(v.nomeSet).includes(cerca) ||
-      String(v.numero) === this.#filtro.trim();
+    const passano = new Set(filtra(this.#voci, this.#filtri).map(chiave));
 
     const scelte = this.#voci.filter((v) => this.#scelte.get(chiave(v)) > 0);
-    const resto = this.#voci.filter((v) => !this.#scelte.get(chiave(v)) && corrisponde(v));
+    const resto = this.#voci.filter(
+      (v) => !this.#scelte.get(chiave(v)) && passano.has(chiave(v)),
+    );
 
     const perNome = (a, b) =>
       String(a.carta?.nome).localeCompare(String(b.carta?.nome), 'it');
@@ -164,6 +187,7 @@ export class CostruttoreMazzo extends HTMLElement {
       return {
         categoria,
         voci: tutte.slice(0, TETTO_PER_CATEGORIA),
+        totali: tutte.length,
         troncate: Math.max(0, tutte.length - TETTO_PER_CATEGORIA),
       };
     }).filter((g) => g.voci.length);
@@ -171,44 +195,156 @@ export class CostruttoreMazzo extends HTMLElement {
     return { scelte, gruppi };
   }
 
+  /**
+   * La barra dei filtri: ricerca, pastiglie dei tipi, e il resto a scomparsa.
+   *
+   * Stessa impostazione della griglia del catalogo, e non per pigrizia: chi ha
+   * imparato a filtrare lì deve ritrovare gli stessi comandi qui, o sono due
+   * app diverse dentro la stessa app. Le opzioni si leggono dalla collezione
+   * (`valoriDisponibili`), quindi non compaiono mai filtri che non selezionano
+   * niente.
+   *
+   * @returns {string} HTML
+   */
+  #filtriHtml() {
+    const v = valoriDisponibili(this.#voci);
+    const menu = (chiave, etichetta, opzioni) => `
+      <label class="campo">
+        <span>${esc(etichetta)}</span>
+        <select data-filtro="${chiave}">
+          <option value="">Tutti</option>
+          ${opzioni
+            .map(
+              ({ valore, testo }) =>
+                `<option value="${esc(valore)}"${
+                  this.#filtri[chiave] === valore ? ' selected' : ''
+                }>${esc(testo)}</option>`,
+            )
+            .join('')}
+        </select>
+      </label>`;
+
+    const attivi = Object.entries(this.#filtri).filter(([, valore]) => valore).length;
+
+    return `
+      <div class="filtri">
+        <input type="search" data-filtro="testo" value="${esc(this.#filtri.testo)}"
+               placeholder="Cerca per nome" aria-label="Cerca fra le tue carte" />
+
+        <div class="chip-tipi">
+          <button type="button" class="chip-tipo${this.#filtri.tipo ? '' : ' attivo'}"
+                  data-tipo-filtro="">Tutti</button>
+          ${v.tipi
+            .map(
+              (t) =>
+                `<button type="button" class="chip-tipo${
+                  this.#filtri.tipo === t ? ' attivo' : ''
+                }" data-tipo="${esc(t)}" data-tipo-filtro="${esc(t)}">${esc(t)}</button>`,
+            )
+            .join('')}
+        </div>
+
+        <div class="riga-comandi">
+          <button type="button" class="collegamento" data-azione="avanzati"
+                  aria-expanded="${this.#avanzatiAperti}">
+            ${this.#avanzatiAperti ? 'Meno filtri' : 'Altri filtri'}
+          </button>
+          ${
+            attivi
+              ? `<button type="button" class="collegamento" data-azione="azzera">Azzera i filtri</button>`
+              : ''
+          }
+        </div>
+
+        ${
+          this.#avanzatiAperti
+            ? `<div class="avanzati">
+                 ${menu(
+                   'categoria',
+                   'Tipo di carta',
+                   v.categorie.map((c) => ({ valore: c, testo: c })),
+                 )}
+                 ${menu(
+                   'stadio',
+                   'Stadio',
+                   v.stadi.map((s) => ({ valore: s, testo: s })),
+                 )}
+                 ${menu(
+                   'set',
+                   'Set',
+                   v.set.map((s) => ({
+                     valore: s.id,
+                     testo: s.anno ? `${s.nome} (${s.anno})` : s.nome,
+                   })),
+                 )}
+               </div>`
+            : ''
+        }
+      </div>`;
+  }
+
   #disegna() {
     if (!this.shadowRoot) return;
     const { scelte, gruppi } = this.#daMostrare();
 
     this.shadowRoot.innerHTML = `
-      <label class="ricerca">
-        <span class="etichetta-ricerca">Cerca fra le tue carte</span>
-        <input type="search" placeholder="nome, set o numero" value="${esc(this.#filtro)}" />
-      </label>
+      ${this.#filtriHtml()}
       ${scelte.length ? `<p class="titolo-gruppo">Nel mazzo</p>${this.#righe(scelte)}` : ''}
       ${gruppi
         .map(
           (g) => `
-        <p class="titolo-gruppo">${esc(g.categoria)}</p>
+        <p class="titolo-gruppo">${esc(g.categoria)} <span class="quante">${g.totali}</span></p>
         ${this.#righe(g.voci)}
         ${
           g.troncate
-            ? `<p class="aiuto">…e altre ${g.troncate}. Scrivi qualcosa per restringere l'elenco.</p>`
+            ? `<p class="aiuto">Altre ${g.troncate} non mostrate: restringi con i filtri qui sopra.</p>`
             : ''
         }`,
         )
         .join('')}
       ${
         !scelte.length && !gruppi.length
-          ? '<p class="aiuto">Nessuna carta corrisponde alla ricerca.</p>'
+          ? '<p class="aiuto">Nessuna carta corrisponde ai filtri.</p>'
           : ''
       }
     `;
 
-    const campo = this.shadowRoot.querySelector('input');
+    const campo = this.shadowRoot.querySelector('[data-filtro="testo"]');
     campo.addEventListener('input', () => {
-      this.#filtro = campo.value;
+      this.#filtri.testo = campo.value;
       this.#disegna();
       // Il campo si ridisegna, quindi va rimesso a fuoco con il cursore in
       // fondo: senza, si scrive una lettera e la tastiera si chiude.
-      const nuovo = this.shadowRoot.querySelector('input');
+      const nuovo = this.shadowRoot.querySelector('[data-filtro="testo"]');
       nuovo.focus();
       nuovo.setSelectionRange(nuovo.value.length, nuovo.value.length);
+    });
+
+    this.shadowRoot.querySelectorAll('select[data-filtro]').forEach((menu) =>
+      menu.addEventListener('change', () => {
+        this.#filtri[menu.dataset.filtro] = menu.value;
+        this.#disegna();
+      }),
+    );
+
+    this.shadowRoot.querySelectorAll('[data-tipo-filtro]').forEach((chip) =>
+      chip.addEventListener('click', () => {
+        // Ritoccare la pastiglia attiva la spegne: è il modo più rapido di
+        // tornare a vedere tutto, senza cercare un pulsante "azzera".
+        const valore = chip.dataset.tipoFiltro;
+        this.#filtri.tipo = this.#filtri.tipo === valore ? '' : valore;
+        this.#disegna();
+      }),
+    );
+
+    this.shadowRoot.querySelector('[data-azione="avanzati"]')?.addEventListener('click', () => {
+      this.#avanzatiAperti = !this.#avanzatiAperti;
+      this.#disegna();
+    });
+
+    this.shadowRoot.querySelector('[data-azione="azzera"]')?.addEventListener('click', () => {
+      this.#filtri = { ...FILTRI_VUOTI };
+      this.#disegna();
     });
 
     // Le figure entrano in osservazione dopo il disegno, e quelle rotte

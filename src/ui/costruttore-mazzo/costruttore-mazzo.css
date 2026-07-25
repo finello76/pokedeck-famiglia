@@ -8,19 +8,12 @@
   display: block;
 }
 
-.ricerca {
-  display: block;
+.filtri {
   margin-bottom: 0.8rem;
 }
 
-.etichetta-ricerca {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--colore-testo-tenue);
-  margin-bottom: 0.3rem;
-}
-
-.ricerca input {
+.filtri input[type='search'],
+.avanzati select {
   inline-size: 100%;
   box-sizing: border-box;
   padding: 0.6rem 0.7rem;
@@ -29,6 +22,86 @@
   background: var(--colore-superficie-2);
   border: 1px solid var(--colore-bordo);
   border-radius: var(--raggio-piccolo, 12px);
+}
+
+/* Le pastiglie dei tipi scorrono in orizzontale invece di andare a capo: con
+   undici tipi su schermo stretto occuperebbero quattro righe, spingendo
+   l'elenco delle carte fuori dalla prima schermata. Lo scorrimento e' confinato
+   qui dentro, la pagina non si muove. */
+.chip-tipi {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.6rem 0 0.2rem;
+  scrollbar-width: thin;
+}
+
+.chip-tipo {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1.5px solid color-mix(in srgb, var(--tipo-colore) 28%, transparent);
+  background: color-mix(in srgb, var(--tipo-colore) 10%, transparent);
+  color: var(--tipo-colore);
+}
+
+/* "Tutti" non ha data-tipo: gli si da' una tinta neutra, o color-mix riceverebbe
+   una variabile non valida e salterebbe. */
+.chip-tipo:not([data-tipo]) {
+  --tipo-colore: #8b93a7;
+}
+
+.chip-tipo.attivo {
+  background: var(--tipo-colore);
+  border-color: var(--tipo-colore);
+  color: #fff;
+}
+
+.riga-comandi {
+  display: flex;
+  gap: 0.9rem;
+  padding-block: 0.3rem;
+}
+
+.collegamento {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--colore-primario);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.avanzati {
+  display: grid;
+  gap: 0.5rem;
+  padding-block: 0.4rem;
+}
+
+@media (min-width: 30rem) {
+  .avanzati {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+}
+
+.campo span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--colore-testo-tenue);
+  margin-bottom: 0.2rem;
+}
+
+/* Quante carte ci sono in quella categoria: un numero accanto al titolo evita
+   di dover contare le righe per sapere se il filtro ha morso. */
+.quante {
+  font-weight: 400;
+  opacity: 0.7;
 }
 
 .titolo-gruppo {
