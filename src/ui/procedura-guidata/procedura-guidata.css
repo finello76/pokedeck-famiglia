@@ -140,3 +140,27 @@ procedura-guidata .indietro:hover {
   border-color: var(--colore-primario);
   color: var(--colore-primario);
 }
+
+/* Campo numerico delle domande `tipo: 'numero'` (la forza obiettivo).
+   Sta sotto le scelte rapide e non al loro posto: quasi sempre si preme un
+   pulsante, e solo chi vuole un numero preciso scende fin qui. */
+procedura-guidata .riga-numero {
+  margin-top: 0.9rem;
+}
+
+procedura-guidata .riga-numero-campi {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+procedura-guidata .riga-numero input {
+  /* Il numero è corto: un campo a tutta larghezza sembrerebbe chiedere altro. */
+  inline-size: 8rem;
+}
+
+procedura-guidata .riga-numero button {
+  width: auto;
+  padding-inline: 1.1rem;
+  border-radius: 14px;
+}

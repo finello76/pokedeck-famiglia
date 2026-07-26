@@ -42,6 +42,36 @@ const DOMANDE = [
     ],
   },
   {
+    chiave: 'forzaObiettivo',
+    // Le scelte rapide dipendono da cosa c'è in casa: proporre "come il mazzo
+    // di riferimento" a chi non ne ha scelto uno sarebbe un pulsante che non
+    // vuol dire niente. Per questo qui `opzioni` è una funzione.
+    tipo: 'numero',
+    testo: 'Quanto devono essere forti i mazzi?',
+    aiuto:
+      'La forza è il punteggio che compare sotto ogni mazzo: tiene conto di PS, ' +
+      'danno per energia e linee evolutive. Serve a fare mazzi alla portata di chi ' +
+      'ci gioca — un mazzo da 150 contro uno da 40 non è una partita.',
+    invito: 'oppure scrivi il punteggio che vuoi',
+    opzioni: (contesto) =>
+      [
+        contesto.forzaRiferimento
+          ? {
+              valore: contesto.forzaRiferimento,
+              etichetta: 'Come il mazzo di riferimento',
+              dettaglio: `Forza ${contesto.forzaRiferimento}: mazzi che se la giocano con quello`,
+              badge: String(contesto.forzaRiferimento),
+            }
+          : null,
+        {
+          valore: 0,
+          etichetta: 'Non importa',
+          dettaglio: 'I mazzi migliori che la collezione permette',
+          badge: '★',
+        },
+      ].filter(Boolean),
+  },
+  {
     chiave: 'proxyEnergia',
     testo: 'Vuoi stampare le Energie mancanti?',
     aiuto:
@@ -114,8 +144,30 @@ export class ProceduraGuidata extends HTMLElement {
         this.#disegna();
         return;
       }
+      if (bottone.dataset.azione === 'conferma-numero') {
+        this.#confermaNumero();
+        return;
+      }
       this.#rispondi(JSON.parse(bottone.dataset.valore));
     });
+
+    // Invio nel campo numerico: chi scrive un numero si aspetta di poter
+    // premere Invio, non di dover cercare il pulsante.
+    this.addEventListener('keydown', (evento) => {
+      if (evento.key !== 'Enter' || !evento.target.closest('[data-numero]')) return;
+      evento.preventDefault();
+      this.#confermaNumero();
+    });
+  }
+
+  /** Prende il valore scritto nel campo e lo tratta come risposta. */
+  #confermaNumero() {
+    const campo = this.querySelector('[data-numero]');
+    if (!campo) return;
+    // Vuoto o zero valgono "non importa": è la stessa cosa detta in due modi, e
+    // rifiutare il campo vuoto costringerebbe a tornare sui pulsanti.
+    const valore = Math.max(0, Math.round(Number(campo.value) || 0));
+    this.#rispondi(valore);
   }
 
   /** Le domande effettivamente da porre, viste le condizioni. */
@@ -154,6 +206,28 @@ export class ProceduraGuidata extends HTMLElement {
     this.#disegna();
   }
 
+  /**
+   * Il campo per scrivere un numero, sotto le scelte rapide.
+   *
+   * Le scelte rapide non bastano da sole: la forza voluta è un numero
+   * qualunque, e vincolarla a due pulsanti significherebbe non poter chiedere
+   * "un po' più deboli del riferimento".
+   *
+   * @param {object} domanda
+   * @returns {string} HTML
+   */
+  #campoNumero(domanda) {
+    return `
+      <div class="riga-numero">
+        <label for="valore-numero">${domanda.invito ?? 'oppure scrivi un numero'}</label>
+        <div class="riga-numero-campi">
+          <input id="valore-numero" type="number" inputmode="numeric" min="0" max="999"
+                 step="1" data-numero placeholder="es. 45" />
+          <button type="button" data-azione="conferma-numero">Continua</button>
+        </div>
+      </div>`;
+  }
+
   #disegna() {
     const attive = this.#attive;
     const domanda = attive[this.#passo];
@@ -162,7 +236,12 @@ export class ProceduraGuidata extends HTMLElement {
       return;
     }
 
-    const opzioni = domanda.opzioni
+    // Le opzioni possono dipendere dalla collezione: in quel caso la domanda
+    // porta una funzione invece di un elenco fisso.
+    const scelte =
+      typeof domanda.opzioni === 'function' ? domanda.opzioni(this.#contesto) : domanda.opzioni;
+
+    const opzioni = scelte
       .map(
         (o) => `
         <button type="button" class="opzione" data-valore='${JSON.stringify(o.valore)}'>
@@ -188,6 +267,7 @@ export class ProceduraGuidata extends HTMLElement {
       <h3>${domanda.testo}</h3>
       <p class="aiuto">${domanda.aiuto}</p>
       <div class="opzioni">${opzioni}</div>
+      ${domanda.tipo === 'numero' ? this.#campoNumero(domanda) : ''}
       ${this.#passo > 0 ? '<button type="button" class="indietro" data-azione="indietro">← Torna indietro</button>' : ''}
     `;
   }
@@ -216,5 +296,8 @@ export function opzioniDaRisposte(risposte) {
     // sola: "nessuna carta" è semplicemente budget zero.
     proxyPokemon: Number(risposte.budgetProxy) > 0,
     budgetProxy: Number(risposte.budgetProxy) || 0,
+    // Zero significa "non importa": il motore lo legge come "nessun obiettivo"
+    // e lascia i mazzi come li ha costruiti.
+    forzaObiettivo: Math.max(0, Number(risposte.forzaObiettivo) || 0),
   };
 }

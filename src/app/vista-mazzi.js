@@ -12,6 +12,9 @@ import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
 import { bilancia, squilibrio, squilibrati as mazziSquilibrati } from '../engine/bilancia.js';
 import { pianifica, rivaluta, carteConDeroga } from '../engine/pianifica.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
+import { disponibilitaResidua } from '../engine/alternative.js';
+import { avvicinaAForza } from '../engine/forza.js';
+import { leggiRiferimento } from '../data/riferimento.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
 import { apriSostituzione } from './sostituzione.js';
@@ -54,10 +57,14 @@ function nuovoSeme() {
 export async function preparaWizard() {
   const voci = await elencoCompleto();
   const stat = await statistiche(voci);
+  const riferimento = await leggiRiferimento();
   wizard.contesto = {
     carte: stat.totaleCarte,
     energie: stat.energie.totaleBase,
     orfani: (await import('../engine/analisi.js')).analizza(voci).orfani.length,
+    // Se c'è un mazzo di riferimento, la sua forza diventa la scelta rapida
+    // della domanda sulla forza obiettivo: è il paragone che si ha in casa.
+    forzaRiferimento: riferimento?.forza ?? null,
   };
   await mostraSalvati();
 }
@@ -107,6 +114,24 @@ async function genera(risposte, seme = nuovoSeme()) {
     scambi: [...(pianoCorrente.equilibrio?.scambi ?? []), ...scambi],
   };
 
+  // La forza obiettivo si insegue **dopo** il pareggio fra i mazzi, e non al
+  // posto suo: portare tutti allo stesso numero li rende anche pari fra loro,
+  // mentre il contrario non vale. Si lavora sulle copie ancora libere in
+  // collezione, che è l'unico posto da cui possono arrivare carte vere.
+  if (opzioni.forzaObiettivo > 0) {
+    pianoCorrente.forza = avvicinaAForza(pianoCorrente.mazzi, {
+      obiettivo: opzioni.forzaObiettivo,
+      dispensa: disponibilitaResidua(voci, pianoCorrente.mazzi),
+    });
+    pianoCorrente.equilibrio = {
+      ...squilibrio(pianoCorrente.mazzi),
+      scambi: pianoCorrente.equilibrio.scambi,
+    };
+    // Le carte cambiate possono aver creato o risolto una carenza: il foglio
+    // regole deve descrivere i mazzi che si hanno in mano adesso.
+    rivaluta(pianoCorrente, opzioni);
+  }
+
   disegnaPiano(pianoCorrente, opzioni);
 }
 
@@ -148,6 +173,44 @@ function statoEquilibrio(piano) {
 }
 
 /**
+ * La riga che dice com'è andata la caccia alla forza chiesta.
+ *
+ * Va detto sempre, anche — soprattutto — quando l'obiettivo non si è
+ * raggiunto: chi ha chiesto mazzi da 45 e se ne ritrova due da 110 deve sapere
+ * che non è stato ignorato, ma che la collezione non contiene carte più deboli
+ * da metterci dentro.
+ *
+ * @param {object} piano
+ * @returns {string} HTML, vuoto se non era stata chiesta nessuna forza
+ */
+function statoForza(piano) {
+  const forza = piano.forza;
+  if (!forza?.obiettivo || !forza.esiti?.length) return '';
+
+  const arrivi = forza.esiti.map((e) => `${e.mazzo}: ${e.arrivo}`).join(' · ');
+  const scambiate = forza.esiti.reduce((somma, e) => somma + e.scambi.length, 0);
+
+  if (forza.esiti.every((e) => e.raggiunto)) {
+    return `<p class="aiuto">Forza richiesta ${forza.obiettivo}, ottenuta (${arrivi})${
+      scambiate ? `, cambiando ${scambiate} ${scambiate === 1 ? 'carta' : 'carte'}` : ''
+    }.</p>`;
+  }
+
+  // Fermarsi perché la collezione non offre di meglio e fermarsi perché sono
+  // finiti i tentativi sono due cose diverse: nel secondo caso rigenerare o
+  // scambiare a mano può ancora servire, e dirlo cambia cosa si fa dopo.
+  const perTentativi = forza.esiti.some((e) => !e.raggiunto && e.motivo === 'passi');
+
+  return `<p class="aiuto">Forza richiesta ${forza.obiettivo}: il più vicino che si è
+    riusciti a fare è ${arrivi}.
+    ${
+      perTentativi
+        ? 'Il motore si è fermato dopo un certo numero di scambi per non stravolgere i mazzi: prova a rigenerare, o cambia qualche carta col pulsante ⇄.'
+        : 'Con le carte che hai non si va oltre — per scendere servirebbero Pokémon più deboli da mettere al posto di quelli forti, per salire ne servirebbero di più forti.'
+    }</p>`;
+}
+
+/**
  * Disegna mazzi, regole e comandi.
  * @param {object} piano
  * @param {object} opzioni
@@ -171,6 +234,7 @@ function disegnaPiano(piano, opzioni) {
       </button>
     </p>
     ${spiegazioneLineeEvolutive(piano)}
+    ${statoForza(piano)}
     ${statoEquilibrio(piano)}
     ${
       incompleti.length

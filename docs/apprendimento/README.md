@@ -1,10 +1,11 @@
-# Materiale di studio — le tre tecnologie del browser
+# Materiale di studio
 
-Questi documenti spiegano **come funzionano**, a livello di piattaforma, le tre
-tecnologie su cui poggia l'app. Non raccontano *cosa fa* PokéDeck (quello lo
-dicono il codice e i commit): raccontano **il meccanismo** — il ciclo di vita, le
-API, il modello di esecuzione — usando il codice del progetto solo come esempio
-concreto sotto mano.
+Questi documenti spiegano **come funzionano** le cose su cui poggia l'app: le
+tre tecnologie del browser (01-03), e poi i meccanismi di programmazione che il
+progetto ha incontrato strada facendo (04-05). Non raccontano *cosa fa* PokéDeck
+(quello lo dicono il codice e i commit): raccontano **il meccanismo** — il ciclo
+di vita, le API, il modello di esecuzione, l'algoritmo — usando il codice del
+progetto solo come esempio concreto sotto mano.
 
 | # | Documento | La domanda a cui risponde |
 |---|---|---|
@@ -12,6 +13,7 @@ concreto sotto mano.
 | 02 | [IndexedDB](02-indexeddb.md) | Com'è fatto un database dentro il browser? Object store, transazioni, versioni dello schema, e perché tutto è asincrono. |
 | 03 | [Web Components](03-web-components.md) | Come si costruisce un componente riutilizzabile senza framework? Custom element, Shadow DOM, ciclo di vita. |
 | 04 | [Persistere oggetti](04-persistere-oggetti.md) | Perché un oggetto salvato non torna indietro uguale? Forma su disco e forma in memoria, `null` contro assente, e una `Promise` che aspetta un evento che non arriva. |
+| 05 | [La salita di collina](05-salita-di-collina.md) | Come si risolve un problema senza formula? Funzione obiettivo, vicinato, massimi locali — e perché l'algoritmo ottimizza esattamente le stupidaggini che misuri. |
 
 ## Per chi è scritto
 

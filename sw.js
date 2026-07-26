@@ -86,6 +86,7 @@ const GUSCIO = [
   './src/engine/mazzo.js',
   './src/engine/riallinea.js',
   './src/engine/bilancia.js',
+  './src/engine/forza.js',
   './src/engine/formati.js',
   './src/ui/vista-regole/vista-regole.js',
   './src/ui/vista-regole/vista-regole.css',
