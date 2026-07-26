@@ -11,6 +11,7 @@ concreto sotto mano.
 | 01 | [Progressive Web App](01-pwa.md) | Come fa un sito a installarsi e a funzionare senza rete? Cos'è un *service worker* e come intercetta le richieste? |
 | 02 | [IndexedDB](02-indexeddb.md) | Com'è fatto un database dentro il browser? Object store, transazioni, versioni dello schema, e perché tutto è asincrono. |
 | 03 | [Web Components](03-web-components.md) | Come si costruisce un componente riutilizzabile senza framework? Custom element, Shadow DOM, ciclo di vita. |
+| 04 | [Persistere oggetti](04-persistere-oggetti.md) | Perché un oggetto salvato non torna indietro uguale? Forma su disco e forma in memoria, `null` contro assente, e una `Promise` che aspetta un evento che non arriva. |
 
 ## Per chi è scritto
 

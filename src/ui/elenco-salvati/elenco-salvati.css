@@ -1,0 +1,29 @@
+/*
+ * Stile di <elenco-salvati>.
+ *
+ * Il file è caricato globalmente (light DOM), quindi ogni classe è prefissata
+ * `salvati-` e ancorata al tag: senza, `.nome` o `.dettaglio` finirebbero per
+ * colpire le liste dei mazzi generati.
+ */
+
+elenco-salvati {
+  display: block;
+}
+
+elenco-salvati h3 {
+  margin-top: 0;
+}
+
+elenco-salvati .salvati-descrizione {
+  display: grid;
+  gap: 0.1rem;
+}
+
+elenco-salvati .salvati-nome {
+  font-weight: 600;
+}
+
+elenco-salvati .salvati-dettaglio {
+  font-size: 0.82rem;
+  color: var(--colore-testo-tenue);
+}

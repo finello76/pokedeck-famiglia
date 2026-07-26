@@ -545,8 +545,9 @@ button:hover {
   gap: 0.8rem;
 }
 
-/* Dialogo "Sostituisci carta". */
-.dialogo-sostituzione {
+/* Dialoghi modali: "Sostituisci carta" e richiesta di un nome. */
+.dialogo-sostituzione,
+.dialogo-nome {
   border: 1px solid var(--colore-bordo);
   border-radius: var(--raggio);
   background: var(--colore-superficie);
@@ -558,8 +559,18 @@ button:hover {
   /* dialog ha margini auto: resta centrato anche su schermi piccoli */
 }
 
-.dialogo-sostituzione::backdrop {
+.dialogo-sostituzione::backdrop,
+.dialogo-nome::backdrop {
   background: rgb(10 14 22 / 55%);
+}
+
+.dialogo-nome input {
+  width: 100%;
+  margin: 0.6rem 0 1rem;
+}
+
+.dialogo-nome h3 {
+  margin: 0;
 }
 
 .dialogo-sostituzione .proposte {

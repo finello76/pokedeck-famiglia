@@ -15,8 +15,11 @@ import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
 import { apriSostituzione } from './sostituzione.js';
+import { chiediNome } from './chiedi-nome.js';
+import { analizza } from '../engine/analisi.js';
 import '../ui/procedura-guidata/procedura-guidata.js';
 import '../ui/mazzo-generato/mazzo-generato.js';
+import '../ui/elenco-salvati/elenco-salvati.js';
 
 const wizard = document.querySelector('#wizard');
 const risultato = document.querySelector('#risultato-mazzi');
@@ -245,13 +248,27 @@ function disegnaPiano(piano, opzioni) {
       stato.hidden = false;
     });
   });
+  // Il nome si chiede PRIMA di scrivere: un elenco di "26/07/2026, 3 mazzi da
+  // 20" non dice quale fosse il mazzo del torneo di Natale, e senza nome i
+  // salvataggi diventano indistinguibili dopo il terzo.
   intestazione.querySelector('#bottone-salva').addEventListener('click', async () => {
     const stato = intestazione.querySelector('#stato-mazzi');
+    const nome = await chiediNome({
+      titolo: 'Che nome dai a questi mazzi?',
+      aiuto: 'Serve a ritrovarli nell\'elenco "Mazzi salvati", qui sotto.',
+      valore: piano.nome ?? nomeProposto(piano, opzioni),
+    });
+    if (nome === null) return;
+
     try {
-      await salvaPiano(piano, opzioni);
+      await salvaPiano(piano, piano.opzioni ?? opzioni, nome);
+      piano.nome = nome;
       await mostraSalvati();
-      stato.textContent = 'Mazzi salvati.';
+      stato.textContent = `Salvato come «${nome}»: lo trovi qui sotto, in "Mazzi salvati".`;
       stato.hidden = false;
+      // Si va a vedere dove è finito: salvare e non vedere niente cambiare
+      // sembra un salvataggio non riuscito.
+      salvati.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } catch (errore) {
       stato.textContent = `Salvataggio fallito: ${errore.message}`;
       stato.hidden = false;
@@ -349,50 +366,70 @@ function ricomincia() {
   wizard.ricomincia();
 }
 
-/** Elenco dei mazzi già salvati, con anteprima e cancellazione. */
+/**
+ * Un nome di partenza per il salvataggio: la data e la taglia.
+ *
+ * Si propone invece di lasciare il campo vuoto perché chi non ha voglia di
+ * inventare un nome deve poter premere Salva e basta.
+ *
+ * @param {object} piano
+ * @param {object} opzioni
+ * @returns {string}
+ */
+function nomeProposto(piano, opzioni) {
+  const taglia = opzioni?.taglia ?? piano.opzioni?.taglia;
+  return `Mazzi da ${taglia ?? '?'} del ${new Date().toLocaleDateString('it-IT')}`;
+}
+
+/** Elenco dei mazzi già salvati: il componente si occupa della resa. */
 async function mostraSalvati() {
-  const piani = await elencoPiani();
-  if (!piani.length) {
-    salvati.innerHTML = '<p class="stato">Nessun mazzo salvato.</p>';
-    return;
-  }
-
-  salvati.innerHTML = `
-    <h3>Mazzi salvati</h3>
-    <ul class="elenco-salvati">
-      ${piani
-        .map(
-          (p) => `
-        <li>
-          <span>
-            ${new Date(p.creatoIl).toLocaleString('it-IT')} —
-            ${p.mazzi.length} mazzi da ${p.opzioni?.taglia ?? '?'} carte
-          </span>
-          <span class="comandi-salvato">
-            <button type="button" class="collegamento" data-apri="${p.id}">Apri</button>
-            <button type="button" class="collegamento" data-elimina="${p.id}">Elimina</button>
-          </span>
-        </li>`,
-        )
-        .join('')}
-    </ul>
-  `;
-
-  salvati.querySelectorAll('[data-apri]').forEach((b) =>
-    b.addEventListener('click', async () => {
-      const piano = await leggiPiano(b.dataset.apri);
-      if (!piano) return;
-      // Diventa il piano corrente: le sostituzioni devono lavorare su di lui.
-      pianoCorrente = piano;
-      disegnaPiano(piano, piano.opzioni ?? {});
-    }),
-  );
-  salvati.querySelectorAll('[data-elimina]').forEach((b) =>
-    b.addEventListener('click', async () => {
-      await eliminaPiano(b.dataset.elimina);
+  let elenco = salvati.querySelector('elenco-salvati');
+  if (!elenco) {
+    elenco = document.createElement('elenco-salvati');
+    elenco.addEventListener('piano-aperto', (evento) => {
+      apriSalvato(evento.detail.id).catch((errore) => {
+        risultato.hidden = false;
+        risultato.innerHTML = `<p class="errore">Non si riesce ad aprire il mazzo: ${errore.message}</p>`;
+      });
+    });
+    elenco.addEventListener('piano-eliminato', async (evento) => {
+      await eliminaPiano(evento.detail.id);
       await mostraSalvati();
-    }),
-  );
+    });
+    salvati.replaceChildren(elenco);
+  }
+  elenco.piani = await elencoPiani();
+}
+
+/**
+ * Riapre un piano salvato e lo rende di nuovo modificabile.
+ *
+ * Il record su disco è una fotografia dei mazzi, non della collezione: analisi
+ * e indice delle evoluzioni non ci sono e vanno ricostruiti sui dati di oggi,
+ * che è anche la cosa giusta da fare — una sostituzione pesca dalla collezione
+ * di adesso, non da quella del giorno del salvataggio.
+ *
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+async function apriSalvato(id) {
+  const piano = await leggiPiano(id);
+  if (!piano) return;
+
+  const voci = await elencoCompleto();
+  piano.opzioni = {
+    ...(piano.opzioni ?? {}),
+    indiceEvoluzioni: await indiceEvoluzioni(),
+    nonPokemon: await preEvoluzioniNonPokemon(),
+  };
+  piano.analisi = analizza(voci, { ammettiEsotici: piano.opzioni.ammettiEsotici ?? false });
+
+  // "Rigenera diversi" rifarebbe i mazzi con le risposte dell'ultima
+  // generazione, che non c'entrano con quelli appena riaperti.
+  ultimeRisposte = null;
+  // Diventa il piano corrente: le sostituzioni devono lavorare su di lui.
+  pianoCorrente = piano;
+  disegnaPiano(piano, piano.opzioni);
 }
 
 // Richiesta di sostituzione da una riga di un mazzo: si propone la scelta e,
