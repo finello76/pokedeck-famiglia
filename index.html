@@ -2,7 +2,15 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- `maximum-scale`/`user-scalable` valgono nella PWA installata (dove non
+         c'è la barra del browser per tornare al 100% dopo uno zoom finito lì
+         per sbaglio); Safari li ignora di proposito nella navigazione normale,
+         quindi da lì il pinch resta possibile. Il fastidio vero — lo zoom da
+         doppio tap sugli stepper — lo toglie `touch-action` in base.css. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
     <title>PokéDeck Famiglia</title>
     <meta name="description" content="Catalogo della collezione Pokémon TCG e generatore di mazzi equilibrati per giocare in famiglia." />
     <meta name="theme-color" content="#2a5fd6" />

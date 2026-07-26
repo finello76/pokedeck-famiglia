@@ -104,6 +104,33 @@ html.scorrimento-bloccato body {
   overflow: hidden;
 }
 
+/* Zoom accidentale su iOS.
+   Due meccanismi diversi, spesso confusi fra loro:
+   1. lo zoom al FOCUS di un campo, che Safari fa quando il testo è sotto i
+      16px — qui non succede, i campi sono a 16px per scelta (vedi più sotto);
+   2. lo zoom da DOPPIO TAP, che è quello che rende l'app inusabile: pigiare due
+      volte di fila «+» su uno stepper mentre si contano le carte è, per il
+      browser, esattamente il gesto dello zoom.
+   `manipulation` disattiva il secondo lasciando vivi scorrimento e pinch: chi
+   ha bisogno di ingrandire può ancora farlo con due dita, di proposito. */
+button,
+input,
+select,
+textarea,
+label,
+summary,
+a {
+  touch-action: manipulation;
+}
+
+/* iOS ingrandisce da solo il testo ruotando il telefono in orizzontale.
+   Cambia le dimensioni sotto i piedi al layout senza che nessuno l'abbia
+   chiesto: si spegne. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
