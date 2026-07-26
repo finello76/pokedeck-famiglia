@@ -99,6 +99,13 @@ solo il hook `pre-commit`; per attivarlo in un clone nuovo, una volta sola:
 git config core.hooksPath .githooks
 ```
 
+Il numero **non deve mai ripetersi**: è l'unica proprietà che lo rende utile, e
+`tests/versione.test.js` la verifica. Per questo `tools/timbra-versione.mjs` non
+lo *prevede* dal conteggio dei commit — un merge sbaglia la previsione, ed è già
+successo: due versioni diverse con lo stesso numero 81 — ma lo fa **crescere**,
+prendendo il massimo fra conteggio e numero già scritto, più uno. Salti nella
+numerazione sono normali e innocui.
+
 Node è installato via **nvm** e non è nel PATH delle shell non interattive. Anteporre:
 
 ```bash
