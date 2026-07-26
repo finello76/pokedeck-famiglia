@@ -13,14 +13,45 @@
  * @module ui/mazzo-generato
  */
 
-/** Ordine di lettura: prima cosa si gioca, poi con cosa lo si alimenta. */
-const ORDINE = ['Pokémon', 'Allenatore', 'Energia'];
+/**
+ * I tre gruppi, nell'ordine di lettura: prima cosa si gioca, poi con cosa lo si
+ * alimenta.
+ *
+ * L'etichetta non è la categoria del dataset: "Allenatore" è il termine tecnico
+ * delle carte, ma chi costruisce il mazzo in famiglia le chiama *carte
+ * speciali*, e la scheda deve dire quello che dice chi la usa.
+ */
+const GRUPPI = [
+  { categoria: 'Pokémon', etichetta: 'Pokémon' },
+  { categoria: 'Energia', etichetta: 'Energie' },
+  { categoria: 'Allenatore', etichetta: 'Carte speciali' },
+];
+
+/** Progressivo per rendere unici gli `id` delle schede fra più mazzi. */
+let contatore = 0;
+
+/**
+ * La scheda aperta, condivisa da tutti i mazzi in pagina.
+ *
+ * Non è uno stato per istanza perché non sopravvivrebbe: ogni sostituzione fa
+ * ridisegnare il piano intero, e i `<mazzo-generato>` vengono ricreati da capo
+ * — chi stava sistemando le Energie si ritrovava sui Pokémon a ogni scambio.
+ * Che sia condivisa fra i mazzi è anzi giusto: si lavora su una parte alla
+ * volta, e la si vuole vedere in tutti.
+ */
+let apertoSu = GRUPPI[0].categoria;
 
 export class MazzoGenerato extends HTMLElement {
   /** @type {object|null} */
   #mazzo = null;
   /** @type {Set<string>} nomi giocabili solo grazie a una regola della casa */
   #conDeroga = new Set();
+  /**
+   * Numero progressivo dell'istanza: gli `id` di scheda e pannello devono
+   * essere unici in tutta la pagina, e di mazzi ce ne sono sempre almeno due.
+   * @type {number}
+   */
+  #id = ++contatore;
 
   /** @param {object} valore */
   set mazzo(valore) {
@@ -42,41 +73,60 @@ export class MazzoGenerato extends HTMLElement {
     if (!this.#mazzo) return;
     const m = this.#mazzo;
 
-    const gruppi = ORDINE.map((categoria) => {
-      const carte = m.carte.filter((c) => (c.carta?.categoria ?? c.categoria) === categoria);
-      if (!carte.length) return '';
+    // Solo i gruppi che hanno carte: una scheda "Energie" vuota si aprirebbe
+    // su niente, e sarebbe un tocco sprecato per scoprirlo.
+    const presenti = GRUPPI.map((g) => ({
+      ...g,
+      carte: m.carte.filter((c) => (c.carta?.categoria ?? c.categoria) === g.categoria),
+    })).filter((g) => g.carte.length);
 
-      const righe = carte
-        .map((c) => {
-          const dati = c.carta ?? c;
-          const deroga = this.#conDeroga.has(dati.nome);
-          const proxy = Boolean(c.proxy);
-          const classi = [deroga && 'deroga', proxy && 'proxy'].filter(Boolean).join(' ');
-          // I proxy non si sostituiscono: non sono carte della collezione.
-          const cambia = proxy
-            ? ''
-            : `<button type="button" class="cambia" data-indice="${m.carte.indexOf(c)}"
-                       title="Sostituisci con un'altra carta della collezione"
-                       aria-label="Sostituisci ${escapeHtml(dati.nome)}">⇄</button>`;
-          return `
-            <li${classi ? ` class="${classi}"` : ''}>
-              <span class="quante">${c.quantita}×</span>
-              <span class="nome">${escapeHtml(dati.nome)}</span>
-              <span class="dettaglio">${escapeHtml(dati.stadio ?? '')}</span>
-              ${proxy ? `<span class="marchio marchio-proxy" title="${escapeHtml(c.motivo ?? 'Carta stampata: non è nella collezione')}">da stampare</span>` : ''}
-              ${deroga ? '<span class="marchio" title="Si gioca come Pokémon Base">come Base</span>' : ''}
-              ${cambia}
-            </li>`;
-        })
-        .join('');
+    // Se questo mazzo non ha la parte aperta (capita: un mazzo senza Energie
+    // vere), si ripiega sulla prima che ha — senza toccare la preferenza, che
+    // vale per gli altri mazzi.
+    const attiva = presenti.some((g) => g.categoria === apertoSu)
+      ? apertoSu
+      : (presenti[0]?.categoria ?? GRUPPI[0].categoria);
 
-      const totale = carte.reduce((s, c) => s + c.quantita, 0);
-      return `
-        <section class="gruppo">
-          <h4>${categoria} <span class="conteggio">${totale}</span></h4>
-          <ul>${righe}</ul>
-        </section>`;
-    }).join('');
+    const gruppi = presenti
+      .map(({ categoria, etichetta, carte }) => {
+        const righe = carte
+          .map((c) => {
+            const dati = c.carta ?? c;
+            const deroga = this.#conDeroga.has(dati.nome);
+            const proxy = Boolean(c.proxy);
+            const classi = [deroga && 'deroga', proxy && 'proxy'].filter(Boolean).join(' ');
+            // I proxy non si sostituiscono: non sono carte della collezione.
+            const cambia = proxy
+              ? ''
+              : `<button type="button" class="cambia" data-indice="${m.carte.indexOf(c)}"
+                         title="Sostituisci con un'altra carta della collezione"
+                         aria-label="Sostituisci ${escapeHtml(dati.nome)}">⇄</button>`;
+            return `
+              <li${classi ? ` class="${classi}"` : ''}>
+                <span class="quante">${c.quantita}×</span>
+                <span class="nome">${escapeHtml(dati.nome)}</span>
+                <span class="dettaglio">${escapeHtml(dati.stadio ?? '')}</span>
+                ${proxy ? `<span class="marchio marchio-proxy" title="${escapeHtml(c.motivo ?? 'Carta stampata: non è nella collezione')}">da stampare</span>` : ''}
+                ${deroga ? '<span class="marchio" title="Si gioca come Pokémon Base">come Base</span>' : ''}
+                ${cambia}
+              </li>`;
+          })
+          .join('');
+
+        const totale = carte.reduce((s, c) => s + c.quantita, 0);
+        const scelto = categoria === attiva;
+        // Il titolo del gruppo resta nel markup ma è visibile solo in stampa:
+        // sul foglio le schede non esistono e i gruppi vanno uno sotto l'altro,
+        // ognuno col suo nome.
+        return `
+          <section class="gruppo" id="gruppo-${identificatore(categoria)}-${this.#id}"
+                   role="tabpanel" aria-labelledby="scheda-${identificatore(categoria)}-${this.#id}"
+                   ${scelto ? '' : 'hidden'}>
+            <h4 class="solo-stampa">${escapeHtml(etichetta)} <span class="conteggio">${totale}</span></h4>
+            <ul>${righe}</ul>
+          </section>`;
+      })
+      .join('');
 
     this.innerHTML = `
       <article class="mazzo" data-tipo="${m.tipi?.[0] ?? 'Incolore'}">
@@ -87,12 +137,14 @@ export class MazzoGenerato extends HTMLElement {
           </p>
         </header>
         ${this.#htmlCarosello(m)}
+        ${this.#htmlSchede(presenti, attiva)}
         ${gruppi}
       </article>
     `;
 
     this.#collegaCarosello();
     this.#collegaFrecce();
+    this.#collegaSchede();
 
     for (const bottone of this.querySelectorAll('.cambia')) {
       bottone.addEventListener('click', () => {
@@ -109,6 +161,64 @@ export class MazzoGenerato extends HTMLElement {
   /** Ridisegna la lista con i dati correnti (dopo una sostituzione). */
   aggiorna() {
     this.#disegna();
+  }
+
+  /**
+   * La barra delle schede.
+   *
+   * I mazzi da 30 e 60 carte facevano una lista lunga il triplo dello schermo:
+   * per aggiungere un'Energia si scorreva oltre tutti i Pokémon. Tre schede
+   * costano un tocco e tolgono lo scorrimento. Il conteggio sta sull'etichetta
+   * perché è il numero che si controlla mentre si compone il mazzo, e chiederlo
+   * costerebbe di nuovo un tocco.
+   *
+   * @param {Array<{categoria: string, etichetta: string, carte: object[]}>} presenti
+   * @param {string} attiva categoria da mostrare aperta
+   * @returns {string} HTML
+   */
+  #htmlSchede(presenti, attiva) {
+    if (presenti.length < 2) return '';
+
+    const schede = presenti
+      .map(({ categoria, etichetta, carte }) => {
+        const totale = carte.reduce((s, c) => s + c.quantita, 0);
+        const scelto = categoria === attiva;
+        return `
+          <button type="button" role="tab" class="scheda${scelto ? ' attiva' : ''}"
+                  id="scheda-${identificatore(categoria)}-${this.#id}"
+                  aria-controls="gruppo-${identificatore(categoria)}-${this.#id}"
+                  aria-selected="${scelto}" tabindex="${scelto ? 0 : -1}"
+                  data-categoria="${escapeHtml(categoria)}">
+            ${escapeHtml(etichetta)} <span class="conteggio">${totale}</span>
+          </button>`;
+      })
+      .join('');
+
+    return `<div class="schede no-stampa" role="tablist" aria-label="Parti del mazzo">${schede}</div>`;
+  }
+
+  /** Cambio di scheda: si mostra un pannello e si nascondono gli altri. */
+  #collegaSchede() {
+    const barra = this.querySelector('.schede');
+    if (!barra) return;
+
+    for (const scheda of barra.querySelectorAll('.scheda')) {
+      scheda.addEventListener('click', () => {
+        apertoSu = scheda.dataset.categoria;
+        // Si aggiorna quel che cambia invece di ridisegnare tutto: un
+        // `#disegna()` qui rifarebbe anche il carosello, che ricaricherebbe le
+        // immagini e perderebbe la posizione dello scorrimento.
+        for (const altra of barra.querySelectorAll('.scheda')) {
+          const attiva = altra === scheda;
+          altra.classList.toggle('attiva', attiva);
+          altra.setAttribute('aria-selected', String(attiva));
+          altra.tabIndex = attiva ? 0 : -1;
+        }
+        for (const pannello of this.querySelectorAll('.gruppo')) {
+          pannello.hidden = pannello.getAttribute('aria-labelledby') !== scheda.id;
+        }
+      });
+    }
   }
 
   /**
@@ -231,6 +341,20 @@ export class MazzoGenerato extends HTMLElement {
       });
     }
   }
+}
+
+/**
+ * Una categoria ridotta a pezzo di `id` HTML: senza accenti né maiuscole.
+ * @param {string} categoria
+ * @returns {string}
+ * @example
+ * identificatore('Pokémon'); // → 'pokemon'
+ */
+function identificatore(categoria) {
+  return categoria
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 }
 
 /**

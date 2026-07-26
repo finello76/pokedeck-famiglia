@@ -241,6 +241,43 @@ look, sì.
 
 ---
 
+## 6-bis. Caso di studio: le schede di `<mazzo-generato>`
+
+Un mazzo da 60 carte faceva una lista alta il triplo dello schermo: per
+aggiungere un'Energia si scorreva oltre tutti i Pokémon. La lista è diventata
+tre schede — Pokémon / Energie / Carte speciali — e la cosa insegna tre punti che
+in Angular sarebbero nascosti dentro un componente di libreria.
+
+**Le schede sono markup, non un widget.** Bastano i ruoli ARIA (`tablist`,
+`tab`, `tabpanel`), `aria-selected`, `aria-controls` e l'attributo `hidden` sui
+pannelli. Nessuna libreria: gli `id` che legano scheda e pannello devono però
+essere **unici in pagina**, e di mazzi ce ne sono sempre almeno due — da lì il
+progressivo `#id = ++contatore` nel componente.
+
+**Attenzione a dove vive lo stato.** La scheda aperta era nata come campo
+privato dell'istanza. Sbagliato: `vista-mazzi.js` a ogni sostituzione **ricrea**
+gli elementi `<mazzo-generato>` da capo, quindi lo stato moriva con l'istanza e
+chi stava sistemando le Energie si ritrovava sui Pokémon a ogni scambio. Ora è
+una variabile del **modulo**, condivisa da tutti i mazzi. In Angular la
+domanda ha lo stesso peso ma un'altra forma («servizio o campo del componente?»):
+qui la regola pratica è *lo stato che deve sopravvivere al ridisegno non può
+stare nell'oggetto che viene ridisegnato*.
+
+**Ciò che si nasconde a schermo deve ricomparire in stampa.** `hidden` è un
+attributo, ma il suo effetto è solo la regola `[hidden] { display: none }` del
+browser — e nel foglio di stampa i gruppi servono tutti:
+
+```css
+@media print {
+  mazzo-generato .gruppo[hidden] { display: block !important; }
+}
+```
+
+Senza questa riga si stamperebbe un terzo del mazzo, e nessuno se ne
+accorgerebbe finché non ha il foglio in mano.
+
+---
+
 ## 7. Il quadro d'insieme
 
 ```mermaid

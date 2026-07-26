@@ -72,6 +72,17 @@
     border-top-width: 3px;
   }
 
+  /* A schermo il mazzo mostra un gruppo per volta (schede Pokémon / Energie /
+     Carte speciali); sul foglio ci vanno TUTTI, uno sotto l'altro col proprio
+     titolo. Senza questo, si stamperebbe un terzo del mazzo. */
+  mazzo-generato .gruppo[hidden] {
+    display: block !important;
+  }
+
+  mazzo-generato .solo-stampa {
+    display: flex !important;
+  }
+
   /* Due mazzi affiancati su A4: entrano comodamente e si confrontano. */
   .elenco-mazzi {
     display: grid;

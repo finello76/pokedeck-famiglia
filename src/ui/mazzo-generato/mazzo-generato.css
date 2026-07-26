@@ -164,6 +164,47 @@ mazzo-generato .quante-mini {
   font-weight: 700;
 }
 
+/* Schede Pokémon / Energie / Carte speciali: solo su schermo, dove la lista
+   intera non ci sta. In stampa spariscono e i gruppi tornano in colonna. */
+mazzo-generato .schede {
+  display: flex;
+  gap: 0.3rem;
+  margin-block-end: 0.7rem;
+}
+
+mazzo-generato .scheda {
+  flex: 1;
+  min-inline-size: 0;
+  padding: 0.45rem 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--colore-fondo);
+  color: var(--colore-testo-tenue);
+  border: 1px solid var(--colore-bordo);
+  /* Le etichette non si spezzano: "Carte speciali" su due righe farebbe
+     ballare l'altezza della barra a ogni cambio di scheda. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+mazzo-generato .scheda.attiva {
+  background: var(--tipo-colore, var(--colore-primario));
+  border-color: var(--tipo-colore, var(--colore-primario));
+  color: #fff;
+}
+
+mazzo-generato .scheda.attiva .conteggio {
+  background: rgb(255 255 255 / 28%);
+  color: #fff;
+}
+
+/* Il titolo del gruppo serve solo sul foglio stampato: a schermo lo dice la
+   scheda, e ripeterlo sotto sarebbe la stessa parola due volte. */
+mazzo-generato .solo-stampa {
+  display: none;
+}
+
 mazzo-generato .gruppo + .gruppo {
   margin-block-start: 0.9rem;
 }
