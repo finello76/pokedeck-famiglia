@@ -17,13 +17,22 @@ const NOME_DB = 'pokedeck';
  * (nuovo store, nuovo indice): è ciò che fa scattare `onupgradeneeded`.
  * @type {number}
  */
-const VERSIONE_DB = 2;
+const VERSIONE_DB = 3;
 
 /** Store delle carte possedute. Chiave: `"<idSet>:<numero>"`. */
 export const STORE_COLLEZIONE = 'collezione';
 
 /** Store dei mazzi generati e salvati. Chiave: `id` (data di creazione). */
 export const STORE_MAZZI = 'mazzi';
+
+/**
+ * Scelte che valgono per tutta l'app, una riga per scelta. Chiave: `id`.
+ *
+ * Non è localStorage — dove sta il tema — perché qui non ci sono preferenze di
+ * aspetto ma **dati**: il mazzo di riferimento punta a un mazzo salvato, e i due
+ * devono poter sparire insieme quando si azzera il database.
+ */
+export const STORE_IMPOSTAZIONI = 'impostazioni';
 
 /** @type {Promise<IDBDatabase>|null} */
 let connessione = null;
@@ -73,6 +82,11 @@ export function apri() {
       // cascata e non in un `else`.
       if (daVersione < 2) {
         db.createObjectStore(STORE_MAZZI, { keyPath: 'id' });
+      }
+
+      // Versione 3: le impostazioni dell'app (per ora il mazzo di riferimento).
+      if (daVersione < 3) {
+        db.createObjectStore(STORE_IMPOSTAZIONI, { keyPath: 'id' });
       }
     };
 

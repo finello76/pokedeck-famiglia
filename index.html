@@ -44,6 +44,7 @@
     <link rel="stylesheet" href="src/ui/mazzo-generato/mazzo-generato.css" />
     <link rel="stylesheet" href="src/ui/vista-regole/vista-regole.css" />
     <link rel="stylesheet" href="src/ui/elenco-salvati/elenco-salvati.css" />
+    <link rel="stylesheet" href="src/ui/mazzo-riferimento/mazzo-riferimento.css" />
     <link rel="stylesheet" href="src/ui/stile/stampa.css" />
   </head>
   <body>
@@ -87,6 +88,24 @@
 
       <div data-vista="regole" hidden>
         <vista-regole id="regole"></vista-regole>
+      </div>
+
+      <!--
+        Sezione di servizio: quello che si imposta una volta e poi si dimentica.
+        Sta lontano dalle viste d'uso quotidiano proprio perché ci si entra di
+        rado, e perché l'importazione sostituisce dati veri.
+      -->
+      <div data-vista="impostazioni" hidden>
+        <section class="pannello" id="pannello-riferimento">
+          <h2>Mazzo di riferimento</h2>
+          <p class="aiuto">
+            È il mazzo con cui si confronta tutto il resto: la forza che chiedi
+            quando crei mazzi nuovi, e — più avanti — il mazzo che giocherà il
+            computer. Si sceglie fra quelli che hai salvato.
+          </p>
+          <mazzo-riferimento id="riferimento"></mazzo-riferimento>
+          <p id="stato-riferimento" class="stato" hidden></p>
+        </section>
 
         <section class="pannello" id="pannello-dati">
           <h2>Dati</h2>
@@ -127,6 +146,12 @@
           <svg viewBox="0 0 24 24" fill="none"><path d="M6 4h9a3 3 0 0 1 3 3v13H8a2 2 0 0 1-2-2V4Z" fill="currentColor" opacity=".5"/><path d="M9 8h7M9 11h7M9 14h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         </span>
         <span class="etichetta">Regole</span>
+      </button>
+      <button type="button" data-vai="impostazioni">
+        <span class="icona" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </span>
+        <span class="etichetta">Impostazioni</span>
       </button>
     </nav>
 

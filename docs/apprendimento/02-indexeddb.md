@@ -42,7 +42,7 @@ che decide se lo schema va creato o migrato.
 
 ```js
 const NOME_DB = 'pokedeck';
-const VERSIONE_DB = 2;
+const VERSIONE_DB = 3;
 
 const richiesta = indexedDB.open(NOME_DB, VERSIONE_DB);
 ```
@@ -64,6 +64,9 @@ richiesta.onupgradeneeded = (evento) => {
   }
   if (daVersione < 2) {
     db.createObjectStore(STORE_MAZZI, { keyPath: 'id' });
+  }
+  if (daVersione < 3) {
+    db.createObjectStore(STORE_IMPOSTAZIONI, { keyPath: 'id' });  // il mazzo di riferimento
   }
 };
 ```
@@ -258,9 +261,10 @@ flowchart LR
    Spiega perché l'ultima riga può lanciare `TransactionInactiveError`, e come
    ristruttureresti il codice per evitarlo.
 
-3. `VERSIONE_DB` passa da 2 a 3 e aggiungi uno store `preferiti`. Scrivi il
-   blocco `if (daVersione < 3)` in `upgradeneeded`. Perché **non** devi toccare
-   i blocchi `< 1` e `< 2` esistenti?
+3. Il passo `< 3` che vedi sopra è arrivato davvero, per il mazzo di
+   riferimento. Immagina il passo `< 4`: uno store `preferiti`. Scrivilo — e
+   spiega perché **non** devi toccare i blocchi `< 1`, `< 2` e `< 3` esistenti,
+   nemmeno per «tenerli aggiornati».
 
 4. Che differenza c'è tra aspettare `richiesta.onsuccess` e aspettare
    `transazione.oncomplete`? In scrittura, quale dei due garantisce che una

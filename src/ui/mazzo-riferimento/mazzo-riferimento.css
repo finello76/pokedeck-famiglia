@@ -1,0 +1,47 @@
+/*
+ * Stile di <mazzo-riferimento>.
+ *
+ * Foglio globale (light DOM): ogni classe è prefissata `riferimento-` e
+ * ancorata al tag, o `.dettaglio` finirebbe per colpire il wizard.
+ */
+
+mazzo-riferimento {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* Il riferimento scelto è l'unica informazione che si viene a cercare qui:
+   sta in un riquadro colorato, non in una riga di testo come le altre. */
+mazzo-riferimento .riferimento-attuale {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--raggio-piccolo);
+  background: var(--colore-superficie-2);
+  border-inline-start: 4px solid var(--colore-primario);
+}
+
+mazzo-riferimento .riferimento-etichetta {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-testo-tenue);
+}
+
+mazzo-riferimento .riferimento-dettaglio {
+  font-size: 0.82rem;
+  color: var(--colore-testo-tenue);
+}
+
+mazzo-riferimento .riferimento-scelta {
+  display: grid;
+  gap: 0.25rem;
+}
+
+/* Il pulsante "Togli" non deve occupare tutta la riga come i pulsanti
+   principali: è un'azione di ripensamento, non l'azione della schermata. */
+mazzo-riferimento [data-togli] {
+  width: auto;
+  justify-self: start;
+}
