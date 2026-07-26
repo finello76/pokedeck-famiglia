@@ -78,7 +78,6 @@ export class ElencoSalvati extends HTMLElement {
    */
   #riga(piano) {
     const quando = new Date(piano.creatoIl);
-    const taglia = piano.opzioni?.taglia ?? '?';
     const forze = forzeDi(piano);
     const quanti = piano.mazzi?.length ?? 0;
 
@@ -87,7 +86,7 @@ export class ElencoSalvati extends HTMLElement {
         <span class="salvati-descrizione">
           <span class="salvati-nome">${escapeHtml(piano.nome ?? 'Senza nome')}</span>
           <span class="salvati-dettaglio">
-            ${quanti === 1 ? 'un mazzo' : `${quanti} mazzi`} da ${taglia} carte ·
+            ${quanti === 1 ? 'un mazzo' : `${quanti} mazzi`} · ${carteDi(piano)} carte ·
             ${Number.isNaN(quando.valueOf()) ? '' : quando.toLocaleDateString('it-IT')}
             ${forze.length ? `· forza ${forze.join(' · ')}` : ''}
           </span>
@@ -100,6 +99,25 @@ export class ElencoSalvati extends HTMLElement {
         </span>
       </li>`;
   }
+}
+
+/**
+ * Quante carte contiene davvero un salvataggio.
+ *
+ * Si contano le carte, **non** si legge `opzioni.taglia`: la taglia è quella a
+ * cui il mazzo puntava, e un mazzo costruito a mano e salvato a metà mostrava
+ * "30 carte" avendone tre. Il numero che serve a riconoscere un salvataggio
+ * nell'elenco è quello che c'è dentro, non quello che si era promesso.
+ *
+ * @param {object} piano
+ * @returns {number}
+ */
+function carteDi(piano) {
+  return (piano.mazzi ?? []).reduce(
+    (somma, mazzo) =>
+      somma + (mazzo.carte ?? []).reduce((s, voce) => s + (voce.quantita ?? 0), 0),
+    0,
+  );
 }
 
 /**

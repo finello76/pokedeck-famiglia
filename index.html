@@ -84,8 +84,6 @@
         <section id="risultato-mazzi" hidden></section>
 
         <section class="pannello no-stampa" id="mazzi-salvati"></section>
-
-        <section class="pannello no-stampa" id="mazzi-prefatti" hidden></section>
       </div>
 
       <!-- Il costruttore manuale ha una vista sua: e' un'attivita' lunga, con
@@ -115,6 +113,14 @@
           <mazzo-riferimento id="riferimento"></mazzo-riferimento>
           <p id="stato-riferimento" class="stato" hidden></p>
         </section>
+
+        <!--
+          Il listino dei mazzi già pronti sta accanto alla scelta del
+          riferimento, non più sotto il wizard: è la tabella da cui si capisce
+          quale mazzo eleggere, e leggerla in un'altra schermata voleva dire
+          ricordarsi i numeri mentre si cambiava vista.
+        -->
+        <section class="pannello no-stampa" id="mazzi-prefatti" hidden></section>
 
         <section class="pannello" id="pannello-dati">
           <h2>Dati</h2>

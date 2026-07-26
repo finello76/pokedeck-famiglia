@@ -67,7 +67,11 @@
   background: rgb(255 255 255 / 28%);
 }
 
+/* Il margine sopra separa la ricerca dalla barra delle schede: appoggiata
+   direttamente sotto, la casella sembrava parte della scheda attiva invece che
+   un filtro che vale per tutte. */
 .filtri {
+  margin-block-start: 0.9rem;
   margin-bottom: 0.8rem;
 }
 

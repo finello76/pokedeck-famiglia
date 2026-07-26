@@ -30,7 +30,6 @@ import '../ui/elenco-salvati/elenco-salvati.js';
 const wizard = document.querySelector('#wizard');
 const risultato = document.querySelector('#risultato-mazzi');
 const salvati = document.querySelector('#mazzi-salvati');
-const prefatti = document.querySelector('#mazzi-prefatti');
 const zonaWizard = document.querySelector('#zona-wizard');
 
 /** @type {object|null} ultimo piano mostrato */
@@ -93,7 +92,6 @@ export async function preparaWizard() {
     idRiferimentoPrefatto: riferimento?.idPrefatto ?? null,
   };
   await mostraSalvati();
-  await mostraPrefatti();
 }
 
 /**
@@ -700,47 +698,6 @@ function ricomincia() {
   risultato.hidden = true;
   zonaWizard.hidden = false;
   wizard.ricomincia();
-}
-
-/**
- * I mazzi prefatti con la loro forza: il metro di paragone.
- *
- * Sta qui, sotto il wizard, e non in una vista sua: serve a leggere un numero
- * prima o dopo aver generato dei mazzi, non è una schermata in cui si va.
- *
- * @returns {Promise<void>}
- */
-async function mostraPrefatti() {
-  const mazzi = await elencoPrefatti();
-  // Senza catalogo la sezione non esiste: è un termine di paragone, non una
-  // funzione da cui dipende qualcosa.
-  prefatti.hidden = !mazzi.length;
-  if (!mazzi.length) return;
-
-  const righe = mazzi
-    .map((mazzo) => {
-      const f = forza(mazzo, { taglia: mazzo.taglia });
-      return `
-        <li>
-          <span class="forza-nome">${mazzo.nome}</span>
-          <span class="forza-barra"><span class="forza-riempimento" style="inline-size:${f.totale}%"></span></span>
-          <span class="forza-valore">${f.totale}</span>
-          <span class="forza-dettaglio">${mazzo.taglia} carte${
-            f.attendibile ? '' : ' · dati incompleti, valore approssimato'
-          }</span>
-        </li>`;
-    })
-    .join('');
-
-  prefatti.innerHTML = `
-    <h3>Mazzi di riferimento</h3>
-    <p class="aiuto">
-      Quanto valgono i mazzi già pronti, sulla stessa scala dei mazzi generati.
-      Servono a capire se una partita sarà pari: un mazzo generato molto più
-      forte del Kit con cui gioca l'altro non fa una partita.
-    </p>
-    <ul class="elenco-forza">${righe}</ul>
-  `;
 }
 
 /**

@@ -24,6 +24,51 @@ import '../ui/mazzo-riferimento/mazzo-riferimento.js';
 
 const componente = document.querySelector('#riferimento');
 const stato = document.querySelector('#stato-riferimento');
+const prefatti = document.querySelector('#mazzi-prefatti');
+
+/**
+ * Il listino dei mazzi già pronti, con la loro forza.
+ *
+ * Sta in questa vista e non più sotto il wizard: è la tabella che si legge
+ * **per decidere** quale mazzo eleggere a riferimento, e averla in un'altra
+ * schermata obbligava a ricordarsi i numeri mentre si cambiava vista. Qui il
+ * confronto è sotto gli occhi insieme alla scelta.
+ *
+ * @returns {Promise<void>}
+ */
+async function mostraPrefatti() {
+  if (!prefatti) return;
+  const mazzi = await elencoPrefatti();
+  // Senza catalogo la sezione non esiste: è un termine di paragone, non una
+  // funzione da cui dipende qualcosa.
+  prefatti.hidden = !mazzi.length;
+  if (!mazzi.length) return;
+
+  const righe = mazzi
+    .map((mazzo) => {
+      const f = forza(mazzo, { taglia: mazzo.taglia });
+      return `
+        <li>
+          <span class="forza-nome">${mazzo.nome}</span>
+          <span class="forza-barra"><span class="forza-riempimento" style="inline-size:${f.totale}%"></span></span>
+          <span class="forza-valore">${f.totale}</span>
+          <span class="forza-dettaglio">${mazzo.taglia} carte${
+            f.attendibile ? '' : ' · dati incompleti, valore approssimato'
+          }</span>
+        </li>`;
+    })
+    .join('');
+
+  prefatti.innerHTML = `
+    <h2>Mazzi di riferimento</h2>
+    <p class="aiuto">
+      Quanto valgono i mazzi già pronti, sulla stessa scala dei mazzi generati.
+      Servono a capire se una partita sarà pari: un mazzo generato molto più
+      forte del Kit con cui gioca l'altro non fa una partita.
+    </p>
+    <ul class="elenco-forza">${righe}</ul>
+  `;
+}
 
 /**
  * Rilegge piani salvati e scelta corrente e li passa al componente.
@@ -84,5 +129,10 @@ document.addEventListener('vista-cambiata', (evento) => {
   messaggio('');
   aggiornaRiferimento().catch((errore) => {
     messaggio(`Impossibile leggere i mazzi salvati: ${errore.message}`, true);
+  });
+  mostraPrefatti().catch(() => {
+    // Il listino è un di più: se il catalogo non si carica, la scelta del
+    // riferimento deve restare comunque utilizzabile.
+    if (prefatti) prefatti.hidden = true;
   });
 });
