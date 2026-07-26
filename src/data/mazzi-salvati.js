@@ -22,6 +22,7 @@
 
 import { STORE_MAZZI, leggiTutto, leggi, scrivi, cancella } from './deposito.js';
 import { forza } from '../engine/forza.js';
+import { contaComposizione } from '../engine/mazzo.js';
 
 /**
  * I campi di carta che il mazzo salvato porta con sé.
@@ -153,9 +154,8 @@ export function idrataPiano(record) {
 
   return {
     ...record,
-    mazzi: (record.mazzi ?? []).map((mazzo) => ({
-      ...mazzo,
-      carte: (mazzo.carte ?? []).map((voce) => {
+    mazzi: (record.mazzi ?? []).map((mazzo) => {
+      const carte = (mazzo.carte ?? []).map((voce) => {
         if (voce?.carta) return voce;
         const { quantita, proxy, motivo, ...campi } = voce ?? {};
         return senzaNulli({
@@ -164,8 +164,21 @@ export function idrataPiano(record) {
           motivo,
           carta: senzaNulli(campi),
         });
-      }),
-    })),
+      });
+
+      return {
+        ...mazzo,
+        carte,
+        // La composizione si ricostruisce quando manca. Serve ai mazzi salvati
+        // prima che il costruttore manuale la scrivesse: `aggiungiAlMazzo()` e
+        // `togliDalMazzo()` la aggiornano invece di ricalcolarla, quindi
+        // premere ⇄ su uno di quei mazzi rompeva la sostituzione. Ricalcolarla
+        // qui è coerente col resto della funzione — è sempre "sviluppare la
+        // fotografia" — e non tocca chi ce l'ha già.
+        composizione: mazzo.composizione ?? contaComposizione(carte),
+        totale: mazzo.totale ?? carte.reduce((s, v) => s + (v.quantita ?? 0), 0),
+      };
+    }),
   };
 }
 

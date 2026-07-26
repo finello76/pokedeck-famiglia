@@ -9,7 +9,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { completa, correggi, applica } from '../src/engine/completa-mazzo.js';
+import { completa, correggi, applica, differenza } from '../src/engine/completa-mazzo.js';
 import { diagnostica, GRAVITA } from '../src/engine/mazzo-manuale.js';
 
 const pk = (nome, opzioni = {}) => ({
@@ -230,4 +230,56 @@ test('un mazzo vuoto e una collezione vuota non fanno esplodere niente', () => {
   assert.doesNotThrow(() => completa(mazzo([]), [], { taglia: 30 }));
   assert.doesNotThrow(() => correggi(undefined, [], { taglia: 30 }));
   assert.equal(completa(mazzo([]), [], { taglia: 30 }).mancanti, 30);
+});
+
+/**
+ * `differenza()` è l'inversa di `applica()`, e serve a mostrare **una** lista di
+ * mosse quando il mazzo proposto nasce da due passaggi (completamento e poi
+ * scambi per la forza). La proprietà che deve valere sempre: applicare la
+ * differenza al mazzo di partenza deve dare esattamente il mazzo di arrivo.
+ */
+test('differenza produce le mosse che portano da un mazzo all\'altro', () => {
+  const prima = mazzo([
+    { carta: pk('Machop'), quantita: 3 },
+    { carta: pk('Mankey'), quantita: 2 },
+  ]);
+  const dopo = mazzo([
+    { carta: pk('Machop'), quantita: 1 },
+    { carta: pk('Mankey'), quantita: 2 },
+    { carta: pk('Onix'), quantita: 4 },
+  ]);
+
+  const mosse = differenza(prima, dopo);
+  assert.equal(mosse.length, 2, 'la carta rimasta uguale non produce mosse');
+
+  const ricostruito = applica(prima, mosse);
+  assert.equal(totale(ricostruito), totale(dopo));
+  for (const voce of dopo.carte) {
+    const suo = ricostruito.carte.find((v) => v.carta.nome === voce.carta.nome);
+    assert.equal(suo?.quantita, voce.quantita, `quantità sbagliata per ${voce.carta.nome}`);
+  }
+});
+
+test('differenza riusa i motivi già scritti e ripiega sull\'altro', () => {
+  const prima = mazzo([{ carta: pk('Machop'), quantita: 1 }]);
+  const dopo = mazzo([
+    { carta: pk('Machop'), quantita: 1 },
+    { carta: pk('Mankey'), quantita: 1 },
+    { carta: pk('Onix'), quantita: 1 },
+  ]);
+
+  const mosse = differenza(prima, dopo, {
+    motivi: [{ verso: 'aggiungi', carta: pk('Mankey'), quante: 1, motivo: 'Serve un Base.' }],
+    altrimenti: 'Scambiata per la forza.',
+  });
+
+  const per = (nome) => mosse.find((m) => m.carta.nome === nome);
+  assert.equal(per('Mankey').motivo, 'Serve un Base.', 'il motivo di completa() va conservato');
+  assert.equal(per('Onix').motivo, 'Scambiata per la forza.');
+});
+
+test('fra due mazzi uguali non c\'è nessuna mossa', () => {
+  const uno = mazzo([{ carta: pk('Machop'), quantita: 2 }]);
+  assert.deepEqual(differenza(uno, uno), []);
+  assert.deepEqual(differenza(undefined, undefined), []);
 });

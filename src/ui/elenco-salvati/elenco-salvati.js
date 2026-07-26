@@ -79,14 +79,15 @@ export class ElencoSalvati extends HTMLElement {
   #riga(piano) {
     const quando = new Date(piano.creatoIl);
     const taglia = piano.opzioni?.taglia ?? '?';
-    const forze = piano.equilibrio?.punteggi?.map((p) => p.totale) ?? [];
+    const forze = forzeDi(piano);
+    const quanti = piano.mazzi?.length ?? 0;
 
     return `
       <li>
         <span class="salvati-descrizione">
           <span class="salvati-nome">${escapeHtml(piano.nome ?? 'Senza nome')}</span>
           <span class="salvati-dettaglio">
-            ${piano.mazzi?.length ?? 0} mazzi da ${taglia} carte ·
+            ${quanti === 1 ? 'un mazzo' : `${quanti} mazzi`} da ${taglia} carte ·
             ${Number.isNaN(quando.valueOf()) ? '' : quando.toLocaleDateString('it-IT')}
             ${forze.length ? `· forza ${forze.join(' · ')}` : ''}
           </span>
@@ -99,6 +100,28 @@ export class ElencoSalvati extends HTMLElement {
         </span>
       </li>`;
   }
+}
+
+/**
+ * I punteggi di forza da mostrare accanto a un salvataggio.
+ *
+ * Due sorgenti, e serve provarle entrambe: `equilibrio` esiste solo nei piani
+ * usciti dal wizard, che misura i mazzi **uno rispetto all'altro**, mentre un
+ * mazzo costruito a mano è uno solo e un equilibrio non ce l'ha. La sua forza
+ * `istantanea()` la scrive comunque su ogni mazzo, ed è da lì che si recupera:
+ * senza questo ripiego i mazzi personalizzati comparivano nell'elenco **senza
+ * punteggio**, cioè senza il dato con cui si sceglie quale riprendere.
+ *
+ * @param {object} piano
+ * @returns {number[]}
+ */
+function forzeDi(piano) {
+  const dallEquilibrio = piano.equilibrio?.punteggi?.map((p) => p.totale);
+  if (dallEquilibrio?.length) return dallEquilibrio;
+
+  return (piano.mazzi ?? [])
+    .map((m) => (m.forza?.attendibile ? m.forza.totale : null))
+    .filter((n) => n != null);
 }
 
 /**

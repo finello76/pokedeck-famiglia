@@ -107,3 +107,40 @@ test('idratare due volte non cambia niente', () => {
   const due = idrataPiano(uno);
   assert.deepEqual(due.mazzi[0].carte, uno.mazzi[0].carte);
 });
+
+/**
+ * Seconda regressione della stessa famiglia, trovata riaprendo un mazzo
+ * costruito a mano: `aggiungiAlMazzo()` e `togliDalMazzo()` **aggiornano**
+ * `mazzo.composizione` invece di ricalcolarla, quindi un mazzo salvato senza
+ * quel campo faceva morire il primo scambio con
+ * `Cannot read properties of undefined (reading 'pokemon')`.
+ */
+test('un mazzo riletto ha sempre composizione e totale, anche se non li aveva', () => {
+  const record = {
+    id: 'x',
+    nome: 'Vecchio',
+    creatoIl: '2026-01-01T00:00:00.000Z',
+    mazzi: [
+      {
+        nome: 'Senza composizione',
+        carte: [
+          { quantita: 3, idSet: 'prova', numero: 'Charmander', nome: 'Charmander', categoria: 'Pokémon' },
+          { quantita: 2, idSet: '@base', numero: 'Fuoco', nome: 'Energia Fuoco', categoria: 'Energia' },
+          { quantita: 1, idSet: 'prova', numero: 'Boss', nome: 'Ordine del Boss', categoria: 'Allenatore' },
+        ],
+      },
+    ],
+  };
+
+  const mazzo = idrataPiano(record).mazzi[0];
+  assert.deepEqual(mazzo.composizione, { pokemon: 3, energie: 2, allenatori: 1 });
+  assert.equal(mazzo.totale, 6);
+});
+
+test('la composizione già salvata non viene ricalcolata', () => {
+  const record = idrataPiano({
+    mazzi: [{ nome: 'Suo', composizione: { pokemon: 9, energie: 9, allenatori: 9 }, totale: 27, carte: [] }],
+  });
+  assert.deepEqual(record.mazzi[0].composizione, { pokemon: 9, energie: 9, allenatori: 9 });
+  assert.equal(record.mazzi[0].totale, 27);
+});

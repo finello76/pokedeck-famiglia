@@ -90,8 +90,23 @@ caricaIn(stileTipi, new URL('../stile/tipi.css', import.meta.url));
  */
 const TETTO_PER_CATEGORIA = 150;
 
-/** Le categorie, nell'ordine in cui si costruisce un mazzo. */
-const CATEGORIE = ['Pokémon', 'Allenatore', 'Energia'];
+/**
+ * Le tre parti di un mazzo, nell'ordine in cui si costruisce, con il nome che
+ * hanno in casa.
+ *
+ * "Carte speciali" e non "Allenatore" per la stessa ragione già scritta in
+ * `mazzo-generato.js`: al tavolo nessuno le chiama Allenatore, e le due schermate
+ * devono chiamare le stesse carte allo stesso modo o sembrano due app diverse.
+ *
+ * L'ordine mette le Energie in mezzo — prima erano ultime — perché è l'ordine in
+ * cui le si sceglie: scelti i Pokémon si guarda subito di che Energie hanno
+ * bisogno, e le carte speciali sono l'ultimo ritocco.
+ */
+const CATEGORIE = [
+  { categoria: 'Pokémon', etichetta: 'Pokémon' },
+  { categoria: 'Energia', etichetta: 'Energie' },
+  { categoria: 'Allenatore', etichetta: 'Carte speciali' },
+];
 
 /** @param {string} testo @returns {string} sicuro dentro l'HTML */
 const esc = (testo) =>
@@ -116,6 +131,18 @@ export class CostruttoreMazzo extends HTMLElement {
   #filtri = { ...FILTRI_VUOTI };
   /** @type {boolean} se il pannello dei filtri avanzati è aperto */
   #avanzatiAperti = false;
+  /**
+   * La scheda aperta: si mostra una categoria per volta.
+   *
+   * Prima le tre categorie stavano incolonnate nella stessa lista, separate da
+   * un titolo. Con centocinquanta righe per categoria, aggiungere un'Energia
+   * dopo aver scelto i Pokémon voleva dire scorrere l'intero elenco dei
+   * Pokémon: il gesto più frequente era il più scomodo. La scheda lo rende un
+   * tocco.
+   *
+   * @type {string}
+   */
+  #scheda = CATEGORIE[0].categoria;
 
   /** @param {object[]} valore */
   set voci(valore) {
@@ -134,13 +161,31 @@ export class CostruttoreMazzo extends HTMLElement {
     this.#disegna();
   }
 
-  /** Le voci scelte, nella forma che il motore si aspetta. */
+  /**
+   * Le voci scelte, nella forma che il motore si aspetta.
+   *
+   * `idSet` e `numero` si ricopiano dalla RIGA dentro la carta, e non è un
+   * dettaglio: il dataset non li mette nella carta — stanno nella riga di
+   * collezione — mentre tutto il resto dell'app identifica una carta proprio
+   * con quella coppia. Senza, un mazzo costruito a mano usciva di qui con
+   * carte anonime: si salvava, e riaprendolo nessuna carta si ritrovava in
+   * collezione. È la stessa `undefined is not an object (evaluating
+   * 'carta.idSet')` che si vedeva sostituendo una carta in un mazzo salvato,
+   * presa dall'altro capo.
+   */
   get carte() {
     const per = new Map(this.#voci.map((v) => [chiave(v), v]));
     return [...this.#scelte.entries()]
       .filter(([, q]) => q > 0)
-      .map(([k, quantita]) => ({ carta: per.get(k)?.carta, quantita }))
-      .filter((v) => v.carta);
+      .map(([k, quantita]) => {
+        const voce = per.get(k);
+        if (!voce?.carta) return null;
+        return {
+          carta: { ...voce.carta, idSet: voce.carta.idSet ?? voce.idSet, numero: voce.carta.numero ?? voce.numero },
+          quantita,
+        };
+      })
+      .filter(Boolean);
   }
 
   /** Svuota il mazzo. */
@@ -165,7 +210,12 @@ export class CostruttoreMazzo extends HTMLElement {
   }
 
   /**
-   * Le voci da mostrare: filtrate per nome e ordinate coi Pokémon prima.
+   * Le voci da mostrare, divise per scheda.
+   *
+   * Si calcolano **tutte e tre** le categorie anche se se ne disegna una sola:
+   * il numero sulla scheda chiusa è ciò che dice quante Energie hai già messo
+   * senza doverci andare, ed è metà del motivo per cui le schede sono un
+   * guadagno e non solo un posto in meno dove scorrere.
    *
    * Le carte già scelte restano SEMPRE visibili, anche quando non
    * corrispondono al filtro: altrimenti scrivere nel campo di ricerca farebbe
@@ -174,25 +224,27 @@ export class CostruttoreMazzo extends HTMLElement {
   #daMostrare() {
     const passano = new Set(filtra(this.#voci, this.#filtri).map(chiave));
 
-    const scelte = this.#voci.filter((v) => this.#scelte.get(chiave(v)) > 0);
-    const resto = this.#voci.filter(
-      (v) => !this.#scelte.get(chiave(v)) && passano.has(chiave(v)),
-    );
+    const perNome = (a, b) => String(a.carta?.nome).localeCompare(String(b.carta?.nome), 'it');
 
-    const perNome = (a, b) =>
-      String(a.carta?.nome).localeCompare(String(b.carta?.nome), 'it');
+    return CATEGORIE.map(({ categoria, etichetta }) => {
+      const sue = this.#voci.filter((v) => v.carta?.categoria === categoria);
+      const scelte = sue.filter((v) => this.#scelte.get(chiave(v)) > 0).sort(perNome);
+      const resto = sue
+        .filter((v) => !this.#scelte.get(chiave(v)) && passano.has(chiave(v)))
+        .sort(perNome);
 
-    const gruppi = CATEGORIE.map((categoria) => {
-      const tutte = resto.filter((v) => v.carta?.categoria === categoria).sort(perNome);
       return {
         categoria,
-        voci: tutte.slice(0, TETTO_PER_CATEGORIA),
-        totali: tutte.length,
-        troncate: Math.max(0, tutte.length - TETTO_PER_CATEGORIA),
+        etichetta,
+        scelte,
+        voci: resto.slice(0, TETTO_PER_CATEGORIA),
+        totali: resto.length,
+        troncate: Math.max(0, resto.length - TETTO_PER_CATEGORIA),
+        // Il conteggio sulla scheda è quante copie hai messo nel mazzo, non
+        // quante ne possiedi: è il numero che si controlla mentre si costruisce.
+        nelMazzo: scelte.reduce((s, v) => s + (this.#scelte.get(chiave(v)) ?? 0), 0),
       };
-    }).filter((g) => g.voci.length);
-
-    return { scelte, gruppi };
+    });
   }
 
   /**
@@ -203,6 +255,11 @@ export class CostruttoreMazzo extends HTMLElement {
    * app diverse dentro la stessa app. Le opzioni si leggono dalla collezione
    * (`valoriDisponibili`), quindi non compaiono mai filtri che non selezionano
    * niente.
+   *
+   * Manca il menu "Tipo di carta" che c'è nel catalogo, ed è voluto: qui quel
+   * filtro lo fanno le schede. Tenerli entrambi avrebbe permesso di aprire la
+   * scheda "Energie" filtrando per "Pokémon" e ottenere una lista vuota senza
+   * capire perché — due comandi per la stessa cosa che si contraddicono.
    *
    * @returns {string} HTML
    */
@@ -260,11 +317,6 @@ export class CostruttoreMazzo extends HTMLElement {
           this.#avanzatiAperti
             ? `<div class="avanzati">
                  ${menu(
-                   'categoria',
-                   'Tipo di carta',
-                   v.categorie.map((c) => ({ valore: c, testo: c })),
-                 )}
-                 ${menu(
                    'stadio',
                    'Stadio',
                    v.stadi.map((s) => ({ valore: s, testo: s })),
@@ -283,31 +335,72 @@ export class CostruttoreMazzo extends HTMLElement {
       </div>`;
   }
 
+  /**
+   * La barra delle tre schede, con quante carte hai messo in ciascuna.
+   *
+   * Stessa forma e stessi ruoli ARIA di `<mazzo-generato>`: chi ha imparato a
+   * cambiare scheda leggendo un mazzo deve ritrovare lo stesso comando qui.
+   *
+   * @param {Array<{categoria: string, etichetta: string, nelMazzo: number}>} gruppi
+   * @returns {string} HTML
+   */
+  #schedeHtml(gruppi) {
+    return `
+      <div class="schede" role="tablist" aria-label="Parti del mazzo">
+        ${gruppi
+          .map(({ categoria, etichetta, nelMazzo }) => {
+            const attiva = categoria === this.#scheda;
+            return `
+              <button type="button" role="tab" class="scheda${attiva ? ' attiva' : ''}"
+                      data-scheda="${esc(categoria)}" aria-selected="${attiva}"
+                      tabindex="${attiva ? 0 : -1}">
+                ${esc(etichetta)} <span class="conteggio">${nelMazzo}</span>
+              </button>`;
+          })
+          .join('')}
+      </div>`;
+  }
+
   #disegna() {
     if (!this.shadowRoot) return;
-    const { scelte, gruppi } = this.#daMostrare();
+    const gruppi = this.#daMostrare();
+    const aperto = gruppi.find((g) => g.categoria === this.#scheda) ?? gruppi[0];
 
     this.shadowRoot.innerHTML = `
+      ${this.#schedeHtml(gruppi)}
       ${this.#filtriHtml()}
-      ${scelte.length ? `<p class="titolo-gruppo">Nel mazzo</p>${this.#righe(scelte)}` : ''}
-      ${gruppi
-        .map(
-          (g) => `
-        <p class="titolo-gruppo">${esc(g.categoria)} <span class="quante">${g.totali}</span></p>
-        ${this.#righe(g.voci)}
-        ${
-          g.troncate
-            ? `<p class="aiuto">Altre ${g.troncate} non mostrate: restringi con i filtri qui sopra.</p>`
-            : ''
-        }`,
-        )
-        .join('')}
       ${
-        !scelte.length && !gruppi.length
-          ? '<p class="aiuto">Nessuna carta corrisponde ai filtri.</p>'
+        aperto.scelte.length
+          ? `<p class="titolo-gruppo">Nel mazzo</p>${this.#righe(aperto.scelte)}`
+          : ''
+      }
+      ${
+        aperto.voci.length
+          ? `<p class="titolo-gruppo">Da aggiungere <span class="quante">${aperto.totali}</span></p>
+             ${this.#righe(aperto.voci)}`
+          : ''
+      }
+      ${
+        aperto.troncate
+          ? `<p class="aiuto">Altre ${aperto.troncate} non mostrate: restringi con i filtri qui sopra.</p>`
+          : ''
+      }
+      ${
+        !aperto.scelte.length && !aperto.voci.length
+          ? `<p class="aiuto">Nessuna carta di questo tipo fra le tue, o nessuna che corrisponda ai filtri.</p>`
           : ''
       }
     `;
+
+    // Cambio di scheda: si ridisegna e basta. Qui, a differenza di
+    // `<mazzo-generato>`, non c'è un carosello da preservare — le figure le
+    // ricarica l'osservatore, e solo quelle che entrano davvero a schermo.
+    this.shadowRoot.querySelectorAll('[data-scheda]').forEach((scheda) =>
+      scheda.addEventListener('click', () => {
+        this.#scheda = scheda.dataset.scheda;
+        this.#disegna();
+      }),
+    );
 
     const campo = this.shadowRoot.querySelector('[data-filtro="testo"]');
     campo.addEventListener('input', () => {

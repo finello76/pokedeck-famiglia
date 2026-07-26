@@ -34,6 +34,30 @@ export function chiaveVoce(carta, proxy = false) {
 }
 
 /**
+ * Il conteggio per categoria di un elenco di carte.
+ *
+ * Esiste perché `aggiungiAlMazzo()` e `togliDalMazzo()` **aggiornano**
+ * `mazzo.composizione` invece di ricalcolarla, e quindi pretendono che ci sia
+ * già: un mazzo senza composizione le fa esplodere alla prima carta con
+ * `Cannot read properties of undefined (reading 'pokemon')`. Il generatore la
+ * costruisce da sé, ma un mazzo fatto a mano nel costruttore o riletto da un
+ * salvataggio vecchio no — e sono proprio quelli su cui si preme ⇄.
+ *
+ * @param {Array<{carta: object, quantita: number}>} carte
+ * @returns {{pokemon: number, energie: number, allenatori: number}}
+ * @example
+ * const mazzo = { nome: 'A mano', carte, composizione: contaComposizione(carte) };
+ */
+export function contaComposizione(carte) {
+  const conti = { pokemon: 0, energie: 0, allenatori: 0 };
+  for (const voce of carte ?? []) {
+    const campo = CAMPO[voce.carta?.categoria];
+    if (campo) conti[campo] += voce.quantita ?? 0;
+  }
+  return conti;
+}
+
+/**
  * Aggiunge copie a un mazzo rispettando il limite delle 4 copie.
  *
  * Le Energie base sono esenti: è la regola ufficiale, ed è anche l'unica ragione

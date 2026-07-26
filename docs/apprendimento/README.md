@@ -18,6 +18,7 @@ progetto solo come esempio concreto sotto mano.
 | 08 | [Persistere oggetti](08-persistere-oggetti.md) | Perché un oggetto salvato non torna indietro uguale? Forma su disco e forma in memoria, `null` contro assente, e una `Promise` che aspetta un evento che non arriva. |
 | 09 | [La salita di collina](09-salita-di-collina.md) | Come si risolve un problema senza formula? Funzione obiettivo, vicinato, massimi locali — e perché l'algoritmo ottimizza esattamente le stupidaggini che misuri. |
 | 10 | [Riunire due rami](10-riunire-due-rami.md) | Cosa succede quando due linee di lavoro costruiscono la stessa cosa due volte? Conflitti che Git non segnala, versioni di schema omonime, e perché un test verde può proteggere un difetto. |
+| 11 | [L'oggetto incompleto](11-oggetti-incompleti.md) | Se tre punti del codice costruiscono "un mazzo", chi garantisce che sia la stessa cosa? Invarianti senza classi, campi derivabili e non, e perché i test si fabbricano input troppo gentili. |
 
 ## Per chi è scritto
 

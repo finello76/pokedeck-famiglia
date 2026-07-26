@@ -391,6 +391,74 @@ function valoreDaTogliere(voce, chiesti) {
 }
 
 /**
+ * Le mosse che portano da un mazzo a un altro.
+ *
+ * È l'inversa di `applica()`, e serve quando il mazzo proposto non nasce da un
+ * solo passaggio: "Completa il mazzo" con una forza obiettivo prima riempie con
+ * `completa()` e poi scambia carte con `avvicinaAForza()`, che muta il mazzo e
+ * restituisce solo i nomi scambiati. Rifare il conto sul risultato finale è
+ * l'unico modo di mostrare a chi guarda **una** lista di mosse che corrisponda
+ * davvero a ciò che succederà premendo Applica: sommare due elenchi parziali
+ * mostrerebbe carte aggiunte e poi tolte, cioè il lavoro del motore invece del
+ * suo esito.
+ *
+ * @param {object} prima
+ * @param {object} dopo
+ * @param {object} [opzioni]
+ * @param {Mossa[]} [opzioni.motivi] mosse già spiegate: dove la carta coincide
+ *   si riusa la frase, così le spiegazioni di `completa()` non si perdono
+ * @param {string} [opzioni.altrimenti=''] motivo per le mosse che quelle non
+ *   spiegano — tipicamente gli scambi fatti per la forza
+ * @returns {Mossa[]}
+ * @example
+ * const mosse = differenza(mazzo, dopoGliScambi, {
+ *   motivi: esito.mosse,
+ *   altrimenti: 'Scambiata per avvicinare la forza a 45.',
+ * });
+ */
+export function differenza(prima, dopo, { motivi = [], altrimenti = '' } = {}) {
+  const conta = (mazzo) => {
+    const per = new Map();
+    for (const voce of mazzo?.carte ?? []) {
+      const k = chiave(voce.carta);
+      const gia = per.get(k);
+      if (gia) gia.quantita += voce.quantita;
+      else per.set(k, { carta: voce.carta, quantita: voce.quantita });
+    }
+    return per;
+  };
+
+  const a = conta(prima);
+  const b = conta(dopo);
+  const spiegate = new Map(motivi.map((m) => [chiave(m.carta), m.motivo]));
+  const mosse = [];
+
+  for (const [k, voce] of b) {
+    const delta = voce.quantita - (a.get(k)?.quantita ?? 0);
+    if (delta > 0) {
+      mosse.push({
+        verso: 'aggiungi',
+        carta: voce.carta,
+        quante: delta,
+        motivo: spiegate.get(k) ?? altrimenti,
+      });
+    }
+  }
+  for (const [k, voce] of a) {
+    const delta = voce.quantita - (b.get(k)?.quantita ?? 0);
+    if (delta > 0) {
+      mosse.push({
+        verso: 'togli',
+        carta: voce.carta,
+        quante: delta,
+        motivo: spiegate.get(k) ?? altrimenti,
+      });
+    }
+  }
+  return mosse;
+}
+
+/**
  * Applica le mosse a un mazzo, restituendone uno nuovo.
  *
  * Separata da `completa()` e `correggi()` apposta: quelle **propongono**,

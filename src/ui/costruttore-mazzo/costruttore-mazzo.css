@@ -8,6 +8,65 @@
   display: block;
 }
 
+/* Le tre schede Pokémon / Energie / Carte speciali. Stessa resa di quelle di
+   `mazzo-generato.css`, riscritta e non importata perché lì i selettori sono
+   nel documento e qui siamo dentro uno Shadow DOM: un foglio globale non
+   entrerebbe comunque. Sono due copie di venti righe di CSS, non due
+   implementazioni di un comportamento — quello sta tutto nel JS. */
+.schede {
+  display: flex;
+  gap: 0.3rem;
+  margin-block-end: 0.8rem;
+  /* Appiccicata in alto mentre si scorre l'elenco: senza, per passare dai
+     Pokémon alle Energie bisognerebbe risalire fino in cima, che è esattamente
+     lo scorrimento che le schede servono a togliere. */
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--colore-superficie, var(--colore-fondo));
+  padding-block: 0.35rem;
+}
+
+.scheda {
+  flex: 1;
+  min-inline-size: 0;
+  padding: 0.5rem 0.3rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--colore-testo-tenue);
+  background: var(--colore-fondo);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo, 12px);
+  /* "Carte speciali" non si spezza: su due righe farebbe ballare l'altezza
+     della barra a ogni cambio di scheda. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.scheda.attiva {
+  color: #fff;
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+}
+
+.scheda .conteggio {
+  display: inline-block;
+  min-inline-size: 1.2em;
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--colore-superficie-2);
+}
+
+.scheda.attiva .conteggio {
+  color: #fff;
+  background: rgb(255 255 255 / 28%);
+}
+
 .filtri {
   margin-bottom: 0.8rem;
 }
