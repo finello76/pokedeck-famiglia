@@ -21,6 +21,7 @@
  */
 
 import { STORE_MAZZI, leggiTutto, leggi, scrivi, cancella } from './deposito.js';
+import { forza } from '../engine/forza.js';
 
 /**
  * I campi di carta che il mazzo salvato porta con sé.
@@ -110,6 +111,15 @@ export function istantanea(piano, opzioni, nome, creatoIl = new Date().toISOStri
       tipi: m.tipi,
       totale: m.totale,
       composizione: m.composizione,
+      // La forza si salva **calcolata**, non ricalcolabile.
+      //
+      // `CAMPI_CARTA` include `attacchi`, quindi tecnicamente `forza()` si
+      // potrebbe rifare alla rilettura — ma non si deve: il numero mostrato
+      // accanto a un mazzo deve restare quello con cui il mazzo è stato
+      // accettato. I tetti di calibrazione in `forza.js` cambiano quando
+      // cambiano i dati, e un mazzo salvato che cambia punteggio da solo
+      // renderebbe insensato il confronto col mazzo di riferimento.
+      forza: forza(m, { taglia: opzioni?.taglia ?? m.totale }),
       carte: m.carte.map((c) => {
         const dati = c.carta ?? c;
         return senzaNulli({

@@ -36,7 +36,10 @@ function moduliDelProgetto() {
     for (const voce of readdirSync(cartella, { withFileTypes: true })) {
       const percorso = join(cartella, voce.name);
       if (voce.isDirectory()) scandisci(percorso);
-      else if (/\.(js|css)$/.test(voce.name)) trovati.push(`./${percorso}`);
+      // `join()` usa il separatore del sistema: su Windows produce
+      // `src\ui\...`, che non somiglia a nessun path di GUSCIO e faceva
+      // fallire il confronto per intero. Gli URL hanno una barra sola.
+      else if (/\.(js|css)$/.test(voce.name)) trovati.push(`./${percorso.replaceAll('\\', '/')}`);
     }
   };
   scandisci('src');

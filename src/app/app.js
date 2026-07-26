@@ -15,6 +15,11 @@ import {
   SET_ENERGIE_GENERICHE,
 } from '../data/collezione.js';
 import { scaricaFile, importa } from '../data/scambio.js';
+import {
+  aggiornaPrezzi,
+  prezziConosciuti,
+  MASSIMO_PER_VOLTA,
+} from '../data/prezzi.js';
 import { avviaBarraAggiornamento } from './barra-aggiornamento.js';
 import { avviaViste } from './viste.js';
 import { avviaTema } from './tema.js';
@@ -22,6 +27,7 @@ import { avviaAggiunta } from './aggiunta.js';
 import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
 import './vista-impostazioni.js';
+import './vista-personalizzato.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
 import { carteMancanti } from '../data/completamento.js';
@@ -81,16 +87,25 @@ function mostraStato(elemento, testo, errore = false) {
  * @returns {Promise<void>}
  */
 async function aggiornaCollezione() {
-  const voci = await elencoCompleto();
-  const stat = await statistiche(voci);
+  // La griglia mostra anche i desideri, contrassegnati; tutto il resto —
+  // statistiche, conteggio energie, carte mancanti — lavora solo su ciò che si
+  // possiede davvero, o direbbe di avere carte che non hai.
+  const voci = await elencoCompleto({ conDesideri: true });
+  const possedute = voci.filter((v) => !v.desiderata);
+  const stat = await statistiche(possedute);
 
   // Il confronto con la collezione di riferimento lo fa il livello dati: la
   // griglia riceve una funzione e non sa da dove arrivino le carte.
-  griglia.caricaMancanti = (idSet) => carteMancanti(idSet, voci);
+  griglia.caricaMancanti = (idSet) => carteMancanti(idSet, possedute);
   // Le energie base generiche non vanno nella griglia: non hanno scansione né
   // numero di collezione e si contano già nel contatore dedicato qui sotto.
   griglia.voci = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);
   contatore.dati = stat.energie;
+
+  // I prezzi già scaricati si rimostrano subito, anche offline: sono l'ultima
+  // quotazione nota, con la sua data. Non si va in rete finché non lo chiede
+  // qualcuno col pulsante.
+  griglia.prezzi = await prezziConosciuti().catch(() => new Map());
 
   // Il riepilogo della collezione (conteggi, sezioni) lo mostra ora la griglia:
   // qui la riga serve solo per errori di caricamento, quindi resta nascosta.
@@ -124,6 +139,44 @@ async function cambiaQuantita(evento) {
 }
 griglia.addEventListener('quantita-cambiata', cambiaQuantita);
 visore.addEventListener('quantita-cambiata', cambiaQuantita);
+
+// "Calcola quotazione": l'unico punto in cui l'app va in rete di sua volontà.
+// La griglia dice quali carte sta mostrando, qui si scaricano i prezzi e le si
+// restituiscono. Il tetto per volta è di `data/prezzi.js`: una richiesta per
+// carta, e l'intera collezione sarebbero migliaia.
+let quotazioneInCorso = false;
+griglia.addEventListener('quotazione-richiesta', async (evento) => {
+  if (quotazioneInCorso) return;
+  const voci = evento.detail.voci.filter((v) => v.carta);
+
+  if (voci.length === 0) {
+    griglia.statoQuotazione = 'Nessuna carta da quotare fra quelle a schermo.';
+    return;
+  }
+  if (voci.length > MASSIMO_PER_VOLTA) {
+    griglia.statoQuotazione =
+      `Sono ${voci.length} carte: si quotano le prime ${MASSIMO_PER_VOLTA}. ` +
+      'Restringi coi filtri (per esempio per rarità) per avere il resto.';
+  }
+
+  quotazioneInCorso = true;
+  try {
+    const { falliti, quotate } = await aggiornaPrezzi(voci, {
+      avanzamento: (fatte, totale) => {
+        griglia.statoQuotazione = `Chiedo i prezzi… ${fatte}/${Math.min(totale, MASSIMO_PER_VOLTA)}`;
+      },
+    });
+    griglia.prezzi = await prezziConosciuti();
+    griglia.statoQuotazione =
+      `${quotate} carte quotate` +
+      (falliti ? `, ${falliti} non lette (rete assente?)` : '') +
+      '. Prezzi Cardmarket, indicativi.';
+  } catch (errore) {
+    griglia.statoQuotazione = `Quotazione non riuscita: ${errore.message}`;
+  } finally {
+    quotazioneInCorso = false;
+  }
+});
 
 document.querySelector('#bottone-esporta').addEventListener('click', async () => {
   try {

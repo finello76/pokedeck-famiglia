@@ -49,11 +49,18 @@ img,
   display: block;
 }
 
+/* Carta senza scansione: il disegnino tinto del tipo (vedi ui/segnaposto.js),
+   non un punto interrogativo che sembrerebbe un errore. */
 .segnaposto {
   display: grid;
   place-items: center;
   color: var(--tipo-colore, #888);
-  font-size: 1.5rem;
+}
+
+.segnaposto svg {
+  width: 42%;
+  height: auto;
+  opacity: 0.75;
 }
 
 /* La colonna dei dati DEVE poter restringersi.

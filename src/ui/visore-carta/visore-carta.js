@@ -109,7 +109,18 @@ export class VisoreCarta extends HTMLElement {
     // fatto nulla. `load` ed `error` lo tolgono in ogni caso.
     const img = this.querySelector('img');
     img.addEventListener('load', () => this.#caricamento(false));
-    img.addEventListener('error', () => this.#caricamento(false));
+    // Scansione che non arriva: si nasconde l'immagine e si scrive il nome
+    // nella cornice, come per le carte che una scansione non ce l'hanno. Il
+    // testo alternativo di un'immagine rotta, in mezzo alla cornice a schermo
+    // intero, è la cosa più brutta che il visore possa mostrare.
+    img.addEventListener('error', () => {
+      this.#caricamento(false);
+      img.hidden = true;
+      const carta = this.#lista[this.#indice]?.carta;
+      this.querySelector('.nome-cornice').textContent = carta
+        ? `${carta.nome}${carta.numero ? `\nn. ${carta.numero}` : ''}`
+        : '';
+    });
 
     // Cliccare fuori dalla carta chiude: su un dialog il click "sullo sfondo"
     // arriva al dialog stesso, non ai figli.
@@ -319,6 +330,10 @@ export class VisoreCarta extends HTMLElement {
         this.#caricamento(true);
         img.src = src;
       }
+      // Qui il testo alternativo serve davvero: nel visore la scansione È il
+      // contenuto, e senza `alt` la carta non avrebbe nome per chi non la vede.
+      // Che non finisca a schermo su un'immagine rotta lo garantisce il
+      // gestore di `error`, che nasconde l'immagine e scrive nella cornice.
       img.alt = `Carta ${carta.nome}`;
       img.hidden = false;
       nomeCornice.textContent = '';

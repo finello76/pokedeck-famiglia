@@ -124,6 +124,43 @@ procedura-guidata .opzione:focus-visible .cerchio {
   border-color: var(--colore-primario);
 }
 
+/* Scelta multipla (i set da escludere): il tocco accende la casella e la
+   schermata resta dov'è, quindi lo stato acceso deve vedersi da lontano —
+   niente hover a cui affidarsi, qui si usa il dito. L'elenco può essere lungo:
+   scorre da solo invece di allungare la pagina sotto il "Continua". */
+procedura-guidata .opzioni:has(.multipla) {
+  max-block-size: 46vh;
+  overflow-y: auto;
+  padding-inline-end: 0.2rem;
+}
+
+procedura-guidata .opzione.scelta {
+  border-color: var(--colore-primario);
+  background: color-mix(in srgb, var(--colore-primario) 10%, var(--colore-superficie));
+}
+
+procedura-guidata .opzione.scelta .cerchio {
+  border-color: var(--colore-primario);
+  background: var(--colore-primario);
+  /* Il segno di spunta è disegnato col bordo, senza font né immagini. */
+  box-shadow: inset 0 0 0 3px var(--colore-superficie);
+}
+
+/* Un set escluso è un set che NON userai: il testo barrato lo dice prima di
+   qualunque etichetta. */
+procedura-guidata .opzione.scelta .etichetta {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+procedura-guidata .continua {
+  width: 100%;
+  margin-block-end: 0.8rem;
+  font-weight: 800;
+  border-radius: 14px;
+  padding: 0.8rem 1.1rem;
+}
+
 procedura-guidata .indietro {
   width: auto;
   background: transparent;

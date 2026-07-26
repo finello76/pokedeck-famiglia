@@ -24,6 +24,7 @@
 
 import { classifica } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
+import { tipiRichiesti } from './fabbisogno.js';
 
 /** Quanti gradini può avere una linea: Base → Livello 1 → Livello 2. */
 const MAX_GRADINI = 3;
@@ -185,10 +186,18 @@ function collassaSuCima(linea) {
  * @param {boolean} [contesto.evoluzioniComeBase=false] se la regola della casa
  *   permette di giocare dalla mano un'evoluzione priva dei gradini sotto
  * @param {Set<string>} [contesto.famiglieInMazzo] linee già prese, per firma
+ * @param {Set<string>|null} [contesto.energieDisponibili=null] i tipi di Energia
+ *   che la collezione può fornire. Se dato, le linee che nessuna Energia
+ *   posseduta potrà alimentare finiscono in fondo: sono carte morte
  * @returns {Linea[]} nuovo array, punteggio decrescente
  */
 export function ordinaLinee(linee, tipi, contesto = {}) {
-  const { budget = 0, evoluzioniComeBase = false, famiglieInMazzo = new Set() } = contesto;
+  const {
+    budget = 0,
+    evoluzioniComeBase = false,
+    famiglieInMazzo = new Set(),
+    energieDisponibili = null,
+  } = contesto;
 
   const praticabili = [];
   for (const linea of linee) {
@@ -207,7 +216,10 @@ export function ordinaLinee(linee, tipi, contesto = {}) {
   }
 
   return praticabili
-    .map((l) => ({ ...l, punteggio: punteggioLinea(l, tipi, famiglieInMazzo) }))
+    .map((l) => ({
+      ...l,
+      punteggio: punteggioLinea(l, tipi, famiglieInMazzo, energieDisponibili),
+    }))
     .sort((a, b) => b.punteggio - a.punteggio);
 }
 
@@ -215,11 +227,25 @@ export function ordinaLinee(linee, tipi, contesto = {}) {
  * @param {Linea} linea
  * @param {string[]} tipi
  * @param {Set<string>} famiglieInMazzo
+ * @param {Set<string>|null} [energieDisponibili]
  * @returns {number}
  */
-function punteggioLinea(linea, tipi, famiglieInMazzo) {
+function punteggioLinea(linea, tipi, famiglieInMazzo, energieDisponibili = null) {
   const { cima } = linea;
   let p = 0;
+
+  // Carta che nessuna Energia posseduta può alimentare: uno Skarmory chiede
+  // Metallo, e se in collezione non c'è nemmeno un'Energia Metallo quella
+  // carta non attaccherà mai, per quanto sia robusta.
+  //
+  // Penalità pesantissima e non divieto, come per le famiglie ripetute: con
+  // una collezione fatta di doppioni sparsi può non esserci altro, e un mazzo
+  // incompleto è peggio di un mazzo con una carta che si gioca solo come muro.
+  // Il foglio regole poi la copre con l'energia universale.
+  if (energieDisponibili) {
+    const richiesti = tipiRichiesti(cima);
+    if (richiesti.length && !richiesti.some((t) => energieDisponibili.has(t))) p -= 500;
+  }
 
   // Il tipo pesa più di tutto: una linea del tipo sbagliato non si alimenta
   // con le energie che hai, per quanto sia bella.

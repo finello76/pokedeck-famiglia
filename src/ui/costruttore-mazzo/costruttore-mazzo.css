@@ -1,0 +1,233 @@
+/* Il componente vive in Shadow DOM, quindi questi selettori non escono di qui.
+   Le custom property invece ATTRAVERSANO il confine: sono ereditate dal
+   documento, ed è il modo previsto per far entrare un tema dentro un
+   componente incapsulato. Chi arriva da Angular riconoscerà `::ng-deep`, ma
+   qui non serve nessuna scappatoia. */
+
+:host {
+  display: block;
+}
+
+.filtri {
+  margin-bottom: 0.8rem;
+}
+
+.filtri input[type='search'],
+.avanzati select {
+  inline-size: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo, 12px);
+}
+
+/* Le pastiglie dei tipi scorrono in orizzontale invece di andare a capo: con
+   undici tipi su schermo stretto occuperebbero quattro righe, spingendo
+   l'elenco delle carte fuori dalla prima schermata. Lo scorrimento e' confinato
+   qui dentro, la pagina non si muove. */
+.chip-tipi {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.6rem 0 0.2rem;
+  scrollbar-width: thin;
+}
+
+.chip-tipo {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1.5px solid color-mix(in srgb, var(--tipo-colore) 28%, transparent);
+  background: color-mix(in srgb, var(--tipo-colore) 10%, transparent);
+  color: var(--tipo-colore);
+}
+
+/* "Tutti" non ha data-tipo: gli si da' una tinta neutra, o color-mix riceverebbe
+   una variabile non valida e salterebbe. */
+.chip-tipo:not([data-tipo]) {
+  --tipo-colore: #8b93a7;
+}
+
+.chip-tipo.attivo {
+  background: var(--tipo-colore);
+  border-color: var(--tipo-colore);
+  color: #fff;
+}
+
+.riga-comandi {
+  display: flex;
+  gap: 0.9rem;
+  padding-block: 0.3rem;
+}
+
+.collegamento {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--colore-primario);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.avanzati {
+  display: grid;
+  gap: 0.5rem;
+  padding-block: 0.4rem;
+}
+
+@media (min-width: 30rem) {
+  .avanzati {
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+}
+
+.campo span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--colore-testo-tenue);
+  margin-bottom: 0.2rem;
+}
+
+/* Quante carte ci sono in quella categoria: un numero accanto al titolo evita
+   di dover contare le righe per sapere se il filtro ha morso. */
+.quante {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.titolo-gruppo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--colore-testo-tenue);
+  margin: 0.9rem 0 0.4rem;
+}
+
+.elenco {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.elenco li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.2rem;
+  border-block-end: 1px solid var(--colore-bordo);
+}
+
+/* Le carte già nel mazzo si distinguono con un filetto laterale invece che con
+   uno sfondo: lo sfondo pieno, ripetuto su venti righe, rende l'elenco
+   illeggibile su schermo piccolo. */
+.elenco li.dentro {
+  border-inline-start: 3px solid var(--colore-primario);
+  padding-inline-start: 0.5rem;
+}
+
+/* La figura della carta. Il rapporto 63x88 e' quello reale di una carta
+   Pokemon: qualunque altro la deformerebbe, e a colpo d'occhio si nota. */
+.apri {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  line-height: 0;
+  border-radius: 4px;
+}
+
+.apri:focus-visible {
+  outline: 2px solid var(--colore-primario);
+  outline-offset: 2px;
+}
+
+.figura {
+  inline-size: 40px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--colore-superficie-2);
+}
+
+/* Carta senza scansione nel dataset — le Energie base generiche, per esempio.
+   `segnaposto()` restituisce uno <span> con dentro un SVG, non un <img>:
+   `object-fit` non lo riguarda, e senza `display: flex` il glifo non si
+   centrerebbe nel riquadro. */
+.figura.segnaposto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--colore-testo-tenue);
+}
+
+.figura.segnaposto svg {
+  inline-size: 60%;
+}
+
+.dati {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.nome {
+  display: block;
+  font-weight: 600;
+  /* I nomi lunghi ("Macchinario Tecnico: Fluorite") non devono allargare la
+     riga oltre lo schermo e far comparire lo scorrimento orizzontale. */
+  overflow-wrap: anywhere;
+}
+
+.dettaglio {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--colore-testo-tenue);
+}
+
+.comandi {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+}
+
+.comandi button {
+  inline-size: 2.2rem;
+  block-size: 2.2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--colore-testo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* 2,2rem è la misura minima comoda da toccare col pollice: sotto, sul telefono
+   si sbaglia bottone e si tolgono carte per errore. */
+.comandi button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.conta {
+  min-inline-size: 1.6rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.aiuto {
+  color: var(--colore-testo-tenue);
+  font-size: 0.8rem;
+}

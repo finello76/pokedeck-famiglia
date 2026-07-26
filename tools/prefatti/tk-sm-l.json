@@ -1,0 +1,28 @@
+{
+  "id": "tk-sm-l",
+  "nome": "Kit Allenatore Lycanroc",
+  "prodotto": "Sole e Luna — Kit Allenatore: Lycanroc e Raichu di Alola (2017)",
+  "taglia": 30,
+  "fonte": "https://bulbapedia.bulbagarden.net/wiki/Sun_&_Moon_Trainer_Kit:_Lycanroc_&_Alolan_Raichu_(TCG)",
+  "note": "I numeri 1-30 sono gli slot del mazzo, uno per carta. TCGdex registra solo 18 delle 30 carte: i numeri che mancano sono tutti Energia Lotta, e vanno dichiarati qui a mano perche' il dataset non li conosce.",
+  "carte": [
+    { "numero": "1", "quantita": 1 },
+    { "numero": "4", "quantita": 1 },
+    { "numero": "11", "quantita": 1 },
+    { "numero": "12", "quantita": 1 },
+    { "numero": "13", "quantita": 1 },
+    { "numero": "14", "quantita": 1 },
+    { "numero": "15", "quantita": 1 },
+    { "numero": "16", "quantita": 1 },
+    { "numero": "18", "quantita": 1 },
+    { "numero": "19", "quantita": 1 },
+    { "numero": "21", "quantita": 1 },
+    { "numero": "22", "quantita": 1 },
+    { "numero": "23", "quantita": 1 },
+    { "numero": "25", "quantita": 1 },
+    { "numero": "27", "quantita": 1 },
+    { "numero": "29", "quantita": 1 },
+    { "numero": "30", "quantita": 1 },
+    { "energia": "Lotta", "quantita": 13 }
+  ]
+}

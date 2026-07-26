@@ -1,276 +1,347 @@
 /**
- * Portare i mazzi a una forza voluta.
+ * Quanto vale un mazzo **in assoluto**, su una scala 0–100.
  *
- * `bilancia.js` risponde a "sono pari fra loro?"; qui si risponde a un'altra
- * domanda, che il wizard adesso pone: "quanto forti li vuoi?". Serve perché
- * l'equilibrio non basta — due mazzi pari a 150 sono ingiocabili contro un
- * bambino, e due mazzi pari a 40 annoiano un adulto — e perché con un mazzo di
- * riferimento in casa ha senso chiedere mazzi che se la giochino con **quello**.
+ * È una misura diversa da quella di `bilancia.js`, e le due convivono apposta.
+ * `punteggioMazzo()` somma valori assoluti — PS totali, gradini evolutivi
+ * totali — e quindi **cresce con la taglia**: serve a ordinare fra loro mazzi
+ * nati insieme, che hanno la stessa taglia per costruzione, ed è il criterio su
+ * cui è tarato l'hill-climbing. Non è una scala: un 60 carte batte sempre un 30
+ * anche quando è più debole carta per carta.
  *
- * Il metodo è la salita di collina della specifica, con un obiettivo invece di
- * una differenza: si prova ogni scambio possibile fra una carta del mazzo e una
- * ancora libera in collezione, si tiene quello che avvicina di più al numero
- * chiesto, e si ripete finché nessuno scambio migliora.
+ * Qui invece serve rispondere a una domanda diversa: *il mazzo che ho appena
+ * generato regge il Kit Allenatore che sta nella scatola in salotto?* Quel Kit
+ * è da 30, o da 60 se si uniscono i due mazzetti, e va confrontato con qualsiasi
+ * taglia si stia generando. Perciò ogni indicatore è **mediato per carta**, mai
+ * sommato, e normalizzato su un tetto fisso.
  *
- * Due vincoli tengono i mazzi giocabili invece di limitarsi a spostare il
- * numero:
+ * I tetti sono **misurati sul dataset**, non inventati (vedi `TETTI`).
  *
- * - esce solo un Pokémon **sciolto**: se qualcuno nel mazzo evolve da lui, o se
- *   lui evolve da una carta presente, toglierlo spezzerebbe una linea evolutiva
- *   — cioè romperebbe la parte migliore del mazzo per far quadrare un conto;
- * - entra solo un Pokémon **Base** di un tipo che il mazzo alimenta già, o
- *   senza tipo: un Base di un tipo estraneo abbasserebbe il punteggio (è anche
- *   la scorciatoia che la salita di collina prenderebbe per prima) lasciando in
- *   mano una carta che non si può attaccare, senza Energie che la servano.
- *
- * Quando la collezione non permette di arrivare all'obiettivo il modulo si
- * ferma e lo dice: `raggiunto: false`. Non è un fallimento da nascondere — è
- * l'informazione che serve a chi sperava in mazzi da 45 e ha in scatola solo
- * carte forti.
- *
- * Modulo puro: riceve mazzi e dispensa, non sa nulla di DOM né di database.
+ * Modulo puro.
  *
  * @module engine/forza
  */
 
-import { punteggioMazzo } from './bilancia.js';
 import { classifica } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
-import { aggiungiAlMazzo, togliDalMazzo, chiaveVoce } from './mazzo.js';
+import { eEnergiaBase, tipoEnergia } from '../data/energie.js';
+import { formatoPer } from './formati.js';
+import { QUOTA_ENERGIE_PER_COSTO } from './proporzioni.js';
 
 /**
- * Scarto entro cui la forza si considera centrata.
+ * I valori che valgono 100 su ciascun indicatore.
  *
- * Il punteggio non è una misura fine: cinque punti sono meno di una carta di
- * differenza, e inseguirli produrrebbe scambi che nessuno noterebbe giocando.
+ * Sono i **90° percentili** misurati su tutti i 12.877 Pokémon del dataset, non
+ * i massimi. Sul massimo (250 di danno per energia, 380 PS) ogni mazzo di casa
+ * finirebbe schiacciato sotto il 20 e la scala non distinguerebbe più niente:
+ * i valori estremi appartengono a poche carte da torneo che in una collezione
+ * di famiglia non ci sono. Col p90 il mazzo "buono ma normale" sta intorno a
+ * metà scala, che è dove serve leggerlo.
+ *
+ * Mediana del dataset, per riferimento: 25 di danno per energia, 100 PS.
  */
-export const TOLLERANZA_FORZA = 5;
+export const TETTI = { dannoPerEnergia: 55, ps: 220 };
 
 /**
- * @typedef {object} EsitoForza
- * @property {string} mazzo nome del mazzo
- * @property {number} partenza forza prima degli scambi
- * @property {number} arrivo forza dopo
- * @property {boolean} raggiunto se si è entrati nella tolleranza
- * @property {'obiettivo'|'collezione'|'passi'} motivo perché ci si è fermati:
- *   arrivati, nessuno scambio migliora più, o tentativi esauriti
- * @property {Array<{fuori: string, dentro: string}>} scambi le carte cambiate
+ * Quanto pesa ogni indicatore nel totale.
+ *
+ * L'offesa pesa più di tutto perché è ciò che decide una partita corta: fra due
+ * mazzi altrimenti pari vince chi mette KO per primo. La costanza pesa poco non
+ * perché conti poco, ma perché è quasi sempre alta: un mazzo generato
+ * dall'app ha già il vincolo del minimo di Base.
  */
+export const PESI = {
+  offesa: 0.3,
+  resistenza: 0.2,
+  struttura: 0.2,
+  motore: 0.2,
+  costanza: 0.1,
+};
 
 /**
- * Avvicina ogni mazzo alla forza chiesta, scambiando carte con la collezione.
+ * Quota minima di Pokémon con dati di attacco utilizzabili sotto la quale il
+ * risultato non si può dichiarare attendibile.
  *
- * Muta i mazzi e la dispensa ricevuti.
- *
- * @param {object[]} mazzi
- * @param {object} opzioni
- * @param {number} opzioni.obiettivo la forza voluta; 0 o assente = non si tocca nulla
- * @param {import('./dispensa.js').Dispensa} opzioni.dispensa copie ancora libere
- * @param {number} [opzioni.passiMassimi=10] tetto agli scambi per mazzo
- * @param {number} [opzioni.tolleranza=TOLLERANZA_FORZA]
- * @returns {{obiettivo: number|null, esiti: EsitoForza[]}}
- * @example
- * const esito = avvicinaAForza(piano.mazzi, {
- *   obiettivo: 45,
- *   dispensa: disponibilitaResidua(voci, piano.mazzi),
- * });
- * esito.esiti[0]; // { mazzo: 'Erba', partenza: 111, arrivo: 48, raggiunto: true, … }
+ * Serve perché il dataset non è uniforme: i set Kit Allenatore sono ristampe e
+ * TCGdex non vi replica i dati di gioco — `tk-sm-l` ha gli attacchi solo sul
+ * 17% dei Pokémon, `tk-xy-b` su nessuno, contro il 98,9% del dataset intero.
+ * Un mazzo costruito da lì darebbe un numero basso che non significa "mazzo
+ * debole" ma "non lo sappiamo", e le due cose non vanno confuse.
  */
-export function avvicinaAForza(mazzi, opzioni = {}) {
-  const {
-    obiettivo = 0,
-    dispensa = null,
-    passiMassimi = 10,
-    tolleranza = TOLLERANZA_FORZA,
-  } = opzioni;
+export const COPERTURA_MINIMA = 0.6;
 
-  if (!obiettivo || obiettivo <= 0 || !Array.isArray(mazzi) || !mazzi.length) {
-    return { obiettivo: obiettivo || null, esiti: [] };
-  }
+// La quota di Energie giusta per unità di costo degli attacchi vive in
+// `proporzioni.js`, che è il modulo che COSTRUISCE i mazzi. Qui si importa e
+// basta: quando la stessa regola stava scritta in due posti, il generatore
+// riempiva di Energie un terzo del mazzo e questa funzione ne voleva il 22% —
+// ogni mazzo generato perdeva un quarto del proprio `motore` per costruzione.
 
-  // I mazzi si scorrono in ordine e condividono la dispensa: la carta che il
-  // primo prende non è più disponibile per il secondo, esattamente come nella
-  // generazione. Senza, due mazzi si ritroverebbero la stessa carta fisica.
-  const esiti = mazzi.map((mazzo) =>
-    avvicinaUno(mazzo, { obiettivo, dispensa, passiMassimi, tolleranza }),
-  );
-  return { obiettivo, esiti };
+/**
+ * Il danno di un attacco come numero.
+ *
+ * Nel dataset il danno è una **stringa**, e non sempre numerica: `"10+"`,
+ * `"40×"`, `"20-"`. Si prende la parte numerica e si ignora il modificatore:
+ * quanto valga davvero quel `+` dipende dall'effetto, che il dataset non
+ * struttura. `Number("10+")` darebbe `NaN` e quindi 0, che è peggio.
+ *
+ * @param {string|number|null|undefined} danno
+ * @returns {number} 0 se non c'è nessuna cifra
+ */
+function valoreDanno(danno) {
+  const cifre = String(danno ?? '').match(/\d+/);
+  return cifre ? Number(cifre[0]) : 0;
 }
 
 /**
- * @param {object} mazzo
- * @param {object} opzioni
- * @returns {EsitoForza}
+ * Cosa una carta sa fare, e quanto costa tenerla accesa.
+ *
+ * Gli attacchi con `costo` vuoto vengono **ignorati**, non contati come costo 1.
+ * È la differenza fra misurare e inventare: nei set Kit Allenatore il costo
+ * manca su tutti gli attacchi presenti, e trattarlo come 1 gonfierebbe la resa
+ * di un fattore 2 o 3 proprio sui mazzi che servono da metro.
+ *
+ * `resa` e `costo` non vengono dallo stesso attacco, e non è una svista:
+ *
+ * - la **resa** è quella dell'attacco migliore, perché è quello che si userà;
+ * - il **costo** è la media di tutti gli attacchi, perché è il fabbisogno di
+ *   Energie della carta. Prendere il costo dell'attacco più redditizio —
+ *   quasi sempre il più economico — faceva risultare che al mazzo bastavano
+ *   pochissime Energie, e otto Energie Lotta in un mazzo Lotta venivano
+ *   giudicate un eccesso da azzerare il motore.
+ *
+ * @param {object} carta
+ * @returns {{resa: number, costo: number}|null} `null` se la carta non ha
+ *   nessun attacco misurabile
  */
-function avvicinaUno(mazzo, { obiettivo, dispensa, passiMassimi, tolleranza }) {
-  const partenza = punteggioMazzo(mazzo).totale;
-  const scambi = [];
-  let corrente = partenza;
-  // Perché ci si è fermati. Serve a non far dire alla UI "con le tue carte non
-  // si va oltre" quando in realtà si è solo esaurito il numero di tentativi:
-  // sono due frasi diverse, e una delle due sarebbe falsa.
-  let motivo = 'passi';
-
-  for (let passo = 0; passo < passiMassimi; passo++) {
-    if (Math.abs(corrente - obiettivo) <= tolleranza) {
-      motivo = 'obiettivo';
-      break;
-    }
-
-    const scelta = migliorScambio(mazzo, dispensa, obiettivo, corrente);
-    if (!scelta) {
-      motivo = 'collezione';
-      break;
-    }
-
-    // Applicato per davvero: la prova l'ha già annullata.
-    const voce = vocePer(mazzo, scelta.cartaFuori);
-    if (!voce || !scambia(mazzo, voce, scelta.carta)) {
-      motivo = 'collezione';
-      break;
-    }
-    dispensa?.preleva(scelta.carta, 1);
-    dispensa?.restituisci(scelta.cartaFuori, 1);
-
-    scambi.push({ fuori: scelta.cartaFuori.nome, dentro: scelta.carta.nome });
-    corrente = scelta.forza;
+function misuraCarta(carta) {
+  let resa = 0;
+  let costoTotale = 0;
+  let quanti = 0;
+  for (const attacco of carta?.attacchi ?? []) {
+    const costo = attacco.costo?.length ?? 0;
+    if (costo === 0) continue;
+    resa = Math.max(resa, valoreDanno(attacco.danno) / costo);
+    costoTotale += costo;
+    quanti += 1;
   }
+  return quanti ? { resa, costo: costoTotale / quanti } : null;
+}
+
+/**
+ * Probabilità di pescare almeno una carta di un certo gruppo nella mano
+ * iniziale (distribuzione ipergeometrica).
+ *
+ * Si calcola come complemento — 1 meno la probabilità di **non** pescarne
+ * nessuna — e per prodotto invece che con i coefficienti binomiali: `C(60, 7)`
+ * è già oltre i 380 milioni, e su mazzi grandi i fattoriali uscirebbero dai
+ * numeri esatti di JavaScript.
+ *
+ * @param {number} totale carte nel mazzo
+ * @param {number} favorevoli copie cercate
+ * @param {number} mano carte pescate
+ * @returns {number} 0–1
+ * @example
+ * probabilitaAlmenoUna(60, 8, 7); // ≈ 0,63
+ */
+export function probabilitaAlmenoUna(totale, favorevoli, mano) {
+  if (totale <= 0 || favorevoli <= 0) return 0;
+  if (favorevoli >= totale || mano >= totale) return 1;
+
+  let nessuna = 1;
+  for (let i = 0; i < mano; i++) {
+    nessuna *= (totale - favorevoli - i) / (totale - i);
+    if (nessuna <= 0) return 1;
+  }
+  return 1 - nessuna;
+}
+
+/** @param {number} valore @returns {number} il valore riportato in 0–1 */
+const limita = (valore) => Math.min(1, Math.max(0, valore || 0));
+
+/**
+ * @typedef {object} Forza
+ * @property {number} totale 0–100, la media pesata degli indicatori
+ * @property {number} offesa danno per Energia, rapportato al p90 del dataset
+ * @property {number} resistenza PS medi, rapportati al p90 del dataset
+ * @property {number} struttura gradini evolutivi effettivamente giocabili
+ * @property {number} motore se le Energie bastano e sono del tipo giusto
+ * @property {number} costanza probabilità di aprire con un Pokémon Base
+ * @property {boolean} attendibile falso se il dataset non ha abbastanza dati
+ * @property {number} copertura quota di Pokémon con attacchi misurabili
+ */
+
+/**
+ * Misura la forza di un mazzo.
+ *
+ * Gli indicatori si restituiscono separati e non solo il totale: dire "45
+ * contro 80" non serve a nessuno se non si sa **in cosa** il secondo è più
+ * forte, che è l'unica informazione con cui si può intervenire.
+ *
+ * @param {object} mazzo con `carte: [{carta, quantita}]`
+ * @param {object} [opzioni]
+ * @param {number} [opzioni.taglia] se assente si usa il totale delle carte
+ * @returns {Forza}
+ * @example
+ * forza(mazzoGenerato).totale;      // 47
+ * forza(kitDiAlola).totale;         // 45  → partita pari
+ */
+export function forza(mazzo, opzioni = {}) {
+  const carte = mazzo?.carte ?? [];
+  const totale = opzioni.taglia ?? carte.reduce((s, c) => s + (c.quantita ?? 0), 0);
+  const pokemon = carte.filter((c) => c.carta?.categoria === 'Pokémon');
+  const copie = pokemon.reduce((s, c) => s + c.quantita, 0);
+
+  const vuoto = {
+    totale: 0,
+    offesa: 0,
+    resistenza: 0,
+    struttura: 0,
+    motore: 0,
+    costanza: 0,
+    attendibile: false,
+    copertura: 0,
+  };
+  if (!copie || !totale) return vuoto;
+
+  // --- Offesa -------------------------------------------------------------
+  // I Pokémon senza dati di attacco non entrano né al numeratore né al
+  // denominatore: escluderli dalla media è diverso dal contarli zero. Un mazzo
+  // di cui conosciamo solo metà delle carte non è un mazzo debole, e la
+  // `copertura` dice quanto ci si può fidare del numero che esce.
+  let resaTotale = 0;
+  let costoTotale = 0;
+  let copieMisurate = 0;
+  for (const voce of pokemon) {
+    const misura = misuraCarta(voce.carta);
+    if (!misura) continue;
+    resaTotale += misura.resa * voce.quantita;
+    costoTotale += misura.costo * voce.quantita;
+    copieMisurate += voce.quantita;
+  }
+  const copertura = copieMisurate / copie;
+  const offesa = copieMisurate
+    ? limita(resaTotale / copieMisurate / TETTI.dannoPerEnergia)
+    : 0;
+
+  // --- Resistenza ---------------------------------------------------------
+  // Stesso trattamento degli attacchi, e per la stessa ragione: le carte
+  // **proxy** che il generatore crea per stampare una pre-evoluzione mancante
+  // non hanno i PS, perché nascono da `cartaDaStampare()` con il solo nome e lo
+  // stadio. Contarle zero abbassava la resistenza di tutti i mazzi che ne
+  // contengono — e su una collezione di famiglia sono la maggioranza — facendo
+  // sembrare fragile un mazzo che non lo è.
+  let psTotali = 0;
+  let copieConPs = 0;
+  for (const voce of pokemon) {
+    if (!voce.carta.ps) continue;
+    psTotali += voce.carta.ps * voce.quantita;
+    copieConPs += voce.quantita;
+  }
+  const resistenza = copieConPs ? limita(psTotali / copieConPs / TETTI.ps) : 0;
+
+  // --- Struttura ----------------------------------------------------------
+  // Stessa regola di `bilancia.js`: un gradino conta solo se la carta da cui
+  // evolve è nel mazzo. Un Livello 2 da solo è una carta morta, non una carta
+  // forte, e misurarlo come forte è esattamente l'errore che porta a generare
+  // il mazzo che poi non funziona in mano.
+  const presenti = new Set(pokemon.map((c) => normalizzaNome(c.carta.nome)));
+  const gradini = pokemon.reduce((somma, c) => {
+    const livello = classifica(c.carta).livello ?? 0;
+    if (livello === 0) return somma;
+    const haLaSua = c.carta.evolveDa && presenti.has(normalizzaNome(c.carta.evolveDa));
+    return somma + (haLaSua ? livello * c.quantita : 0);
+  }, 0);
+  // Diviso 2: il massimo teorico è un mazzo di soli Livello 2 giocabili, che
+  // non esiste, ed è giusto che il tetto sia irraggiungibile.
+  const struttura = limita(gradini / copie / 2);
+
+  // --- Motore -------------------------------------------------------------
+  // Due cose insieme, perché una sola non basta: le Energie devono essere
+  // abbastanza *e* del tipo giusto. Dodici Energie Acqua in un mazzo Lotta
+  // sono dodici carte morte.
+  const energieBase = carte.filter((c) => eEnergiaBase(c.carta));
+  const quantiEnergie = energieBase.reduce((s, c) => s + c.quantita, 0);
+  const costoMedio = copieMisurate ? costoTotale / copieMisurate : 2;
+  const quotaIdeale = costoMedio * QUOTA_ENERGIE_PER_COSTO;
+  const rapporto = quantiEnergie / totale / quotaIdeale;
+  // La penalità è **asimmetrica**, perché lo sono le conseguenze: senza
+  // Energie non si attacca affatto, e la mancanza va contata per intero. Averne
+  // troppe fa solo pescare Energie invece di Pokémon — un fastidio, non una
+  // paralisi — e si penalizza a metà velocità: il motore si azzera solo al
+  // triplo del necessario, cioè quando il mazzo è per metà Energie.
+  const adeguatezza = rapporto <= 1 ? limita(rapporto) : limita(1 - (rapporto - 1) / 2);
+
+  const tipiEnergia = new Set(energieBase.map((c) => tipoEnergia(c.carta)).filter(Boolean));
+  const serviti = pokemon.reduce(
+    (s, c) => s + ((c.carta.tipi ?? []).some((t) => tipiEnergia.has(t)) ? c.quantita : 0),
+    0,
+  );
+  const motore = adeguatezza * (serviti / copie);
+
+  // --- Costanza -----------------------------------------------------------
+  // Senza un Base in mano iniziale non si comincia nemmeno: si rimescola e si
+  // perde il turno. La mano la dà il formato, che è la fonte unica dei numeri
+  // di partita.
+  const basi = pokemon.reduce(
+    (s, c) => s + (classifica(c.carta).livello === 0 ? c.quantita : 0),
+    0,
+  );
+  const costanza = probabilitaAlmenoUna(totale, basi, formatoPer(totale).manoIniziale);
+
+  const voci = { offesa, resistenza, struttura, motore, costanza };
+  const punteggio = Object.entries(PESI).reduce((s, [voce, peso]) => s + voci[voce] * peso, 0);
 
   return {
-    mazzo: mazzo.nome,
-    partenza,
-    arrivo: corrente,
-    raggiunto: Math.abs(corrente - obiettivo) <= tolleranza,
-    motivo,
-    scambi,
+    ...voci,
+    totale: Math.round(punteggio * 100),
+    attendibile: copertura >= COPERTURA_MINIMA,
+    copertura,
   };
 }
 
 /**
- * Lo scambio che avvicina di più all'obiettivo, se ne esiste uno che migliori.
+ * La forza media di un gruppo di mazzi.
  *
- * @param {object} mazzo
- * @param {import('./dispensa.js').Dispensa} dispensa
- * @param {number} obiettivo
- * @param {number} corrente forza attuale del mazzo
- * @returns {{cartaFuori: object, carta: object, forza: number}|null}
- */
-function migliorScambio(mazzo, dispensa, obiettivo, corrente) {
-  if (!dispensa) return null;
-
-  // Si annotano le **carte** e non le voci: provando uno scambio l'ultima copia
-  // di una voce la fa sparire da `mazzo.carte`, e annullando rientra come voce
-  // nuova. Tenendo il riferimento vecchio, tutte le prove successive su quella
-  // carta fallivano in silenzio — e le carte in copia unica non venivano mai
-  // considerate.
-  const uscite = mazzo.carte.filter((voce) => sostituibile(voce, mazzo)).map((voce) => voce.carta);
-  const entrate = dispensa
-    .cerca((carta) => carta.categoria === 'Pokémon' && classifica(carta).livello === 0)
-    .filter(({ carta }) => tipoCompatibile(carta, mazzo))
-    .map(({ carta }) => carta);
-
-  let migliore = null;
-  let scartoMigliore = Math.abs(corrente - obiettivo);
-
-  for (const cartaFuori of uscite) {
-    for (const carta of entrate) {
-      const voce = vocePer(mazzo, cartaFuori);
-      if (!voce) continue;
-      const annulla = scambia(mazzo, voce, carta);
-      // Il tetto delle 4 copie ha respinto la carta: non è uno scambio.
-      if (!annulla) continue;
-      const forza = punteggioMazzo(mazzo).totale;
-      annulla();
-
-      const scarto = Math.abs(forza - obiettivo);
-      if (scarto < scartoMigliore) {
-        scartoMigliore = scarto;
-        migliore = { cartaFuori, carta, forza };
-      }
-    }
-  }
-  return migliore;
-}
-
-/**
- * La voce del mazzo che contiene questa carta vera.
- * @param {object} mazzo
- * @param {object} carta
- * @returns {object|undefined}
- */
-function vocePer(mazzo, carta) {
-  const chiave = chiaveVoce(carta, false);
-  return mazzo.carte.find((voce) => !voce.proxy && chiaveVoce(voce.carta, false) === chiave);
-}
-
-/**
- * Se una voce del mazzo si può togliere senza spezzare una linea evolutiva.
+ * È il numero con cui si confronta un piano intero con un mazzo di riferimento:
+ * il bersaglio riguarda la partita, non il singolo mazzo.
  *
- * @param {object} voce
- * @param {object} mazzo
- * @returns {boolean}
+ * @param {object[]} mazzi
+ * @param {object} [opzioni] passate a `forza()`
+ * @returns {{media: number, forze: Forza[], attendibile: boolean}}
  */
-function sostituibile(voce, mazzo) {
-  // Le carte da stampare esistono per una carta precisa: non sono zavorra da
-  // scambiare, e toglierle è compito di `riallinea.js`.
-  if (voce.proxy) return false;
-  const carta = voce.carta;
-  if (carta?.categoria !== 'Pokémon') return false;
-
-  const nome = normalizzaNome(carta.nome);
-  const regge = mazzo.carte.some(
-    (altra) => altra !== voce && normalizzaNome(altra.carta?.evolveDa) === nome,
-  );
-  if (regge) return false;
-
-  // Evoluzione appoggiata su una Base presente: portandola via si lascia nel
-  // mazzo una Base che non evolve più in niente.
-  if (carta.evolveDa) {
-    const suaBase = normalizzaNome(carta.evolveDa);
-    if (mazzo.carte.some((altra) => normalizzaNome(altra.carta?.nome) === suaBase)) return false;
-  }
-  return true;
+export function forzaMedia(mazzi, opzioni = {}) {
+  const forze = (mazzi ?? []).map((m) => forza(m, opzioni));
+  if (!forze.length) return { media: 0, forze, attendibile: false };
+  return {
+    media: Math.round(forze.reduce((s, f) => s + f.totale, 0) / forze.length),
+    forze,
+    // Basta un mazzo non misurabile perché il confronto non regga.
+    attendibile: forze.every((f) => f.attendibile),
+  };
 }
 
 /**
- * Se una carta può entrare in questo mazzo senza restare senza Energie.
- * @param {object} carta
- * @param {object} mazzo
- * @returns {boolean}
- */
-function tipoCompatibile(carta, mazzo) {
-  const tipi = carta.tipi ?? [];
-  if (!tipi.length) return true;
-  const delMazzo = mazzo.tipi ?? [];
-  if (!delMazzo.length) return true;
-  return tipi.some((tipo) => delMazzo.includes(tipo));
-}
-
-/**
- * Scambia una copia: fuori la voce, dentro la carta.
+ * Come si legge la differenza fra un mazzo e il suo riferimento.
  *
- * @param {object} mazzo
- * @param {object} voce voce presente in `mazzo.carte`
- * @param {object} carta
- * @returns {(() => void)|null} come rimettere le cose a posto, `null` se lo
- *   scambio non si è potuto fare
+ * La soglia è a 5 punti su 100: sotto, la differenza si perde nel rumore del
+ * pescare: non è distinguibile giocando, e prometterla sarebbe una bugia.
+ *
+ * @param {number} punteggio
+ * @param {number} riferimento
+ * @returns {{verso: 'pari'|'sotto'|'sopra', scarto: number, testo: string}}
  */
-function scambia(mazzo, voce, carta) {
-  // La voce può sparire da `mazzo.carte` (ultima copia): i suoi dati servono
-  // dopo, per rimetterla dentro identica.
-  const originale = voce.carta;
-  const extra = voce.proxy ? { proxy: true, motivo: voce.motivo } : {};
-
-  if (togliDalMazzo(mazzo, voce, 1) === 0) return null;
-  if (aggiungiAlMazzo(mazzo, carta, 1) === 0) {
-    aggiungiAlMazzo(mazzo, originale, 1, extra);
-    return null;
+export function confronta(punteggio, riferimento) {
+  const scarto = punteggio - riferimento;
+  if (Math.abs(scarto) <= 5) return { verso: 'pari', scarto, testo: 'partita pari' };
+  if (scarto < 0) {
+    return {
+      verso: 'sotto',
+      scarto,
+      testo: Math.abs(scarto) > 15 ? 'nettamente più debole' : 'un po\' più debole',
+    };
   }
-
-  return () => {
-    const chiave = chiaveVoce(carta, false);
-    const entrata = mazzo.carte.find((c) => chiaveVoce(c.carta, c.proxy) === chiave);
-    if (entrata) togliDalMazzo(mazzo, entrata, 1);
-    aggiungiAlMazzo(mazzo, originale, 1, extra);
+  return {
+    verso: 'sopra',
+    scarto,
+    testo: scarto > 15 ? 'nettamente più forte' : 'un po\' più forte',
   };
 }

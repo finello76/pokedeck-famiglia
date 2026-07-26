@@ -7,7 +7,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { filtra, raggruppa, valoriDisponibili, FILTRI_VUOTI } from '../src/ui/griglia-collezione/raggruppa.js';
+import { filtra, progressoSet, raggruppa, valoriDisponibili, FILTRI_VUOTI } from '../src/ui/griglia-collezione/raggruppa.js';
 
 const sv = { id: 'sv', nome: 'Scarlatto e Violetto' };
 const sm = { id: 'sm', nome: 'Sole e Luna' };
@@ -19,6 +19,7 @@ const voce = (idSet, numero, nome, extra = {}) => ({
   nomeSet: extra.nomeSet ?? idSet,
   serie: extra.serie ?? sv,
   totaleSet: extra.totaleSet ?? 100,
+  uscitaSet: extra.uscitaSet ?? null,
   carta: extra.carta === null ? null : {
     nome,
     categoria: extra.categoria ?? 'Pokémon',
@@ -28,10 +29,10 @@ const voce = (idSet, numero, nome, extra = {}) => ({
 });
 
 const collezione = () => [
-  voce('sv08', '001', 'Exeggcute', { nomeSet: 'Scintille Folgoranti', totaleSet: 191 }),
-  voce('sv08', '060', 'Magnezone', { nomeSet: 'Scintille Folgoranti', totaleSet: 191, stadio: 'Livello 2', tipi: ['Lampo'], quantita: 2 }),
-  voce('sv01', '054', 'Quaquaval', { nomeSet: 'Scarlatto e Violetto', totaleSet: 198, tipi: ['Acqua'] }),
-  voce('swsh9', '001', 'Exeggcute', { serie: sm, nomeSet: 'Astri Lucenti', totaleSet: 186 }),
+  voce('sv08', '001', 'Exeggcute', { nomeSet: 'Scintille Folgoranti', totaleSet: 191, uscitaSet: '2024-11-08' }),
+  voce('sv08', '060', 'Magnezone', { nomeSet: 'Scintille Folgoranti', totaleSet: 191, uscitaSet: '2024-11-08', stadio: 'Livello 2', tipi: ['Lampo'], quantita: 2 }),
+  voce('sv01', '054', 'Quaquaval', { nomeSet: 'Scarlatto e Violetto', totaleSet: 198, uscitaSet: '2023-03-31', tipi: ['Acqua'] }),
+  voce('swsh9', '001', 'Exeggcute', { serie: sm, nomeSet: 'Astri Lucenti', totaleSet: 186, uscitaSet: '2022-02-25' }),
 ];
 
 test('le serie restano nell\'ordine di arrivo, non in ordine alfabetico', () => {
@@ -51,6 +52,35 @@ test('dentro una serie le carte si dividono per set, coi conteggi', () => {
   assert.equal(scintille.copie, 3, 'di cui una in doppio');
   assert.equal(scintille.totale, 191, 'il riferimento per il completamento');
   assert.equal(primaSerie.distinte, 3, 'la serie somma i suoi set');
+});
+
+test('un set coi dati parziali si conta sulle carte che esistono davvero', () => {
+  // Kit Allenatore Sole e Luna: numerato fino a 30, ma le carte diverse sono
+  // 19 (energie e Pozione ripetute). Chi ha il kit intero deve leggere 19/19,
+  // non 19/30 con undici "mancanti" che non esistono da nessuna parte.
+  assert.deepEqual(progressoSet({ distinte: 19, totale: 30, ufficiali: 19 }), {
+    riferimento: 19,
+    pct: 100,
+    parziale: true,
+  });
+  // A metà kit il conteggio resta sulle 19 note.
+  assert.deepEqual(progressoSet({ distinte: 10, totale: 30, ufficiali: 19 }), {
+    riferimento: 19,
+    pct: 53,
+    parziale: true,
+  });
+});
+
+test('un set coi dati completi si conta sul totale ufficiale', () => {
+  // Qui il totale è quello stampato sulla carta: le segrete oltre la
+  // numerazione non devono gonfiare il denominatore.
+  assert.deepEqual(progressoSet({ distinte: 2, totale: 191, ufficiali: 191 }), {
+    riferimento: 191,
+    pct: 1,
+    parziale: false,
+  });
+  // Dato mancante (indice vecchio): si torna al totale, senza etichetta.
+  assert.equal(progressoSet({ distinte: 2, totale: 100, ufficiali: null }).riferimento, 100);
 });
 
 test('il filtro per serie tiene solo quella scelta', () => {
@@ -84,13 +114,31 @@ test('una carta senza dati sopravvive solo se non filtri i suoi dati', () => {
 test('i menu dei filtri si riempiono dalla collezione intera', () => {
   const valori = valoriDisponibili(collezione());
   assert.deepEqual(valori.serie.map((s) => s.nome), ['Scarlatto e Violetto', 'Sole e Luna']);
-  assert.deepEqual(valori.set.map((s) => s.nome), [
-    'Scintille Folgoranti',
-    'Scarlatto e Violetto',
-    'Astri Lucenti',
+  // I set, a differenza delle serie, si riordinano: dal più vecchio, con
+  // l'anno che il menu mostra fra parentesi.
+  assert.deepEqual(valori.set.map((s) => `${s.nome} (${s.anno})`), [
+    'Astri Lucenti (2022)',
+    'Scarlatto e Violetto (2023)',
+    'Scintille Folgoranti (2024)',
   ]);
   assert.deepEqual(valori.stadi, ['Base', 'Livello 2']);
   assert.deepEqual(valori.tipi, ['Acqua', 'Erba', 'Lampo']);
+});
+
+test('i set senza data di uscita restano in fondo al menu', () => {
+  // Le Energie base non escono in nessun set, e i dati vecchi possono non
+  // avere ancora la data: messi in cima sembrerebbero antichissimi.
+  const valori = valoriDisponibili([
+    ...collezione(),
+    voce('@base', 'Erba', 'Energia Erba', { nomeSet: 'Energie base', categoria: 'Energia' }),
+  ]);
+  assert.deepEqual(valori.set.map((s) => s.nome), [
+    'Astri Lucenti',
+    'Scarlatto e Violetto',
+    'Scintille Folgoranti',
+    'Energie base',
+  ]);
+  assert.equal(valori.set.at(-1).anno, null, 'senza data non c\'è anno da mostrare');
 });
 
 test('le voci senza serie finiscono in un gruppo esplicito', () => {

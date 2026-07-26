@@ -12,7 +12,14 @@
  */
 
 import { elencoPiani } from '../data/mazzi-salvati.js';
-import { leggiRiferimento, impostaRiferimento, togliRiferimento } from '../data/riferimento.js';
+import { elencoPrefatti } from '../data/mazzi-prefatti.js';
+import {
+  leggiRiferimento,
+  impostaRiferimento,
+  impostaRiferimentoPrefatto,
+  togliRiferimento,
+} from '../data/riferimento.js';
+import { forza } from '../engine/forza.js';
 import '../ui/mazzo-riferimento/mazzo-riferimento.js';
 
 const componente = document.querySelector('#riferimento');
@@ -24,8 +31,19 @@ const stato = document.querySelector('#stato-riferimento');
  */
 export async function aggiornaRiferimento() {
   componente.piani = await elencoPiani();
-  // Dopo i piani, così il componente può già evidenziare quello scelto: al
-  // contrario il `<select>` non troverebbe l'opzione da selezionare.
+  // I prefatti portano la forza già misurata: il componente disegna e basta,
+  // non gli si può chiedere di chiamare il motore.
+  componente.prefatti = (await elencoPrefatti()).map((m) => {
+    const misura = forza(m, { taglia: m.taglia });
+    return {
+      id: m.id,
+      nome: m.nome,
+      taglia: m.taglia,
+      forza: misura.attendibile ? misura.totale : null,
+    };
+  });
+  // Dopo le due sorgenti, così il componente può già evidenziare quello scelto:
+  // al contrario il `<select>` non troverebbe l'opzione da selezionare.
   componente.scelto = await leggiRiferimento();
 }
 
@@ -40,11 +58,14 @@ function messaggio(testo, errore = false) {
 }
 
 componente.addEventListener('riferimento-scelto', async (evento) => {
-  const { idPiano, indice } = evento.detail;
+  const { sorgente, idPiano, indice, idPrefatto } = evento.detail;
   try {
-    const scelto = await impostaRiferimento(idPiano, indice);
+    const scelto =
+      sorgente === 'prefatto'
+        ? await impostaRiferimentoPrefatto(idPrefatto)
+        : await impostaRiferimento(idPiano, indice);
     componente.scelto = scelto;
-    messaggio(`«${scelto.nomeMazzo}» è il mazzo di riferimento.`);
+    messaggio(`«${scelto.nome}» è il mazzo di riferimento.`);
   } catch (errore) {
     messaggio(`Non si riesce a impostarlo: ${errore.message}`, true);
   }

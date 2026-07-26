@@ -15,6 +15,7 @@ import { analizza } from './analisi.js';
 import { Dispensa } from './dispensa.js';
 import { classifica, SCALA } from './stadi.js';
 import { tipoEnergia, eEnergiaBase } from '../data/energie.js';
+import { fabbisogno, tipiDisponibili, costoMedioAttacchi } from './fabbisogno.js';
 import { composizione, fettaPerMazzo, piramide } from './proporzioni.js';
 import { Casuale } from './casuale.js';
 import { aggiungiAlMazzo } from './mazzo.js';
@@ -217,6 +218,10 @@ export function generaMazzi(voci, opzioni) {
   const casuale = new Casuale(seme);
   const analisi = analizza(voci, { ammettiEsotici });
   const dispensa = new Dispensa(voci);
+  // Cosa la scatola sa alimentare. Si guarda la collezione INTERA e una volta
+  // sola: è una proprietà di ciò che possiedi, non di come si stanno
+  // riempiendo i mazzi, e non deve cambiare mentre la dispensa si svuota.
+  const energieInCollezione = tipiDisponibili(voci);
 
   const totali = {
     pokemon: analisi.conteggi.pokemon,
@@ -228,7 +233,9 @@ export function generaMazzi(voci, opzioni) {
   // collezione con pochi Pokémon riceverebbe due soli slot e il budget di
   // stampa non avrebbe dove spendersi.
   fetta.pokemon += budgetPerMazzo;
-  const quota = composizione(taglia, fetta);
+  // Il costo medio degli attacchi decide quante Energie servono: si misura
+  // sulla collezione intera, prima che i mazzi comincino a consumarla.
+  const quota = composizione(taglia, fetta, { costoMedio: costoMedioAttacchi(voci) });
 
   // I tipi si scelgono sapendo quali sanno evolvere: si guarda l'intera
   // collezione, prima che i mazzi comincino a consumarla.
@@ -282,6 +289,11 @@ export function generaMazzi(voci, opzioni) {
         budget,
         evoluzioniComeBase: Boolean(permessi.evoluzioniComeBase),
         famiglieInMazzo: mazzo.famiglie,
+        // Con l'energia universale attiva ogni Energia paga qualunque costo,
+        // quindi nessuna carta è morta e la penalità non deve scattare.
+        // Idem se si stamperanno Energie: quelle mancanti si producono.
+        energieDisponibili:
+          permessi.energiaUniversale || opzioni.proxyEnergia ? null : energieInCollezione,
       });
       // Non sempre la migliore: fra scelte quasi equivalenti si estrae, ed è
       // ciò che rende diversi due giri di generazione.
@@ -346,18 +358,65 @@ export function generaMazzi(voci, opzioni) {
   // JSON, e un Set non sopravvive alla serializzazione.
   for (const mazzo of mazzi) delete mazzo.famiglie;
 
-  // --- Energie: prima quelle del tipo del mazzo ---
+  // --- Energie: secondo ciò che le carte del mazzo chiedono davvero ---
+  //
+  // Prima si guardava solo `mazzo.tipi`, il tipo DICHIARATO del mazzo, e il
+  // resto della quota si riempiva con un'Energia qualsiasi. Due difetti, che
+  // si vedevano solo giocando: un mazzo "Lotta" contenente un Exeggcute non
+  // riceveva Energie Erba nemmeno avendone in collezione, e intanto si
+  // prendeva Energie Fuoco che non servivano a nessuno.
+  //
+  // Ora l'ordine di riempimento è: i tipi che le carte chiedono, dal più
+  // richiesto; poi il tipo del mazzo; e solo alla fine il resto, che è meglio
+  // di lasciare il mazzo incompleto ma non è una scelta.
   for (const mazzo of mazzi) {
-    const suoTipo = (c) => eEnergiaBase(c) && mazzo.tipi.includes(tipoEnergia(c));
-    for (const criterio of [suoTipo, (c) => c.categoria === 'Energia']) {
-      while (mazzo.composizione.energie < quota.energie) {
+    const chiesti = fabbisogno(mazzo);
+    const perBisogno = Object.entries(chiesti)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tipo]) => tipo);
+    // Il tipo del mazzo resta in coda a quelli richiesti e non davanti: se
+    // nessuna carta chiede Lotta, riempire di Energie Lotta un mazzo "Lotta"
+    // è esattamente lo spreco da cui veniamo.
+    const ordine = [...new Set([...perBisogno, ...(mazzo.tipi ?? [])])];
+
+    // Ogni tipo richiesto riceve un tetto proporzionale a quanto è richiesto,
+    // e ci si ferma lì. Senza il tetto il primo tipo si prendeva tutti gli
+    // slot — il ciclo pesca finché la dispensa dà — e gli altri restavano a
+    // secco: era il difetto di prima con un ordine diverso.
+    const totaleChiesto = Object.values(chiesti).reduce((s, n) => s + n, 0);
+    const tetti = new Map(
+      ordine.map((tipo) => [
+        tipo,
+        totaleChiesto
+          ? Math.max(1, Math.round((quota.energie * (chiesti[tipo] ?? 0)) / totaleChiesto))
+          : quota.energie,
+      ]),
+    );
+
+    const passi = ordine.map((tipo) => ({
+      criterio: (c) => eEnergiaBase(c) && tipoEnergia(c) === tipo,
+      tetto: tetti.get(tipo),
+    }));
+    // Ultima risorsa, senza tetto: meglio un mazzo completo con qualche
+    // Energia inerte che un mazzo di 27 carte. Le base prima delle Speciali,
+    // che hanno regole proprie e in casa restano quasi sempre inutilizzate.
+    passi.push(
+      { criterio: (c) => eEnergiaBase(c), tetto: Infinity },
+      { criterio: (c) => c.categoria === 'Energia', tetto: Infinity },
+    );
+
+    for (const { criterio, tetto } of passi) {
+      let messeQui = 0;
+      while (mazzo.composizione.energie < quota.energie && messeQui < tetto) {
         const disponibili = casuale.mescola(dispensa.cerca(criterio));
         if (!disponibili.length) break;
         const scelta = disponibili[0].carta;
-        const prese = dispensa.preleva(scelta, quota.energie - mazzo.composizione.energie);
+        const quante = Math.min(tetto - messeQui, quota.energie - mazzo.composizione.energie);
+        const prese = dispensa.preleva(scelta, quante);
         const messe = aggiungiAlMazzo(mazzo, scelta, prese);
         if (prese > messe) dispensa.restituisci(scelta, prese - messe);
         if (messe === 0) break;
+        messeQui += messe;
       }
     }
   }

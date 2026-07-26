@@ -1,0 +1,2971 @@
+{
+ "generatoIl": "2026-07-25",
+ "ristampe": {
+  "bw7/108": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Copia Universale",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "A1/205"
+  },
+  "sm1/76": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Focalenergia",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Oscurità"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "sm3/81"
+  },
+  "sm1/78": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Bullo",
+     "costo": [
+      "Oscurità"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Uncino",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm12/128"
+  },
+  "sm10/121": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Spelonca",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Fangosberla",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "sm1/86"
+  },
+  "sm12/39": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Faro",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Geloneve",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm2/21"
+  },
+  "sm12/145": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Calcio Esplosivo",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Assorbimento Spirale",
+     "costo": [
+      "Folletto",
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 80
+    }
+   ],
+   "datiDa": "smp/SM128"
+  },
+  "sm5/28": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Ricciolscudo",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Palla Gelo",
+     "costo": [
+      "Acqua",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "sm2/19"
+  },
+  "sm5/78": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Spelonca",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Fangosberla",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "sm1/86"
+  },
+  "sm5/79": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Attacco Sotterraneo",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "sm1/87",
+   "approssimati": true
+  },
+  "sm8/118": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Graffio",
+     "costo": [],
+     "danno": 10
+    },
+    {
+     "nome": "Bruciapelo",
+     "costo": [
+      "Oscurità",
+      "Oscurità"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "smp/SM43"
+  },
+  "sm8/119": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Provocazione",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Artiglilaceranti",
+     "costo": [
+      "Oscurità"
+     ],
+     "danno": "30+"
+    }
+   ],
+   "datiDa": "sm1/79"
+  },
+  "sm8/122": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Spelonca",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Fangosberla",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "sm1/86"
+  },
+  "sm8/123": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Attacco Sotterraneo",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "sm1/87",
+   "approssimati": true
+  },
+  "sv08/122": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Spelonca",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Fangosberla",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "sm1/86"
+  },
+  "sv08/123": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Attacco Sotterraneo",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "sm1/87",
+   "approssimati": true
+  },
+  "sv08/208": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Attacco Sotterraneo",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "sm1/87",
+   "approssimati": true
+  },
+  "swsh10.5/053": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Copia Universale",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "A1/205"
+  },
+  "swsh11/044": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Immersione Silenziosa",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "swshp/SWSH273"
+  },
+  "swsh11/083": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Posizione Difensiva",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "swsh10/070",
+   "approssimati": true
+  },
+  "swsh12.5/107": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Copia Universale",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "A1/205"
+  },
+  "swsh12.5gg/GG22": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Copia Universale",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "A1/205"
+  },
+  "tk-sm-l/1": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Pausa",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Rosicchiamento",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm1/1"
+  },
+  "tk-sm-l/4": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Semitraglia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "20×"
+    }
+   ],
+   "datiDa": "sm1/107"
+  },
+  "tk-sm-l/11": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Ruggito",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Alabattito",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm2/109"
+  },
+  "tk-sm-l/12": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm1/109"
+  },
+  "tk-sm-l/13": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Alabattito",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Ventagliente",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "sm2/110"
+  },
+  "tk-sm-l/14": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Sassata",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "smp/SM06"
+  },
+  "tk-sm-l/15": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Spaccaroccia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "sm1/106"
+  },
+  "tk-sm-l/16": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Artigli Pericolosi",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": "30+"
+    },
+    {
+     "nome": "Trappola",
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 90
+    }
+   ],
+   "datiDa": "sm3/75"
+  },
+  "tk-sm-l/18": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Attacco a Sorpresa",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Forza",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "sm1/67"
+  },
+  "tk-sm-l/22": {
+   "ps": 140,
+   "attacchi": [
+    {
+     "nome": "Echeggiavoce",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    },
+    {
+     "nome": "Cannonbecco",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 100
+    }
+   ],
+   "datiDa": "sm1/108"
+  },
+  "tk-sm-l/29": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Sassata",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "smp/SM06"
+  },
+  "tk-sm-l/30": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Artigli Pericolosi",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": "30+"
+    },
+    {
+     "nome": "Trappola",
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 90
+    }
+   ],
+   "datiDa": "sm3/75"
+  },
+  "tk-sm-r/4": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "sm1/111"
+  },
+  "tk-sm-r/6": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Super Velenospiro",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Acrobazia",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "sm1/55"
+  },
+  "tk-sm-r/11": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Sgomento",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "sm1/54"
+  },
+  "tk-sm-r/13": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Becchinsetto",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "sm1/97"
+  },
+  "tk-sm-r/14": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Shock statico",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "smp/SM157"
+  },
+  "tk-sm-r/16": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Presa",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm1/13"
+  },
+  "tk-sm-r/17": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Attacco Rapido",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": "10+"
+    },
+    {
+     "nome": "Surfista Elettrico",
+     "costo": [
+      "Lampo",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "smp/SM65"
+  },
+  "tk-sm-r/18": {
+   "ps": 130,
+   "attacchi": [
+    {
+     "nome": "Presa dell’Orso",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    },
+    {
+     "nome": "Troppoforte",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "80+"
+    }
+   ],
+   "datiDa": "sm1/112"
+  },
+  "tk-sm-r/22": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Psicoboom",
+     "costo": [
+      "Psico"
+     ],
+     "danno": "10×"
+    },
+    {
+     "nome": "Bottintesta",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "sm1/59"
+  },
+  "tk-sm-r/26": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Ricciolscudo",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Scarica",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": "30×"
+    }
+   ],
+   "datiDa": "smp/SM09"
+  },
+  "tk-sm-r/29": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Shock statico",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "smp/SM157"
+  },
+  "tk-sm-r/30": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Attacco Rapido",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": "10+"
+    },
+    {
+     "nome": "Surfista Elettrico",
+     "costo": [
+      "Lampo",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "smp/SM65"
+  },
+  "tk-xy-b/1": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Ventagliente",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/31"
+  },
+  "tk-xy-b/4": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Graffio",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "xy3/82"
+  },
+  "tk-xy-b/11": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Lameterna",
+     "costo": [
+      "Metallo",
+      "Incolore"
+     ],
+     "danno": "30x"
+    }
+   ],
+   "datiDa": "xy0/21"
+  },
+  "tk-xy-b/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Iperzanna",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy1/106"
+  },
+  "tk-xy-b/13": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Perforare",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Taglio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/19"
+  },
+  "tk-xy-b/14": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Duplicelama",
+     "costo": [
+      "Metallo",
+      "Incolore"
+     ],
+     "danno": "30×"
+    }
+   ],
+   "datiDa": "xy1/84"
+  },
+  "tk-xy-b/15": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Gransbadiglio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy3/81"
+  },
+  "tk-xy-b/16": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Stoccata Burbera",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Ferrartigli",
+     "costo": [
+      "Metallo",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "xy0/20"
+  },
+  "tk-xy-b/17": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Controllo Sicurezza",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy3/84"
+  },
+  "tk-xy-b/21": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Perforare",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Taglio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/19"
+  },
+  "tk-xy-b/23": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Duplicelama",
+     "costo": [
+      "Metallo",
+      "Incolore"
+     ],
+     "danno": "30×"
+    }
+   ],
+   "datiDa": "xy1/84"
+  },
+  "tk-xy-b/26": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Gransbadiglio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy3/81"
+  },
+  "tk-xy-b/27": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Lameterna",
+     "costo": [
+      "Metallo",
+      "Incolore"
+     ],
+     "danno": "30x"
+    }
+   ],
+   "datiDa": "xy0/21"
+  },
+  "tk-xy-b/28": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Graffio",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "xy3/82"
+  },
+  "tk-xy-b/30": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Stoccata Burbera",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Ferrartigli",
+     "costo": [
+      "Metallo",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "xy0/20"
+  },
+  "tk-xy-latia/4": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Ventagliente",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/31"
+  },
+  "tk-xy-latia/6": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Uncino",
+     "costo": [
+      "Erba"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Battuta",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy5/11"
+  },
+  "tk-xy-latia/7": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Attacco Rapido",
+     "costo": [
+      "Erba"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "xy5/6"
+  },
+  "tk-xy-latia/11": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Battuta",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy5/10"
+  },
+  "tk-xy-latia/12": {
+   "ps": 130,
+   "attacchi": [
+    {
+     "nome": "Megassorbimento",
+     "costo": [
+      "Erba",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    },
+    {
+     "nome": "Laccioerboso",
+     "costo": [
+      "Erba",
+      "Erba",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "80+"
+    }
+   ],
+   "datiDa": "xy5/5"
+  },
+  "tk-xy-latia/13": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Assorbimento",
+     "costo": [
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Frustata",
+     "costo": [
+      "Erba",
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy5/4"
+  },
+  "tk-xy-latia/14": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Raffica di Nebbia",
+     "costo": [
+      "Psico"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "smp/SM87"
+  },
+  "tk-xy-latia/16": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Fuggi Fuggi",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy5/13"
+  },
+  "tk-xy-latia/18": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Botta",
+     "costo": [
+      "Erba"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Agilità",
+     "costo": [
+      "Erba",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy5/7"
+  },
+  "tk-xy-latia/21": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Uncino",
+     "costo": [
+      "Erba"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Battuta",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy5/11"
+  },
+  "tk-xy-latia/23": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Battuta",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy5/10"
+  },
+  "tk-xy-latia/24": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Attacco Rapido",
+     "costo": [
+      "Erba"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "xy5/6"
+  },
+  "tk-xy-latia/25": {
+   "ps": 130,
+   "attacchi": [
+    {
+     "nome": "Megassorbimento",
+     "costo": [
+      "Erba",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    },
+    {
+     "nome": "Laccioerboso",
+     "costo": [
+      "Erba",
+      "Erba",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "80+"
+    }
+   ],
+   "datiDa": "xy5/5"
+  },
+  "tk-xy-latia/26": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Assorbimento",
+     "costo": [
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Frustata",
+     "costo": [
+      "Erba",
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy5/4"
+  },
+  "tk-xy-latia/27": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Botta",
+     "costo": [
+      "Erba"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Agilità",
+     "costo": [
+      "Erba",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy5/7"
+  },
+  "tk-xy-latia/30": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Raffica di Nebbia",
+     "costo": [
+      "Psico"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "smp/SM87"
+  },
+  "tk-xy-latio/1": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Rintoccasana",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Codabotta",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy1/104"
+  },
+  "tk-xy-latio/4": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Perforcorno",
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    },
+    {
+     "nome": "Montepazzo",
+     "costo": [
+      "Lotta",
+      "Lotta",
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/61"
+  },
+  "tk-xy-latio/11": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Nocca-Pugno",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy3/44"
+  },
+  "tk-xy-latio/12": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Generatore Solare",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Scaraventa",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": "20+"
+    }
+   ],
+   "datiDa": "xy5/83"
+  },
+  "tk-xy-latio/13": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Irruzione",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Volo Lagunare",
+     "costo": [
+      "Psico",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "smp/SM88"
+  },
+  "tk-xy-latio/14": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Batosta",
+     "costo": [
+      "Lotta",
+      "Lotta"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy3/45"
+  },
+  "tk-xy-latio/15": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Scavata",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Perforcorno",
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy1/60"
+  },
+  "tk-xy-latio/19": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Centro Benessere",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Bruciapelo",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy1/105"
+  },
+  "tk-xy-latio/22": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Batosta",
+     "costo": [
+      "Lotta",
+      "Lotta"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy3/45"
+  },
+  "tk-xy-latio/23": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Scavata",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Perforcorno",
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy1/60"
+  },
+  "tk-xy-latio/24": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Centro Benessere",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Bruciapelo",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy1/105"
+  },
+  "tk-xy-latio/25": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Perforcorno",
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    },
+    {
+     "nome": "Montepazzo",
+     "costo": [
+      "Lotta",
+      "Lotta",
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/61"
+  },
+  "tk-xy-latio/26": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Generatore Solare",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Scaraventa",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": "20+"
+    }
+   ],
+   "datiDa": "xy5/83"
+  },
+  "tk-xy-latio/27": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Rintoccasana",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Codabotta",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy1/104"
+  },
+  "tk-xy-latio/28": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Nocca-Pugno",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy3/44"
+  },
+  "tk-xy-latio/30": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Irruzione",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Volo Lagunare",
+     "costo": [
+      "Psico",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "smp/SM88"
+  },
+  "tk-xy-n/1": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Splash",
+     "costo": [
+      "Psico"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy1/49"
+  },
+  "tk-xy-n/2": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Vocemistero",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Urlospettrale",
+     "costo": [
+      "Psico",
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/57"
+  },
+  "tk-xy-n/3": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Gastroacido",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Velenpuntura",
+     "costo": [
+      "Psico",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "xy1/48"
+  },
+  "tk-xy-n/4": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/30"
+  },
+  "tk-xy-n/11": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Stordiraggio",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/56"
+  },
+  "tk-xy-n/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Raffica",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy3/87"
+  },
+  "tk-xy-n/13": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Caccia Lucente",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Settima Eco",
+     "costo": [
+      "Psico",
+      "Oscurità"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "swsh12/133"
+  },
+  "tk-xy-n/16": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Morso",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy1/47"
+  },
+  "tk-xy-n/18": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Stordiraggio",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/56"
+  },
+  "tk-xy-n/20": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Strettazanna",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Zannaffilata",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "xy0/32"
+  },
+  "tk-xy-n/23": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Raffica",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy3/87"
+  },
+  "tk-xy-n/30": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Caccia Lucente",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Settima Eco",
+     "costo": [
+      "Psico",
+      "Oscurità"
+     ],
+     "danno": 70
+    }
+   ],
+   "datiDa": "swsh12/133"
+  },
+  "tk-xy-p/1": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Furbetto",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Graffio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/93"
+  },
+  "tk-xy-p/4": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Nocca-Pugno",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Elettropugno",
+     "costo": [
+      "Lampo",
+      "Lampo",
+      "Incolore"
+     ],
+     "danno": 90
+    }
+   ],
+   "datiDa": "xy9/43"
+  },
+  "tk-xy-p/7": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Aeroassalto",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "xy1/102"
+  },
+  "tk-xy-p/11": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Sottocarica",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Lampo",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy5/59"
+  },
+  "tk-xy-p/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/48"
+  },
+  "tk-xy-p/13": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Scintilla Casuale",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy6/25"
+  },
+  "tk-xy-p/15": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Nocca-Pugno",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/42"
+  },
+  "tk-xy-p/16": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Acrobazia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "xy6/82"
+  },
+  "tk-xy-p/19": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Lacerazione",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Pressa Felina",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "40+"
+    }
+   ],
+   "datiDa": "xy9/94"
+  },
+  "tk-xy-p/22": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Scintilla Casuale",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy6/25"
+  },
+  "tk-xy-p/23": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Nocca-Pugno",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/42"
+  },
+  "tk-xy-p/24": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Lacerazione",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Pressa Felina",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "40+"
+    }
+   ],
+   "datiDa": "xy9/94"
+  },
+  "tk-xy-p/25": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Nocca-Pugno",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Elettropugno",
+     "costo": [
+      "Lampo",
+      "Lampo",
+      "Incolore"
+     ],
+     "danno": 90
+    }
+   ],
+   "datiDa": "xy9/43"
+  },
+  "tk-xy-p/26": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/48"
+  },
+  "tk-xy-p/27": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Furbetto",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Graffio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/93"
+  },
+  "tk-xy-p/28": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Sottocarica",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Morso",
+     "costo": [
+      "Lampo",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy5/59"
+  },
+  "tk-xy-su/4": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Affondo",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy7/63"
+  },
+  "tk-xy-su/6": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Taglio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy8/47"
+  },
+  "tk-xy-su/7": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Affondo",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/36"
+  },
+  "tk-xy-su/11": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Rimbalzo",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy1/39"
+  },
+  "tk-xy-su/12": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Inondacorno",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": "10+"
+    },
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy8/28"
+  },
+  "tk-xy-su/13": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy8/27"
+  },
+  "tk-xy-su/14": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Raggiaurora",
+     "costo": [
+      "Acqua",
+      "Acqua",
+      "Acqua"
+     ],
+     "danno": 110
+    }
+   ],
+   "datiDa": "xy9/30",
+   "approssimati": true
+  },
+  "tk-xy-su/16": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Schizzi d'Onda",
+     "costo": [
+      "Acqua",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy8/36"
+  },
+  "tk-xy-su/18": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Attacco d'Ala",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Baldeali",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 80
+    }
+   ],
+   "datiDa": "xy9/37"
+  },
+  "tk-xy-su/21": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Taglio",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy8/47"
+  },
+  "tk-xy-su/23": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Rimbalzo",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy1/39"
+  },
+  "tk-xy-su/24": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Affondo",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy9/36"
+  },
+  "tk-xy-su/25": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Inondacorno",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": "10+"
+    },
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "datiDa": "xy8/28"
+  },
+  "tk-xy-su/26": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Carica Avventata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy8/27"
+  },
+  "tk-xy-su/27": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Attacco d'Ala",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Baldeali",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 80
+    }
+   ],
+   "datiDa": "xy9/37"
+  },
+  "tk-xy-su/30": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Raggiaurora",
+     "costo": [
+      "Acqua",
+      "Acqua",
+      "Acqua"
+     ],
+     "danno": 110
+    }
+   ],
+   "datiDa": "xy9/30",
+   "approssimati": true
+  },
+  "tk-xy-sy/1": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Ventagliente",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/31"
+  },
+  "tk-xy-sy/11": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Bottintesta",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/22"
+  },
+  "tk-xy-sy/13": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Affondo",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy7/63"
+  },
+  "tk-xy-sy/14": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Bottintesta",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Doppio Pestone",
+     "costo": [
+      "Folletto",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "50+"
+    }
+   ],
+   "datiDa": "xy0/23"
+  },
+  "tk-xy-sy/15": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Arriccianastro",
+     "costo": [
+      "Folletto"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Echeggiavoce",
+     "costo": [
+      "Folletto",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "xy3/72"
+  },
+  "tk-xy-sy/16": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Strettazanna",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Zannaffilata",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "xy0/32"
+  },
+  "tk-xy-sy/19": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Ventagliente",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/31"
+  },
+  "tk-xy-sy/21": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Affondo",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy7/63"
+  },
+  "tk-xy-sy/22": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Strettazanna",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "nome": "Zannaffilata",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "xy0/32"
+  },
+  "tk-xy-sy/27": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Bottintesta",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy0/22"
+  },
+  "tk-xy-sy/29": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Bottintesta",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Doppio Pestone",
+     "costo": [
+      "Folletto",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "50+"
+    }
+   ],
+   "datiDa": "xy0/23"
+  },
+  "tk-xy-sy/30": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Arriccianastro",
+     "costo": [
+      "Folletto"
+     ],
+     "danno": 30
+    },
+    {
+     "nome": "Echeggiavoce",
+     "costo": [
+      "Folletto",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "xy3/72"
+  },
+  "tk-xy-w/1": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Dragonair",
+     "costo": [
+      "Folletto"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy0/24"
+  },
+  "tk-xy-w/2": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Turbosabbia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Imboscata",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "20+"
+    }
+   ],
+   "datiDa": "xy2/76"
+  },
+  "tk-xy-w/4": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Graffio",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Codasberla",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy2/81"
+  },
+  "tk-xy-w/11": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Sbeccata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy2/75"
+  },
+  "tk-xy-w/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Rotolamento",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Cantosincero",
+     "costo": [
+      "Folletto"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/87"
+  },
+  "tk-xy-w/13": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Lucelunare",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Botta",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy3/69"
+  },
+  "tk-xy-w/14": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Raccoglienergia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Parimpampum",
+     "costo": [
+      "Folletto",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    }
+   ],
+   "datiDa": "xy1/89"
+  },
+  "tk-xy-w/16": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Sonoqui",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Forza Lunare",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy3/71"
+  },
+  "tk-xy-w/18": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Dragonair",
+     "costo": [
+      "Folletto"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy0/24"
+  },
+  "tk-xy-w/19": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Lucelunare",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Botta",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "xy3/69"
+  },
+  "tk-xy-w/23": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "nome": "Turbosabbia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Imboscata",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "20+"
+    }
+   ],
+   "datiDa": "xy2/76"
+  },
+  "tk-xy-w/25": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Rotolamento",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Cantosincero",
+     "costo": [
+      "Folletto"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "xy1/87"
+  },
+  "tk-xy-w/28": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Sonoqui",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Forza Lunare",
+     "costo": [
+      "Folletto",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "xy3/71"
+  },
+  "tk-xy-w/29": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Sbeccata",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xy2/75"
+  },
+  "tk-xy-w/30": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "nome": "Raccoglienergia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Parimpampum",
+     "costo": [
+      "Folletto",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    }
+   ],
+   "datiDa": "xy1/89"
+  }
+ }
+}

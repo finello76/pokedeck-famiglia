@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["tools/servi-dev.py", "8010"],
       "port": 8010
+    },
+    {
+      "name": "pokedeck-node",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/servi-dev.mjs", "8011"],
+      "port": 8011
     }
   ]
 }

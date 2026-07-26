@@ -27,7 +27,9 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
-import { FILTRI_VUOTI, filtra, raggruppa, valoriDisponibili } from './raggruppa.js';
+import { formattaEuro, valoreDi } from '../../data/prezzi.js';
+import { segnaposto, seImmagineRotta } from '../segnaposto.js';
+import { FILTRI_VUOTI, filtra, progressoSet, raggruppa, valoriDisponibili } from './raggruppa.js';
 
 /**
  * Osservatore condiviso: carica l'immagine di una card solo quando sta per
@@ -59,6 +61,10 @@ export class GrigliaCollezione extends HTMLElement {
   #mostraMancanti = false;
   /** @type {boolean} se il pannello dei filtri avanzati è aperto */
   #filtriAperti = false;
+  /** @type {Map<string, {euro: number|null, aggiornatoIl: string, senzaMercato: boolean}>} */
+  #prezzi = new Map();
+  /** @type {string} messaggio sotto il pulsante della quotazione */
+  #statoQuotazione = '';
 
   /**
    * Come procurarsi le carte mancanti di un set. La inietta chi usa il
@@ -75,6 +81,30 @@ export class GrigliaCollezione extends HTMLElement {
 
   get voci() {
     return this.#voci;
+  }
+
+  /**
+   * Le quotazioni note, per chiave `"<idSet>:<numero>"`. Le passa chi ha accesso
+   * al database: la griglia mostra numeri, non li va a cercare.
+   * @param {Map<string, object>} valore
+   */
+  set prezzi(valore) {
+    this.#prezzi = valore ?? new Map();
+    this.#disegnaRisultati();
+  }
+
+  get prezzi() {
+    return this.#prezzi;
+  }
+
+  /** @param {string} valore messaggio di avanzamento della quotazione */
+  set statoQuotazione(valore) {
+    this.#statoQuotazione = valore ?? '';
+    const riga = this.querySelector('.stato-quotazione');
+    if (riga) {
+      riga.textContent = this.#statoQuotazione;
+      riga.hidden = !this.#statoQuotazione;
+    }
   }
 
   connectedCallback() {
@@ -128,6 +158,19 @@ export class GrigliaCollezione extends HTMLElement {
         return;
       }
 
+      // Si quotano le carte A SCHERMO, non tutta la collezione: una richiesta
+      // di rete per carta, e il senso della funzione è "quanto vale questa
+      // manciata di rare", non "censisci ventimila carte".
+      if (evento.target.closest('[data-quotazione]')) {
+        this.dispatchEvent(
+          new CustomEvent('quotazione-richiesta', {
+            bubbles: true,
+            detail: { voci: filtra(this.#voci, this.#filtri) },
+          }),
+        );
+        return;
+      }
+
       if (evento.target.closest('[data-azione="azzera-filtri"]')) {
         this.#filtri = { ...FILTRI_VUOTI };
         this.#mostraMancanti = false;
@@ -178,13 +221,15 @@ export class GrigliaCollezione extends HTMLElement {
 
   /** Disegna la barra di controlli (ricerca, chip, filtri) e il contenitore. */
   #disegna() {
-    const { categorie, tipi, stadi, serie, set } = valoriDisponibili(this.#voci);
+    const { categorie, tipi, stadi, serie, set, rarita } = valoriDisponibili(this.#voci);
 
+    // I set portano l'anno fra parentesi: due set possono avere nomi simili, e
+    // l'anno è il modo in cui ci si ricorda le carte che si hanno in mano.
     const opzioni = (valori, selezionato) =>
       valori
         .map(
-          ({ id, nome }) =>
-            `<option value="${id}"${id === selezionato ? ' selected' : ''}>${escapeHtml(nome)}</option>`,
+          ({ id, nome, anno }) =>
+            `<option value="${id}"${id === selezionato ? ' selected' : ''}>${escapeHtml(nome)}${anno ? ` (${anno})` : ''}</option>`,
         )
         .join('');
     const opzioniSemplici = (valori, selezionato) =>
@@ -207,6 +252,7 @@ export class GrigliaCollezione extends HTMLElement {
         this.#filtri.set ||
         this.#filtri.categoria ||
         this.#filtri.stadio ||
+        this.#filtri.rarita ||
         this.#mostraMancanti,
     );
 
@@ -269,6 +315,25 @@ export class GrigliaCollezione extends HTMLElement {
               <option value="">tutti</option>${opzioniSemplici(stadi, this.#filtri.stadio)}
             </select>
           </div>
+          <div>
+            <label for="filtro-desiderio">Lista desideri</label>
+            <select id="filtro-desiderio" data-filtro="desiderio">
+              <option value=""${this.#filtri.desiderio === '' ? ' selected' : ''}>tutto</option>
+              <option value="solo"${this.#filtri.desiderio === 'solo' ? ' selected' : ''}>solo i desideri</option>
+              <option value="escludi"${this.#filtri.desiderio === 'escludi' ? ' selected' : ''}>solo ciò che ho</option>
+            </select>
+          </div>
+          <div>
+            <label for="filtro-rarita">Rarità</label>
+            <select id="filtro-rarita" data-filtro="rarita">
+              <option value="">tutte</option>${rarita
+                .map(
+                  (r) =>
+                    `<option value="${r.codice}"${r.codice === this.#filtri.rarita ? ' selected' : ''}>${escapeHtml(r.etichetta)}</option>`,
+                )
+                .join('')}
+            </select>
+          </div>
         </div>
         <label class="interruttore-mancanti">
           <input type="checkbox" data-mancanti ${this.#mostraMancanti ? 'checked' : ''} />
@@ -277,6 +342,13 @@ export class GrigliaCollezione extends HTMLElement {
             <small>Le carte dei set che possiedi solo in parte compaiono in grigio: così vedi cosa manca per completarli.</small>
           </span>
         </label>
+
+        <!-- La quotazione è un'azione, non un filtro: scarica dalla rete, quindi
+             si fa quando la si chiede e su quello che si sta guardando. -->
+        <div class="zona-quotazione">
+          <button type="button" class="secondario" data-quotazione>Calcola quotazione</button>
+          <p class="stato-quotazione" hidden></p>
+        </div>
       </div>
 
       <p class="riepilogo"></p>
@@ -303,6 +375,7 @@ export class GrigliaCollezione extends HTMLElement {
       this.#voci.length === 0
         ? 'La collezione è vuota: tocca il pulsante <strong>＋</strong> in basso per aggiungere la prima carta.'
         : `${copie} copie in ${gruppi.length} serie` +
+          valoreAschermo(voci, this.#prezzi) +
           (filtriAttivi
             ? ' · <button type="button" data-azione="azzera-filtri" class="collegamento">azzera filtri</button>'
             : '');
@@ -375,7 +448,12 @@ export class GrigliaCollezione extends HTMLElement {
    */
   #card(voce, mancante = false) {
     const card = document.createElement('article');
-    card.className = mancante ? 'carta-griglia mancante' : 'carta-griglia';
+    // Tre stati, non due: posseduta, desiderata, e "manca al set" (che è una
+    // carta di cui l'app sa l'esistenza ma che tu non hai mai né avuto né
+    // chiesto). Il desiderio è una scelta tua, quindi si vede di più.
+    card.className = 'carta-griglia';
+    if (mancante) card.classList.add('mancante');
+    if (voce.desiderata) card.classList.add('desiderata');
     // idSet/numero/quantita servono al visore per mostrare e modificare le copie
     // possedute mentre la carta è aperta a schermo intero.
     card._voce = {
@@ -391,7 +469,7 @@ export class GrigliaCollezione extends HTMLElement {
     if (!voce.carta) {
       card.dataset.tipo = 'Incolore';
       card.innerHTML = `
-        <div class="miniatura"><span class="segnaposto-mini" aria-hidden="true">?</span></div>
+        <div class="miniatura">${segnaposto(null, 'segnaposto-mini')}</div>
         <div class="corpo">
           <div class="nome-carta">${escapeHtml(voce.idSet)} n. ${escapeHtml(voce.numero)}</div>
           <div class="meta-carta">Set non più disponibile: riscarica i dati.</div>
@@ -406,10 +484,14 @@ export class GrigliaCollezione extends HTMLElement {
     card.dataset.tipo = tipo;
 
     const numero = String(c.numero ?? voce.numero ?? '').split('/')[0];
-    const badge =
-      mancante || !voce.quantita
+    // Sul desiderio il numero non dice "ne ho", dice "ne vorrei": la stellina
+    // lo distingue senza bisogno di leggere una legenda.
+    const badge = voce.desiderata
+      ? `<span class="badge-qty badge-desiderio" title="Nella lista desideri">★${voce.quantita}</span>`
+      : mancante || !voce.quantita
         ? ''
         : `<span class="badge-qty">×${voce.quantita}</span>`;
+    const prezzo = this.#badgePrezzo(voce);
     const meta =
       c.categoria === 'Pokémon'
         ? `n. ${escapeHtml(numero)} · ${escapeHtml(c.stadio ?? 'Base')}`
@@ -427,6 +509,7 @@ export class GrigliaCollezione extends HTMLElement {
         <div class="miniatura">
           ${this.#htmlImmagine(c)}
           ${badge}
+          ${prezzo}
           <span class="scan">n. ${escapeHtml(numero)}</span>
         </div>
         <div class="corpo">
@@ -439,18 +522,40 @@ export class GrigliaCollezione extends HTMLElement {
     `;
 
     const img = card.querySelector('img[data-src]');
-    if (img) osservatore.observe(img);
+    if (img) {
+      osservatore.observe(img);
+      seImmagineRotta(img, c, 'segnaposto-mini');
+    }
     return card;
+  }
+
+  /**
+   * La targhetta col prezzo, se per quella carta ne conosciamo uno.
+   *
+   * Le carte digitali (Pokémon Pocket) non hanno mercato: si dice "digitale"
+   * invece di lasciare il vuoto, che si confonderebbe con "non l'ho ancora
+   * chiesto". La data serve perché un prezzo senza data non è un prezzo.
+   *
+   * @param {object} voce
+   * @returns {string} HTML
+   */
+  #badgePrezzo(voce) {
+    const prezzo = this.#prezzi.get(`${voce.idSet}:${voce.numero}`);
+    if (!prezzo) return '';
+    if (prezzo.euro === null) {
+      return `<span class="badge-prezzo senza" title="${prezzo.senzaMercato ? 'Carta digitale: non ha un mercato' : 'Nessun prezzo disponibile'}">${prezzo.senzaMercato ? 'digitale' : '—'}</span>`;
+    }
+    const quando = new Date(prezzo.aggiornatoIl).toLocaleDateString('it-IT');
+    return `<span class="badge-prezzo" title="Cardmarket, tendenza del ${quando}">${formattaEuro(prezzo.euro)}</span>`;
   }
 
   /** L'immagine (in lazy-load) o il segnaposto tinto per le carte senza scan. */
   #htmlImmagine(c) {
     const src = urlImmagine(c, 'griglia');
-    if (!src) {
-      const sigla = c.categoria === 'Energia' ? 'E' : '?';
-      return `<span class="segnaposto-mini" aria-hidden="true">${sigla}</span>`;
-    }
-    return `<img data-src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />`;
+    if (!src) return segnaposto(c, 'segnaposto-mini');
+    // `alt=""`: il nome della carta è già scritto sotto la miniatura, e un
+    // testo alternativo comparirebbe a schermo se l'immagine non arrivasse.
+    return `<img data-src="${src}" alt="" />`;
   }
 
   /**
@@ -472,6 +577,27 @@ export class GrigliaCollezione extends HTMLElement {
       </div>
     `;
   }
+}
+
+/**
+ * Il valore delle carte a schermo, quando qualche prezzo è noto.
+ *
+ * Si conta **per copie possedute**, non per carte distinte: tre copie della
+ * stessa rara valgono tre volte. E si dichiara sempre quante carte non hanno
+ * prezzo, altrimenti un totale parziale si legge come un totale.
+ *
+ * @param {object[]} voci le voci filtrate, cioè quelle visibili
+ * @param {Map<string, object>} prezzi
+ * @returns {string} HTML, vuoto se non si conosce nessun prezzo
+ */
+function valoreAschermo(voci, prezzi) {
+  if (!prezzi.size) return '';
+  const { totale, quotate, senzaPrezzo } = valoreDi(voci, prezzi);
+  if (!quotate) return '';
+  return (
+    ` · <strong class="valore-totale">${formattaEuro(totale)}</strong>` +
+    ` (${quotate} quotate${senzaPrezzo ? `, ${senzaPrezzo} senza prezzo` : ''})`
+  );
 }
 
 /**
@@ -498,15 +624,14 @@ function testaSet(set) {
       <span class="prog">${set.distinte} carte</span>`;
   }
 
-  const pct = Math.min(100, Math.round((set.distinte / set.totale) * 100));
-  const parziale = set.ufficiali !== null && set.ufficiali < set.totale;
+  const { riferimento, pct, parziale } = progressoSet(set);
   return `
     <span class="nome-set">${escapeHtml(set.nomeSet)}</span>
     <span class="barra"><span class="riempi" style="width:${pct}%"></span></span>
-    <span class="prog">${set.distinte}/${set.totale}</span>
+    <span class="prog">${set.distinte}/${riferimento}</span>
     ${
       parziale
-        ? `<span class="dati-parziali" title="Di questo set conosciamo solo ${set.ufficiali} carte su ${set.totale}: le altre non sono nei dati italiani di TCGdex.">parziali</span>`
+        ? `<span class="dati-parziali" title="Il set è numerato fino a ${set.totale}, ma le carte diverse note nei dati italiani di TCGdex sono ${set.ufficiali}: il conteggio è su quelle.">parziali</span>`
         : ''
     }`;
 }

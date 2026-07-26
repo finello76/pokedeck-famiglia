@@ -98,8 +98,66 @@ export async function elencoSerie() {
 export async function caricaSet(idSet) {
   if (cacheSet.has(idSet)) return cacheSet.get(idSet);
   const set = await leggiJson(`${idSet}.json`);
+  set.carte = await completaRistampe(idSet, set.carte ?? []);
   cacheSet.set(idSet, set);
   return set;
+}
+
+/** @type {Promise<Record<string, object>>|null} caricamento unico di ristampe.json */
+let caricamentoRistampe = null;
+
+/**
+ * Rimette i dati di gioco alle carte che TCGdex lascia incomplete.
+ *
+ * TCGdex tratta alcune stampe come ristampe e non vi replica PS e attacchi:
+ * 204 Pokémon su 12.877, quasi tutti nei set Kit Allenatore — cioè proprio i
+ * mazzi con cui si gioca in casa. Senza questo passaggio il costruttore mostra
+ * "offesa 0" su un mazzo di Lycanroc e Raichu, e `forza()` dichiara il
+ * punteggio inattendibile.
+ *
+ * I dati vengono da `data/ristampe.json`, prodotto da
+ * `tools/completa-ristampe.mjs`. La ricerca dell'omonima si fa **lì**, una
+ * volta sola: cercarla qui significherebbe scorrere tutti i set, e la PWA ne
+ * carica uno per volta apposta — scaricare 6,4 MB per leggere gli attacchi di
+ * una carta sarebbe l'esatto contrario di ciò per cui il dataset è diviso.
+ *
+ * Si applica al **caricamento del set**, non alla singola lettura: così ogni
+ * consumatore — griglia, motore, costruttore — vede le stesse carte, senza
+ * doversi ricordare di chiamare qualcosa.
+ *
+ * Se il file manca (installazione a metà, cache incompleta) le carte restano
+ * come sono: è un miglioramento, non un requisito.
+ *
+ * @param {string} idSet
+ * @param {object[]} carte
+ * @returns {Promise<object[]>}
+ */
+async function completaRistampe(idSet, carte) {
+  caricamentoRistampe ??= leggiJson('../ristampe.json')
+    .then((d) => d.ristampe ?? {})
+    .catch(() => ({}));
+  const ristampe = await caricamentoRistampe;
+  if (!Object.keys(ristampe).length) return carte;
+
+  return carte.map((carta) => {
+    const dati = ristampe[`${idSet}/${carta.numero}`];
+    if (!dati) return carta;
+    // I dati della carta hanno la precedenza su quelli ritrovati: lo strumento
+    // riempie solo ciò che manca, e qui si rispetta lo stesso ordine.
+    //
+    // Gli attacchi si trattano a parte, e il criterio non è "la carta ne ha"
+    // ma "ne ha di **utilizzabili**". Nei set Kit Allenatore la carta ha spesso
+    // un array di attacchi pieno di voci senza nome e senza costo: presenti,
+    // quindi lo spread li avrebbe tenuti, e inservibili — `forza()` misura il
+    // danno per Energia spesa, e senza costo non c'è niente da misurare.
+    const suoiUsabili = (carta.attacchi ?? []).some((a) => (a.costo ?? []).length);
+    return {
+      ...dati,
+      ...carta,
+      ps: carta.ps ?? dati.ps,
+      attacchi: suoiUsabili ? carta.attacchi : dati.attacchi,
+    };
+  });
 }
 
 /**

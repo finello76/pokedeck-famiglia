@@ -13,6 +13,8 @@
  * @module ui/mazzo-generato
  */
 
+import { seImmagineRotta } from '../segnaposto.js';
+
 /**
  * I tre gruppi, nell'ordine di lettura: prima cosa si gioca, poi con cosa lo si
  * alimenta.
@@ -146,6 +148,13 @@ export class MazzoGenerato extends HTMLElement {
     this.#collegaFrecce();
     this.#collegaSchede();
 
+    // Scansione che non arriva (offline, o URL cambiato a monte): al suo posto
+    // il segnaposto disegnato, non l'icona di immagine rotta. Il nome resta nel
+    // `title` del pulsante e nella lista qui sotto.
+    for (const img of this.querySelectorAll('.carosello img')) {
+      seImmagineRotta(img, null, 'segnaposto-mini');
+    }
+
     for (const bottone of this.querySelectorAll('.cambia')) {
       bottone.addEventListener('click', () => {
         this.dispatchEvent(
@@ -264,7 +273,7 @@ export class MazzoGenerato extends HTMLElement {
           <button type="button" class="${classi}"
                   data-nome="${escapeHtml(dati.nome)}"
                   title="${escapeHtml(dati.nome)}${proxy ? ' (da stampare)' : ''}">
-            <img src="${dati.immagine}/low.webp" alt="${escapeHtml(dati.nome)}" loading="lazy" />
+            <img src="${dati.immagine}/low.webp" alt="" loading="lazy" />
             ${c.quantita > 1 ? `<span class="quante-mini">×${c.quantita}</span>` : ''}
           </button>`;
       })

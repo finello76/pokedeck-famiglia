@@ -2,7 +2,7 @@
 
 Questi documenti spiegano **come funzionano** le cose su cui poggia l'app: le
 tre tecnologie del browser (01-03), e poi i meccanismi di programmazione che il
-progetto ha incontrato strada facendo (04-05). Non raccontano *cosa fa* PokéDeck
+progetto ha incontrato strada facendo (04 in poi). Non raccontano *cosa fa* PokéDeck
 (quello lo dicono il codice e i commit): raccontano **il meccanismo** — il ciclo
 di vita, le API, il modello di esecuzione, l'algoritmo — usando il codice del
 progetto solo come esempio concreto sotto mano.
@@ -12,8 +12,12 @@ progetto solo come esempio concreto sotto mano.
 | 01 | [Progressive Web App](01-pwa.md) | Come fa un sito a installarsi e a funzionare senza rete? Cos'è un *service worker* e come intercetta le richieste? |
 | 02 | [IndexedDB](02-indexeddb.md) | Com'è fatto un database dentro il browser? Object store, transazioni, versioni dello schema, e perché tutto è asincrono. |
 | 03 | [Web Components](03-web-components.md) | Come si costruisce un componente riutilizzabile senza framework? Custom element, Shadow DOM, ciclo di vita. |
-| 04 | [Persistere oggetti](04-persistere-oggetti.md) | Perché un oggetto salvato non torna indietro uguale? Forma su disco e forma in memoria, `null` contro assente, e una `Promise` che aspetta un evento che non arriva. |
-| 05 | [La salita di collina](05-salita-di-collina.md) | Come si risolve un problema senza formula? Funzione obiettivo, vicinato, massimi locali — e perché l'algoritmo ottimizza esattamente le stupidaggini che misuri. |
+| 04 | [Immagini che non arrivano](04-immagini-che-mancano.md) | Cosa fa il browser quando un `<img>` fallisce, a cosa serve davvero `alt`, e come si disegna un segnaposto che eredita il colore dal CSS. |
+| 05 | [Dati che vengono da fuori](05-dati-da-fuori.md) | Come si aggiunge una chiamata di rete a un'app offline-first senza tradirla: `fetch` e i suoi errori silenziosi, cache in IndexedDB, migrazioni di schema. |
+| 06 | [Misurare un mazzo](06-misurare-un-mazzo.md) | Come si costruisce un punteggio che significhi qualcosa: normalizzare per taglia, calibrare i tetti sui dati, distinguere «zero» da «non lo so», e l'ipergeometrica senza fattoriali. |
+| 08 | [Persistere oggetti](08-persistere-oggetti.md) | Perché un oggetto salvato non torna indietro uguale? Forma su disco e forma in memoria, `null` contro assente, e una `Promise` che aspetta un evento che non arriva. |
+| 09 | [La salita di collina](09-salita-di-collina.md) | Come si risolve un problema senza formula? Funzione obiettivo, vicinato, massimi locali — e perché l'algoritmo ottimizza esattamente le stupidaggini che misuri. |
+| 10 | [Riunire due rami](10-riunire-due-rami.md) | Cosa succede quando due linee di lavoro costruiscono la stessa cosa due volte? Conflitti che Git non segnala, versioni di schema omonime, e perché un test verde può proteggere un difetto. |
 
 ## Per chi è scritto
 

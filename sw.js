@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v34';
+const VERSIONE = 'v48';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -54,7 +54,10 @@ const GUSCIO = [
   './src/data/collezione.js',
   './src/data/completamento.js',
   './src/data/energie.js',
+  './src/data/rarita.js',
+  './src/data/prezzi.js',
   './src/data/scambio.js',
+  './src/ui/segnaposto.js',
   './src/ui/stile/base.css',
   './src/ui/stile/tipi.css',
   './src/ui/scheda-carta/scheda-carta.js',
@@ -68,7 +71,11 @@ const GUSCIO = [
   './src/ui/visore-carta/visore-carta.css',
   './src/app/viste.js',
   './src/app/vista-mazzi.js',
+  './src/app/vista-personalizzato.js',
+  './src/ui/costruttore-mazzo/costruttore-mazzo.js',
+  './src/ui/costruttore-mazzo/costruttore-mazzo.css',
   './src/data/mazzi-salvati.js',
+  './src/data/mazzi-prefatti.js',
   './src/engine/nomi.js',
   './src/engine/stadi.js',
   './src/engine/analisi.js',
@@ -86,8 +93,13 @@ const GUSCIO = [
   './src/engine/mazzo.js',
   './src/engine/riallinea.js',
   './src/engine/bilancia.js',
-  './src/engine/forza.js',
+  './src/engine/obiettivo-forza.js',
   './src/engine/formati.js',
+  './src/engine/fabbisogno.js',
+  './src/engine/mazzo-manuale.js',
+  './src/engine/completa-mazzo.js',
+  './src/engine/forza.js',
+  './src/engine/bersaglio.js',
   './src/ui/vista-regole/vista-regole.js',
   './src/ui/vista-regole/vista-regole.css',
   './src/ui/vista-regole/testi-regolamento.js',
@@ -110,6 +122,15 @@ const GUSCIO = [
   // L'indice delle evoluzioni: 22 KB, ma serve a ogni generazione di mazzi
   // (recupera i collegamenti che le singole stampe non dichiarano).
   './data/evoluzioni.json',
+  // I dati di gioco che TCGdex non replica sulle ristampe: 42 KB, e senza di
+  // essi le carte dei Kit Allenatore risultano prive di attacchi — cioè
+  // proprio i mazzi con cui si gioca in casa.
+  './data/ristampe.json',
+  // Il catalogo dei mazzi prefatti: 50 KB, ed è il termine di paragone della
+  // forza. Va precaricato perché senza non si può dire se una partita sarà
+  // pari, e quella domanda ci si fa proprio quando si sta per giocare — cioè
+  // sul tavolo di cucina, non necessariamente in linea.
+  './data/mazzi-prefatti.json',
 ];
 
 self.addEventListener('install', (evento) => {

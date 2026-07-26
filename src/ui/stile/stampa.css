@@ -139,11 +139,38 @@
 }
 
 @media print {
+  /* Il foglio proxy ha una geometria di pagina TUTTA SUA, e non è un vezzo:
+     con i 14mm di margine delle pagine di testo restano 182mm di larghezza,
+     mentre tre colonne da 63mm ne chiedono 189 — la terza colonna finiva
+     fuori foglio. In altezza, 269mm meno il titolo bastavano per due sole
+     file da 88mm e la terza scivolava nella pagina dopo.
+     Le carte NON si possono rimpicciolire per farle stare (a misura sbagliata
+     si riconoscono al tatto nel mazzo), quindi è il margine che deve cedere:
+     6mm lasciano 198×285mm, cioè 3 colonne e 3 file per pagina con spazio in
+     avanzo. Il margine di 14mm resta per le liste dei mazzi e le regole. */
+  @page foglio-proxy {
+    size: A4;
+    margin: 6mm;
+  }
+
+  .foglio-proxy-cornice {
+    page: foglio-proxy;
+    break-before: page;
+  }
+
+  /* Il titolo compare solo sulla prima pagina di proxy: va tenuto basso,
+     altrimenti si mangia la terza fila proprio lì. */
+  .foglio-proxy-cornice h2 {
+    font-size: 12pt;
+    margin: 0 0 3mm;
+  }
+
   .foglio-proxy {
     display: grid;
     /* Misura reale di una carta Pokémon: 63×88 mm. Non si scala, altrimenti
        nel mazzo si riconoscerebbero al tatto. */
     grid-template-columns: repeat(3, 63mm);
+    grid-auto-rows: 88mm;
     gap: 0;
     justify-content: center;
   }
@@ -186,10 +213,4 @@
 
 .carta-proxy .nome-proxy {
   font-size: 13pt;
-}
-
-@media print {
-  .foglio-proxy {
-    break-before: page;
-  }
 }

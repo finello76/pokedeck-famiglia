@@ -10,11 +10,14 @@
 import { elencoCompleto, statistiche } from '../data/collezione.js';
 import { indiceEvoluzioni, preEvoluzioniNonPokemon } from '../data/dataset.js';
 import { bilancia, squilibrio, squilibrati as mazziSquilibrati } from '../engine/bilancia.js';
-import { pianifica, rivaluta, carteConDeroga } from '../engine/pianifica.js';
+import { forza, confronta } from '../engine/forza.js';
+import { rivaluta, carteConDeroga } from '../engine/pianifica.js';
+import { cercaPiano, bersaglioPer } from '../engine/bersaglio.js';
 import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
 import { disponibilitaResidua } from '../engine/alternative.js';
-import { avvicinaAForza } from '../engine/forza.js';
+import { avvicinaAForza } from '../engine/obiettivo-forza.js';
 import { leggiRiferimento } from '../data/riferimento.js';
+import { elencoPrefatti, leggiPrefatto } from '../data/mazzi-prefatti.js';
 import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js';
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
 import { apriSostituzione } from './sostituzione.js';
@@ -27,6 +30,7 @@ import '../ui/elenco-salvati/elenco-salvati.js';
 const wizard = document.querySelector('#wizard');
 const risultato = document.querySelector('#risultato-mazzi');
 const salvati = document.querySelector('#mazzi-salvati');
+const prefatti = document.querySelector('#mazzi-prefatti');
 const zonaWizard = document.querySelector('#zona-wizard');
 
 /** @type {object|null} ultimo piano mostrato */
@@ -62,11 +66,65 @@ export async function preparaWizard() {
     carte: stat.totaleCarte,
     energie: stat.energie.totaleBase,
     orfani: (await import('../engine/analisi.js')).analizza(voci).orfani.length,
-    // Se c'è un mazzo di riferimento, la sua forza diventa la scelta rapida
-    // della domanda sulla forza obiettivo: è il paragone che si ha in casa.
+    // I set presenti in collezione, per la domanda su cosa lasciare fuori. La
+    // domanda esiste perché una parte delle carte può essere già impegnata:
+    // il Kit Allenatore con cui gioca un altro membro della famiglia non è
+    // disponibile, anche se sta nella stessa scatola.
+    set: setInCollezione(voci),
+    // Quante carte desiderate: la domanda "uso anche i desideri?" ha senso
+    // solo se ce ne sono.
+    desideri: (await elencoCompleto({ conDesideri: true })).filter((v) => v.desiderata).length,
+    // I mazzi contro cui si può scegliere di giocare, già misurati: il wizard
+    // mostra la forza accanto al nome, perché "Kit Lycanroc" da solo non aiuta
+    // a decidere e il numero sì.
+    prefatti: (await elencoPrefatti()).map((m) => ({
+      id: m.id,
+      nome: m.nome,
+      taglia: m.taglia,
+      forza: forza(m, { taglia: m.taglia }).totale,
+    })),
+    // Il riferimento scelto in Impostazioni — un mazzo salvato o un prefatto —
+    // diventa la scelta rapida della domanda sulla forza obiettivo: è il
+    // paragone che si ha davvero in casa.
     forzaRiferimento: riferimento?.forza ?? null,
+    nomeRiferimento: riferimento?.nome ?? null,
+    // Se il riferimento è un prefatto, la domanda "contro quale mazzo" lo
+    // segnala nell'elenco invece di aggiungerne una copia in cima.
+    idRiferimentoPrefatto: riferimento?.idPrefatto ?? null,
   };
   await mostraSalvati();
+  await mostraPrefatti();
+}
+
+/**
+ * I set da cui hai almeno una carta, dal più vecchio, con l'anno e quante ne hai.
+ *
+ * Stesso ordine del menu della collezione: un set si riconosce dall'epoca, e
+ * due elenchi degli stessi set in ordini diversi si contraddicono a vicenda.
+ *
+ * @param {object[]} voci risultato di `elencoCompleto()`
+ * @returns {Array<{id: string, nome: string, anno: number|null, carte: number}>}
+ */
+function setInCollezione(voci) {
+  const set = new Map();
+  for (const voce of voci) {
+    const suo = set.get(voce.idSet) ?? {
+      id: voce.idSet,
+      nome: voce.nomeSet ?? voce.idSet,
+      anno: voce.uscitaSet ? Number(String(voce.uscitaSet).slice(0, 4)) : null,
+      uscita: voce.uscitaSet ?? null,
+      carte: 0,
+    };
+    suo.carte += 1;
+    set.set(voce.idSet, suo);
+  }
+  return [...set.values()].sort(
+    (a, b) =>
+      // Senza data (Energie base) in fondo: in cima sembrerebbero antichissime.
+      Number(Boolean(b.uscita)) - Number(Boolean(a.uscita)) ||
+      String(a.uscita).localeCompare(String(b.uscita)) ||
+      a.nome.localeCompare(b.nome, 'it'),
+  );
 }
 
 /**
@@ -76,11 +134,24 @@ export async function preparaWizard() {
  */
 async function genera(risposte, seme = nuovoSeme()) {
   ultimeRisposte = risposte;
-  const voci = await elencoCompleto();
+  const tutte = await elencoCompleto({ conDesideri: Boolean(opzioniDaRisposte(risposte).usaDesideri) });
 
-  if (voci.length === 0) {
+  // I set esclusi si tolgono QUI, prima del motore: per lui devono essere
+  // carte che non esistono. Filtrare dopo significherebbe generare mazzi con
+  // quelle carte e poi toglierle, lasciando buchi che nessuno ricuce.
+  const esclusi = new Set(risposte.setEsclusi ?? []);
+  const voci = esclusi.size ? tutte.filter((v) => !esclusi.has(v.idSet)) : tutte;
+
+  if (tutte.length === 0) {
     risultato.innerHTML =
       '<p class="errore">La collezione è vuota: cataloga qualche carta prima di generare i mazzi.</p>';
+    return;
+  }
+
+  if (voci.length === 0) {
+    risultato.hidden = false;
+    risultato.innerHTML = `<p class="errore">Hai escluso tutti i set che possiedi:
+      non resta nessuna carta con cui costruire i mazzi. Torna indietro e lasciane fuori meno.</p>`;
     return;
   }
 
@@ -90,15 +161,43 @@ async function genera(risposte, seme = nuovoSeme()) {
   // Helixfossile). Il motore resta puro: i dati glieli passa l'app.
   const opzioni = {
     ...opzioniDaRisposte(risposte),
+    // I nomi, non solo gli id: il piano si può riaprire fra un mese, e
+    // "sv03.5" non dice a nessuno quali carte erano fuori.
+    setEsclusiNomi: [...esclusi]
+      .map((id) => tutte.find((v) => v.idSet === id)?.nomeSet ?? id)
+      .sort((a, b) => a.localeCompare(b, 'it')),
     seme,
     indiceEvoluzioni: await indiceEvoluzioni(),
     nonPokemon: await preEvoluzioniNonPokemon(),
   };
-  pianoCorrente = pianifica(voci, opzioni);
+  // Il mazzo contro cui si giocherà, se ne è stato scelto uno: la sua forza è
+  // il bersaglio, spostato secondo la partita che si vuole.
+  const riferimento = await risolviRiferimento(opzioni.riferimento);
+  if (riferimento) {
+    opzioni.riferimentoNome = riferimento.nome;
+    opzioni.riferimentoForza = riferimento.forza;
+  }
+  const bersaglio = riferimento
+    ? bersaglioPer(riferimento.forza, opzioni.versoBersaglio)
+    : null;
+
+  const ricerca = await cercaPiano(voci, opzioni, {
+    bersaglio,
+    // Le carte da stampare escono dal generatore col solo nome: senza questo
+    // passaggio la ricerca misurerebbe mazzi molto più deboli di quelli che
+    // poi finiscono a schermo, e sceglierebbe il seme sbagliato.
+    rifinisci: arricchisciProxy,
+    onTentativo: (fatti, totali) => {
+      if (bersaglio == null) return;
+      risultato.hidden = false;
+      risultato.innerHTML = `<p class="stato">Cerco mazzi da forza ${bersaglio}…
+        tentativo ${fatti} di ${totali}</p>`;
+    },
+  });
+
+  pianoCorrente = ricerca.piano;
   pianoCorrente.opzioni = opzioni;
-  // Il motore dei proxy conosce solo i nomi: le scansioni le cerca il livello
-  // applicativo nel dataset, prima di disegnare.
-  await arricchisciProxy(pianoCorrente);
+  pianoCorrente.ricerca = { bersaglio, ...ricerca, piano: undefined };
 
   // L'equilibrio si rimisura **dopo** l'arricchimento, e il riequilibrio si
   // rifà con i dati completi: una carta da stampare arriva dal motore col solo
@@ -121,6 +220,10 @@ async function genera(risposte, seme = nuovoSeme()) {
   if (opzioni.forzaObiettivo > 0) {
     pianoCorrente.forza = avvicinaAForza(pianoCorrente.mazzi, {
       obiettivo: opzioni.forzaObiettivo,
+      // La stessa taglia con cui `forza()` misura ovunque nella pagina: senza,
+      // la salita di collina normalizzerebbe sul numero di carte del momento e
+      // inseguirebbe un numero diverso da quello mostrato accanto al mazzo.
+      taglia: opzioni.taglia,
       dispensa: disponibilitaResidua(voci, pianoCorrente.mazzi),
     });
     pianoCorrente.equilibrio = {
@@ -133,6 +236,49 @@ async function genera(risposte, seme = nuovoSeme()) {
   }
 
   disegnaPiano(pianoCorrente, opzioni);
+}
+
+/**
+ * Il mazzo contro cui si giocherà, qualunque sia la sorgente scelta.
+ *
+ * La risposta del wizard è `'riferimento'` — il mazzo eletto in Impostazioni,
+ * che può essere un mazzo salvato — oppure l'id di un prefatto. Le due strade
+ * si uniscono qui e non più a valle: `cercaPiano()` ha bisogno di un numero e
+ * di un nome, non di sapere da dove vengono.
+ *
+ * @param {string|null} scelta il valore di `opzioni.riferimento`
+ * @returns {Promise<{nome: string, forza: number}|null>} `null` se non c'è
+ *   riferimento o se non è misurabile
+ */
+async function risolviRiferimento(scelta) {
+  if (!scelta) return null;
+
+  if (scelta === 'riferimento') {
+    const scelto = await leggiRiferimento();
+    // Può essersi sciolto fra l'apertura del wizard e il "Genera": il piano
+    // puntato cancellato dall'altra vista. Meglio nessun bersaglio che uno
+    // inventato.
+    return scelto?.forza != null ? { nome: scelto.nome, forza: scelto.forza } : null;
+  }
+
+  const prefatto = await leggiPrefatto(scelta);
+  if (!prefatto) return null;
+  const misura = forza(prefatto, { taglia: prefatto.taglia });
+  // Un prefatto di cui il dataset non conosce gli attacchi non è un metro:
+  // usarlo come bersaglio farebbe cercare mazzi attorno a un numero inventato.
+  return misura.attendibile ? { nome: prefatto.nome, forza: misura.totale } : null;
+}
+
+/**
+ * "1 mazzo" o "3 mazzi". Vale la pena di una funzione perché il numero lo
+ * sceglie l'utente e la frase compare in più punti: "1 mazzi" è il genere di
+ * dettaglio che fa sembrare l'app un prototipo.
+ *
+ * @param {number} quanti
+ * @returns {string}
+ */
+function contaMazzi(quanti) {
+  return quanti === 1 ? '1 mazzo' : `${quanti} mazzi`;
 }
 
 /**
@@ -157,6 +303,10 @@ function squilibrati(piano) {
 function statoEquilibrio(piano) {
   const eq = piano.equilibrio;
   if (!eq?.punteggi?.length) return '';
+  // Con un mazzo solo non c'è niente da equilibrare: l'avversario ha il suo, e
+  // dirgli "mazzi equilibrati" mostrando un punteggio solo sarebbe una risposta
+  // a una domanda che nessuno ha fatto.
+  if (piano.mazzi.length < 2) return '';
 
   const punteggi = eq.punteggi.map((p, i) => `${piano.mazzi[i]?.nome ?? i + 1}: ${p.totale}`);
   const spostate = eq.scambi?.length
@@ -164,19 +314,24 @@ function statoEquilibrio(piano) {
     : '';
 
   if (!squilibrati(piano)) {
-    return `<p class="aiuto">Mazzi equilibrati (forza ${punteggi.join(' · ')}).${spostate}</p>`;
+    return `<p class="aiuto">Mazzi equilibrati fra loro (${punteggi.join(' · ')}).${spostate}</p>`;
   }
-  return `<p class="errore">I mazzi non sono del tutto pari: forza ${punteggi.join(' · ')}.
+  return `<p class="errore">I mazzi non sono del tutto pari: ${punteggi.join(' · ')}.
     ${piano.mazzi[eq.migliore]?.nome} è più forte, soprattutto per le linee evolutive.${spostate}
     Con questa collezione può non esserci di meglio: prova a rigenerare, o passa una carta
     da un mazzo all'altro col pulsante ⇄.</p>`;
 }
 
 /**
- * La riga che dice com'è andata la caccia alla forza chiesta.
+ * La riga che dice com'è andata la rifinitura verso la forza chiesta.
+ *
+ * È il secondo stadio della cascata: `cercaPiano()` ha già scelto il piano più
+ * vicino al bersaglio, `avvicinaAForza()` ha poi scambiato qualche carta per
+ * chiudere la distanza rimasta. Qui si racconta **solo quel secondo passo** —
+ * quanto valgono i mazzi lo dice `schedaForza()` qui sotto.
  *
  * Va detto sempre, anche — soprattutto — quando l'obiettivo non si è
- * raggiunto: chi ha chiesto mazzi da 45 e se ne ritrova due da 110 deve sapere
+ * raggiunto: chi ha chiesto mazzi da 45 e se ne ritrova due da 70 deve sapere
  * che non è stato ignorato, ma che la collezione non contiene carte più deboli
  * da metterci dentro.
  *
@@ -184,30 +339,140 @@ function statoEquilibrio(piano) {
  * @returns {string} HTML, vuoto se non era stata chiesta nessuna forza
  */
 function statoForza(piano) {
-  const forza = piano.forza;
-  if (!forza?.obiettivo || !forza.esiti?.length) return '';
+  const esito = piano.forza;
+  if (!esito?.obiettivo || !esito.esiti?.length) return '';
 
-  const arrivi = forza.esiti.map((e) => `${e.mazzo}: ${e.arrivo}`).join(' · ');
-  const scambiate = forza.esiti.reduce((somma, e) => somma + e.scambi.length, 0);
+  const arrivi = esito.esiti.map((e) => `${e.mazzo}: ${e.arrivo}`).join(' · ');
+  const scambiate = esito.esiti.reduce((somma, e) => somma + e.scambi.length, 0);
 
-  if (forza.esiti.every((e) => e.raggiunto)) {
-    return `<p class="aiuto">Forza richiesta ${forza.obiettivo}, ottenuta (${arrivi})${
+  if (esito.esiti.every((e) => e.raggiunto)) {
+    return `<p class="aiuto">Forza richiesta ${esito.obiettivo}, ottenuta (${arrivi})${
       scambiate ? `, cambiando ${scambiate} ${scambiate === 1 ? 'carta' : 'carte'}` : ''
     }.</p>`;
+  }
+
+  // Un mazzo di cui il dataset non conosce gli attacchi non è stato toccato: il
+  // suo punteggio non è una misura, e scambiare carte per spostarlo sarebbe
+  // stato rimescolare inseguendo rumore. Dirlo evita che sembri un rifiuto.
+  if (esito.esiti.some((e) => e.motivo === 'nonMisurabile')) {
+    return `<p class="aiuto">Forza richiesta ${esito.obiettivo}: di alcune carte il
+      dataset non ha i dati degli attacchi, quindi quei mazzi non sono stati
+      ritoccati — il loro punteggio non sarebbe affidabile.</p>`;
   }
 
   // Fermarsi perché la collezione non offre di meglio e fermarsi perché sono
   // finiti i tentativi sono due cose diverse: nel secondo caso rigenerare o
   // scambiare a mano può ancora servire, e dirlo cambia cosa si fa dopo.
-  const perTentativi = forza.esiti.some((e) => !e.raggiunto && e.motivo === 'passi');
+  const perTentativi = esito.esiti.some((e) => !e.raggiunto && e.motivo === 'passi');
 
-  return `<p class="aiuto">Forza richiesta ${forza.obiettivo}: il più vicino che si è
+  return `<p class="aiuto">Forza richiesta ${esito.obiettivo}: il più vicino che si è
     riusciti a fare è ${arrivi}.
     ${
       perTentativi
         ? 'Il motore si è fermato dopo un certo numero di scambi per non stravolgere i mazzi: prova a rigenerare, o cambia qualche carta col pulsante ⇄.'
         : 'Con le carte che hai non si va oltre — per scendere servirebbero Pokémon più deboli da mettere al posto di quelli forti, per salire ne servirebbero di più forti.'
     }</p>`;
+}
+
+/**
+ * La forza di ogni mazzo sulla scala 0–100.
+ *
+ * È un'informazione diversa dall'equilibrio qui sopra, e va detta a parte:
+ * quella dice se i mazzi si somigliano **fra loro**, questa quanto valgono in
+ * assoluto. Due mazzi possono essere perfettamente pari e insieme troppo forti
+ * per il Kit Allenatore con cui gioca il terzo.
+ *
+ * @param {object} piano
+ * @param {object} opzioni
+ * @returns {string} HTML
+ */
+function schedaForza(piano, opzioni) {
+  // Un piano riaperto dal salvataggio porta la forza già calcolata: le sue
+  // carte non conservano gli attacchi, quindi ricalcolarla darebbe zero.
+  const forze = piano.mazzi.map((m) => m.forza ?? forza(m, { taglia: opzioni.taglia }));
+  if (!forze.length) return '';
+
+  const riferimento = opzioni.riferimentoForza ?? null;
+  // La tacca sulla barra: si legge a colpo d'occhio se un mazzo sta sopra o
+  // sotto il metro, che è più immediato di due numeri da confrontare a mente.
+  const tacca =
+    riferimento == null
+      ? ''
+      : `<span class="tacca-riferimento" style="inset-inline-start:${riferimento}%"></span>`;
+
+  const barre = forze
+    .map((f, i) => {
+      const nome = piano.mazzi[i]?.nome ?? `Mazzo ${i + 1}`;
+      const dettaglio = [
+        `offesa ${Math.round(f.offesa * 100)}`,
+        `resistenza ${Math.round(f.resistenza * 100)}`,
+        `evoluzioni ${Math.round(f.struttura * 100)}`,
+        `energie ${Math.round(f.motore * 100)}`,
+        `avvio ${Math.round(f.costanza * 100)}`,
+      ].join(' · ');
+      return `
+        <li>
+          <span class="forza-nome">${nome}</span>
+          <span class="forza-barra"><span class="forza-riempimento" style="inline-size:${f.totale}%"></span>${tacca}</span>
+          <span class="forza-valore">${f.totale}</span>
+          <span class="forza-dettaglio">${dettaglio}</span>
+        </li>`;
+    })
+    .join('');
+
+  // Se il dataset non ha i dati di attacco di abbastanza carte, il numero non
+  // va presentato come una misura: dirlo è meno grave che farlo credere.
+  const dubbio = forze.some((f) => !f.attendibile)
+    ? `<p class="aiuto">Di alcune carte il dataset non ha i dati degli attacchi:
+         la forza è approssimata per difetto.</p>`
+    : '';
+
+  return `
+    <div class="forza-mazzi no-stampa">
+      <h3>Quanto sono forti</h3>
+      <p class="aiuto">Scala 0–100, confrontabile fra mazzi di taglia diversa:
+        un mazzo da 15 e uno da 60 si leggono sullo stesso metro.</p>
+      <ul class="elenco-forza">${barre}</ul>
+      ${esitoBersaglio(piano, opzioni, forze)}
+      ${dubbio}
+    </div>`;
+}
+
+/**
+ * Com'è andata la ricerca del bersaglio, detta prima di giocare.
+ *
+ * Quando non si è centrato il bersaglio va detto **esplicitamente**: la
+ * collezione può semplicemente non contenere carte abbastanza deboli o
+ * abbastanza forti, e scoprirlo perdendo una partita è il fallimento che
+ * questa funzione doveva evitare.
+ *
+ * @param {object} piano
+ * @param {object} opzioni
+ * @param {object[]} forze
+ * @returns {string} HTML
+ */
+function esitoBersaglio(piano, opzioni, forze) {
+  const nome = opzioni.riferimentoNome;
+  const suo = opzioni.riferimentoForza;
+  if (!nome || suo == null) return '';
+
+  const media = Math.round(forze.reduce((s, f) => s + f.totale, 0) / forze.length);
+  const { verso, testo } = confronta(media, suo);
+  const chiesto = { pari: 'alla pari', sotto: 'un po\' più debole', sopra: 'un po\' più forte' }[
+    opzioni.versoBersaglio ?? 'pari'
+  ];
+  const tentativi = piano.ricerca?.tentativi;
+  const quante = tentativi > 1 ? ` Provate ${tentativi} combinazioni.` : '';
+
+  // Ciò che si è chiesto e ciò che si è ottenuto coincidono?
+  const atteso = { pari: 'pari', sotto: 'sotto', sopra: 'sopra' }[opzioni.versoBersaglio ?? 'pari'];
+  if (verso === atteso) {
+    return `<p class="aiuto"><strong>${nome}</strong> vale ${suo}, i tuoi mazzi ${media}:
+      ${testo}, come hai chiesto.${quante}</p>`;
+  }
+  return `<p class="errore"><strong>${nome}</strong> vale ${suo}, i tuoi mazzi ${media}:
+    ${testo}. Avevi chiesto ${chiesto}, ma con questa collezione non si è riusciti
+    ad avvicinarsi di più.${quante} Prova a rigenerare, o cambia la taglia dei mazzi.</p>`;
 }
 
 /**
@@ -225,17 +490,24 @@ function disegnaPiano(piano, opzioni) {
   const intestazione = document.createElement('div');
   intestazione.className = 'no-stampa';
   intestazione.innerHTML = `
-    <h2>I mazzi</h2>
+    <h2>${piano.mazzi.length === 1 ? 'Il mazzo' : 'I mazzi'}</h2>
     <p class="aiuto">
-      ${piano.mazzi.length} mazzi da ${opzioni.taglia} carte.
+      ${contaMazzi(piano.mazzi.length)} da ${opzioni.taglia} carte.
       Pesca le carte elencate dalla tua collezione.
       <button type="button" class="collegamento" id="vai-formato">
         Come si gioca con ${opzioni.taglia} carte?
       </button>
     </p>
+    ${
+      opzioni.setEsclusiNomi?.length
+        ? `<p class="aiuto">Lasciati fuori: ${opzioni.setEsclusiNomi.join(', ')}.
+             Le loro carte non compaiono nei mazzi né fra le sostituzioni.</p>`
+        : ''
+    }
     ${spiegazioneLineeEvolutive(piano)}
     ${statoForza(piano)}
     ${statoEquilibrio(piano)}
+    ${schedaForza(piano, opzioni)}
     ${
       incompleti.length
         ? `<p class="errore">Attenzione: ${incompleti.length} mazzo/i non si è potuto completare
@@ -428,6 +700,47 @@ function ricomincia() {
   risultato.hidden = true;
   zonaWizard.hidden = false;
   wizard.ricomincia();
+}
+
+/**
+ * I mazzi prefatti con la loro forza: il metro di paragone.
+ *
+ * Sta qui, sotto il wizard, e non in una vista sua: serve a leggere un numero
+ * prima o dopo aver generato dei mazzi, non è una schermata in cui si va.
+ *
+ * @returns {Promise<void>}
+ */
+async function mostraPrefatti() {
+  const mazzi = await elencoPrefatti();
+  // Senza catalogo la sezione non esiste: è un termine di paragone, non una
+  // funzione da cui dipende qualcosa.
+  prefatti.hidden = !mazzi.length;
+  if (!mazzi.length) return;
+
+  const righe = mazzi
+    .map((mazzo) => {
+      const f = forza(mazzo, { taglia: mazzo.taglia });
+      return `
+        <li>
+          <span class="forza-nome">${mazzo.nome}</span>
+          <span class="forza-barra"><span class="forza-riempimento" style="inline-size:${f.totale}%"></span></span>
+          <span class="forza-valore">${f.totale}</span>
+          <span class="forza-dettaglio">${mazzo.taglia} carte${
+            f.attendibile ? '' : ' · dati incompleti, valore approssimato'
+          }</span>
+        </li>`;
+    })
+    .join('');
+
+  prefatti.innerHTML = `
+    <h3>Mazzi di riferimento</h3>
+    <p class="aiuto">
+      Quanto valgono i mazzi già pronti, sulla stessa scala dei mazzi generati.
+      Servono a capire se una partita sarà pari: un mazzo generato molto più
+      forte del Kit con cui gioca l'altro non fa una partita.
+    </p>
+    <ul class="elenco-forza">${righe}</ul>
+  `;
 }
 
 /**

@@ -17,13 +17,21 @@ const NOME_DB = 'pokedeck';
  * (nuovo store, nuovo indice): è ciò che fa scattare `onupgradeneeded`.
  * @type {number}
  */
-const VERSIONE_DB = 3;
+const VERSIONE_DB = 4;
 
 /** Store delle carte possedute. Chiave: `"<idSet>:<numero>"`. */
 export const STORE_COLLEZIONE = 'collezione';
 
 /** Store dei mazzi generati e salvati. Chiave: `id` (data di creazione). */
 export const STORE_MAZZI = 'mazzi';
+
+/**
+ * Store dei prezzi scaricati da TCGdex. Chiave: `"<idSet>:<numero>"`, come la
+ * collezione. Sta in un store SEPARATO e non dentro la riga della carta perché
+ * ha un ciclo di vita suo: si aggiorna quando lo chiedi, invecchia da solo, e
+ * cancellarlo tutto non deve mai poter toccare le quantità possedute.
+ */
+export const STORE_PREZZI = 'prezzi';
 
 /**
  * Scelte che valgono per tutta l'app, una riga per scelta. Chiave: `id`.
@@ -49,6 +57,25 @@ function promessa(richiesta) {
     richiesta.onsuccess = () => risolvi(richiesta.result);
     richiesta.onerror = () => rifiuta(richiesta.error);
   });
+}
+
+/**
+ * Crea uno store solo se non c'è già.
+ *
+ * Serve perché due rami hanno numerato la stessa versione dello schema (vedi il
+ * commento sulla versione 4): senza questo controllo un dispositivo che ha già
+ * lo store si prenderebbe una `ConstraintError` dentro `onupgradeneeded`, che
+ * annulla l'intera transazione di aggiornamento — cioè perde anche i passi
+ * andati a buon fine prima.
+ *
+ * @param {IDBDatabase} db
+ * @param {string} nome
+ * @returns {void}
+ */
+function creaSeManca(db, nome) {
+  if (!db.objectStoreNames.contains(nome)) {
+    db.createObjectStore(nome, { keyPath: 'id' });
+  }
 }
 
 /**
@@ -84,9 +111,23 @@ export function apri() {
         db.createObjectStore(STORE_MAZZI, { keyPath: 'id' });
       }
 
-      // Versione 3: le impostazioni dell'app (per ora il mazzo di riferimento).
+      // Versione 3: i prezzi Cardmarket, scaricati su richiesta. Anche qui a
+      // cascata: chi arriva dalla v2 tiene collezione e mazzi.
       if (daVersione < 3) {
-        db.createObjectStore(STORE_IMPOSTAZIONI, { keyPath: 'id' });
+        creaSeManca(db, STORE_PREZZI);
+      }
+
+      // Versione 4: le impostazioni dell'app (per ora il mazzo di riferimento).
+      //
+      // `impostazioni` e `prezzi` sono nati **in parallelo**, su due rami che
+      // avevano numerato entrambi la propria aggiunta come versione 3. Sui
+      // dispositivi che hanno visto solo uno dei due rami il database in giro
+      // può quindi essere a v3 con l'uno o con l'altro store: per questo la
+      // creazione passa da `creaSeManca()` invece che da `createObjectStore()`
+      // diretta, che su uno store già presente solleverebbe e lascerebbe
+      // l'aggiornamento a metà.
+      if (daVersione < 4) {
+        creaSeManca(db, STORE_IMPOSTAZIONI);
       }
     };
 

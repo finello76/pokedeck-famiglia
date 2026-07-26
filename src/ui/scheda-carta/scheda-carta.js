@@ -16,6 +16,7 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
+import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 
 /** Foglio di stile condiviso da tutte le istanze, caricato una volta sola. */
 const stile = new CSSStyleSheet();
@@ -131,7 +132,10 @@ export class SchedaCarta extends HTMLElement {
 
     // L'immagine è stata appena ricreata da innerHTML: va riosservata.
     const img = this.shadowRoot.querySelector('img[data-src]');
-    if (img) osservatore.observe(img);
+    if (img) {
+      osservatore.observe(img);
+      seImmagineRotta(img, c);
+    }
 
     // Il click annuncia la richiesta, non apre nulla: la scheda non deve
     // sapere che esiste un visore. Chi ascolta decide cosa farne.
@@ -151,11 +155,9 @@ export class SchedaCarta extends HTMLElement {
   #htmlImmagine(c) {
     const src = urlImmagine(c, 'griglia');
     // Le energie base generiche non hanno illustrazione: non appartengono a
-    // nessun set, quindi non esiste una scansione da mostrare.
-    if (!src) {
-      const sigla = c.categoria === 'Energia' ? 'E' : '?';
-      return `<div class="segnaposto" aria-hidden="true">${sigla}</div>`;
-    }
+    // nessun set, quindi non esiste una scansione da mostrare. Nemmeno i set
+    // più vecchi ce l'hanno nei dati italiani.
+    if (!src) return segnaposto(c);
     // L'URL sta in data-src, non in src: lo assegna l'IntersectionObserver
     // quando la scheda si avvicina al viewport. NON si usa loading="lazy"
     // perché su un <img> inserito via innerHTML dentro uno Shadow DOM non si
@@ -164,9 +166,14 @@ export class SchedaCarta extends HTMLElement {
     // L'immagine è dentro un <button>, non un <div> con un onclick: così si
     // raggiunge con il tastierino, si attiva con Invio e gli screen reader la
     // annunciano come un comando.
+    //
+    // `alt=""` non è una dimenticanza: l'illustrazione è decorativa, il nome
+    // della carta è scritto qui accanto e il pulsante ha già il suo titolo.
+    // Con un testo alternativo, un'immagine che non arriva lo stampa a schermo
+    // in mezzo alla scheda — proprio la cosa che si vuole evitare.
     return `
       <button class="apri" type="button" title="Ingrandisci ${escapeHtml(c.nome)}">
-        <img data-src="${src}" alt="Illustrazione di ${escapeHtml(c.nome)}" />
+        <img data-src="${src}" alt="" />
       </button>`;
   }
 

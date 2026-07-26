@@ -56,8 +56,16 @@ scaricato set nuovi, aggiungere all'indice la serie di appartenenza:
 node tools/aggiorna-serie.mjs   # 18 richieste: scrive `serie` in data/set/indice.json
 ```
 
-Senza, i set nuovi finiscono nel gruppo "Altre serie" della vista collezione. Poi
-rigenerare anche l'indice delle evoluzioni:
+Senza, i set nuovi finiscono nel gruppo "Altre serie" della vista collezione. Poi la
+data di uscita, che l'API dà solo nel dettaglio del singolo set:
+
+```bash
+node tools/aggiorna-anni.mjs   # una richiesta per set: scrive `uscita` in data/set/indice.json
+```
+
+Senza, i set nuovi non hanno anno e finiscono in fondo al menu "Set" della collezione,
+che è ordinato dal più vecchio con l'anno fra parentesi. Poi rigenerare anche l'indice
+delle evoluzioni:
 
 ```bash
 node tools/genera-indice-evoluzioni.mjs   # ricostruisce data/evoluzioni.json
@@ -68,6 +76,20 @@ evoluzioni): senza, il motore tratta da orfane carte di cui possiedi la pre-evol
 Il file ha forma `{da: {...}, nonPokemon: [...]}`: `nonPokemon` sono le pre-evoluzioni
 che in realtà sono carte Allenatore (i fossili — Omanyte "evolve" da *Vecchio
 Helixfossile*), che il motore non deve stampare come Pokémon.
+
+Infine i dati di gioco che TCGdex non replica sulle ristampe:
+
+```bash
+node tools/completa-ristampe.mjs   # scrive data/ristampe.json
+```
+
+TCGdex tratta alcune stampe come ristampe e non vi mette PS e attacchi: 204 Pokémon su
+12.877, ma **quasi tutti nei set Kit Allenatore**, cioè proprio i mazzi con cui si gioca
+in casa. Senza, `engine/forza.js` non sa misurare quelle carte e mostra "offesa 0". Lo
+strumento le ritrova per nome nelle altre stampe (163 su 204; le restanti sono carte
+uniche — V UNIONE, TURBO — che non esistono altrove) e `data/dataset.js` le riapplica al
+caricamento del set. La ricerca **non** si fa a runtime: cercare un omonimo richiede di
+scorrere tutti i set, e la PWA ne carica uno per volta apposta.
 
 **Numero di build.** `version.json` mostra in fondo alla pagina un numero che cresce a
 ogni commit, per capire se GitHub Pages ha pubblicato la versione nuova. Lo aggiorna da
@@ -162,12 +184,17 @@ Attenzione: gli id dei set TCGdex differiscono da quelli di pokemon-tcg-data
 - **v1 — Catalogo** (minimale, da chiudere in fretta): inserimento per set+numero con quantità,
   vista collezione filtrabile (supertipo/tipo/fase) e ricerca per nome, **contatore energie per
   tipo** (dato critico per il motore), IndexedDB + export/import JSON, PWA installabile e responsive.
-- **v1.1 — Valore economico**: prezzi via API esterna (Cardmarket EUR via pokemontcg.io, o
-  alternativa gratuita). Refresh manuale, cache locale con data, **degrado con grazia** se l'API tace.
+- **v1.1 — Valore economico**: *fatta*. Prezzi Cardmarket in EUR presi da TCGdex
+  (`pricing.cardmarket`), scaricati **solo** col pulsante "Calcola quotazione" sulle carte
+  a schermo, salvati in IndexedDB con la data e rimostrati offline (`src/data/prezzi.js`).
+  Tetto di 60 carte per volta: è una richiesta per carta, quindi si filtra prima — per questo
+  esiste il filtro per rarità (`src/data/rarita.js`), che riduce i 35 valori grezzi e mescolati
+  al francese di TCGdex a una dozzina di classi ordinate dal comune al più raro.
 - **v2 — Wizard mazzi + regole della casa**: il cuore del progetto (vedi sotto).
 - **v3 — Mini partita esplicativa**: simulazione guidata passo-passo di alcuni turni.
 
-I prezzi NON fanno parte della v1.
+I prezzi restano fuori dalla v1: sono l'unico punto in cui l'app chiama la rete di sua
+iniziativa, e non deve mai farlo da sola.
 
 ## Il motore (v2) — specifica
 

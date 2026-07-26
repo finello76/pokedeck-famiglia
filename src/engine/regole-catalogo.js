@@ -38,6 +38,20 @@ import { formatoPer, alteraNumeriUfficiali, UFFICIALE } from './formati.js';
  */
 
 /**
+ * "2 mazzi da 15", "1 mazzo da 15".
+ *
+ * Le motivazioni sono fatte per essere lette ad alta voce prima di giocare: un
+ * "1 mazzi da 15" in mezzo alla frase toglie credibilità al numero che la
+ * precede, che è tutto quello che quella frase deve fare.
+ *
+ * @param {object} opzioni `{numeroMazzi, taglia}`
+ * @returns {string}
+ */
+function quantiMazzi({ numeroMazzi, taglia }) {
+  return `${numeroMazzi === 1 ? '1 mazzo' : `${numeroMazzi} mazzi`} da ${taglia}`;
+}
+
+/**
  * Le regole disponibili, in ordine di stampa.
  *
  * Ogni voce ha una `condizione(contesto)` che restituisce `null` se la regola
@@ -111,17 +125,41 @@ export const CATALOGO = [
       if (opzioni.proxyEnergia) return null;
       const fuoriTipo = carenze.filter((c) => c.codice === 'energie-fuori-tipo');
       const poche = carenze.filter((c) => c.codice === 'poche-energie');
-      if (!fuoriTipo.length && !poche.length) return null;
+      // Carte che non possono attaccare perché l'Energia che chiedono non è nel
+      // mazzo: è il caso che questa regola risolve più direttamente di tutti, e
+      // finché non veniva misurato la regola non si attivava proprio lì dove
+      // serviva. Una collezione senza nemmeno un'Energia Metallo mette in campo
+      // uno Skarmory che senza deroga resta a guardare per tutta la partita.
+      const scoperte = carenze.filter((c) => c.codice === 'carte-senza-energia');
+      if (!fuoriTipo.length && !poche.length && !scoperte.length) return null;
 
       const tipiPresenti = Object.keys(analisi.energie.perTipo ?? {});
+      // La motivazione cita le carte vere quando ce ne sono: "questa regola
+      // esiste perché Skarmory chiede Metallo e Metallo non ce n'è" è
+      // applicabile, "le energie sono poche" no.
+      const nomi = [...new Set(scoperte.flatMap((c) => c.dati.carte.map((x) => x.nome)))];
+      const tipiMancanti = [...new Set(scoperte.flatMap((c) => c.dati.tipi))];
+      const copie = scoperte.reduce((s, c) => s + c.dati.copie, 0);
+      // Si dice che l'Energia manca **nel mazzo**, non in collezione: quasi
+      // sempre in collezione c'è, ma è troppo poca per tutti i mazzi e a
+      // qualcuno non tocca. Scrivere "non ne hai" sarebbe falso, e chi legge il
+      // foglio con la scatola davanti se ne accorgerebbe subito.
+      const motivazione = nomi.length
+        ? `${copie} cart${copie === 1 ? 'a' : 'e'} nei mazzi ` +
+          `(${nomi.slice(0, 4).join(', ')}${nomi.length > 4 ? ` e altre ${nomi.length - 4}` : ''}) ` +
+          `attacc${copie === 1 ? 'a' : 'ano'} solo con Energia ${tipiMancanti.join(' o ')}, ` +
+          'e nel loro mazzo non è finita nessuna Energia di quel tipo: le ' +
+          `${analisi.energie.totaleBase} Energie base disponibili non bastano a coprire ` +
+          'tutti i mazzi. Senza questa regola resterebbero in campo senza poter fare niente.'
+        : `Ci sono ${analisi.energie.totaleBase} Energie base divise su ${tipiPresenti.length} ` +
+          `tipi (${tipiPresenti.join(', ')}): nessun tipo ne ha abbastanza per un mazzo ` +
+          'intero, quindi molti attacchi non si potrebbero mai pagare.';
+
       return {
         testo:
           'Qualunque carta Energia può essere assegnata a qualunque Pokémon e conta ' +
           'come Energia del tipo richiesto dall\'attacco.',
-        motivazione:
-          `Ci sono ${analisi.energie.totaleBase} Energie base divise su ${tipiPresenti.length} ` +
-          `tipi (${tipiPresenti.join(', ')}): nessun tipo ne ha abbastanza per un mazzo ` +
-          'intero, quindi molti attacchi non si potrebbero mai pagare.',
+        motivazione,
         permessi: { energiaUniversale: true },
       };
     },
@@ -148,8 +186,8 @@ export const CATALOGO = [
           'Il costo di ogni attacco è ridotto di 1 Energia, fino a un minimo di 1. ' +
           'Un attacco che costa 3 Energie ne costa 2; uno che ne costa 1 resta a 1.',
         motivazione:
-          `Servirebbero circa ${Math.round(servono)} Energie per ${opzioni.numeroMazzi} mazzi ` +
-          `da ${opzioni.taglia}, e in collezione ce ne sono ${energie}. Senza questa ` +
+          `Servirebbero circa ${Math.round(servono)} Energie per ${quantiMazzi(opzioni)}, ` +
+          `e in collezione ce ne sono ${energie}. Senza questa ` +
           'riduzione i Pokémon resterebbero quasi sempre senza abbastanza Energie per attaccare.',
       };
     },
@@ -237,8 +275,8 @@ export const CATALOGO = [
           'Se dopo 20 minuti nessuno ha preso tutte le carte Premio, vince chi ne ha prese ' +
           'di più. A parità, vince chi ha più Pokémon ancora in gioco.',
         motivazione:
-          `Con ${analisi.energie.totaleBase} Energie per ${opzioni.numeroMazzi} mazzi da ` +
-          `${opzioni.taglia} carte può capitare che nessuno dei due riesca ad attaccare per ` +
+          `Con ${analisi.energie.totaleBase} Energie per ${quantiMazzi(opzioni)} ` +
+          'carte può capitare che nessuno dei due riesca ad attaccare per ' +
           'diversi turni: questa regola evita partite che non finiscono mai.',
       };
     },
@@ -264,8 +302,10 @@ export const CATALOGO = [
           'rimescolala nel mazzo e pescane una nuova, senza penalità per nessuno. ' +
           'Alla terza volta tieni la mano e peschi dal mazzo finché non trovi un ' +
           'Pokémon: parti da quello.',
-        motivazione: `Alcuni mazzi hanno pochi Pokémon Base (${dettaglio}): capiterà di ` +
-          'aprire mani senza nulla da mettere in gioco, e non è colpa di chi pesca.',
+        motivazione:
+          `${scarse.length === 1 ? 'Un mazzo ha' : 'Alcuni mazzi hanno'} pochi Pokémon Base ` +
+          `(${dettaglio}): capiterà di aprire mani senza nulla da mettere in gioco, ` +
+          'e non è colpa di chi pesca.',
       };
     },
   },
@@ -313,8 +353,8 @@ export const CATALOGO = [
           'Una volta per turno, ritirare il Pokémon attivo non costa Energie. ' +
           'Dalla seconda ritirata nello stesso turno si paga il costo normale.',
         motivazione:
-          `In collezione ci sono ${energie} Energie base per ${opzioni.numeroMazzi} mazzi ` +
-          `da ${opzioni.taglia}: pagare anche la ritirata lascerebbe i Pokémon senza ` +
+          `In collezione ci sono ${energie} Energie base per ${quantiMazzi(opzioni)}: ` +
+          'pagare anche la ritirata lascerebbe i Pokémon senza ' +
           'Energie per attaccare.',
       };
     },
@@ -339,7 +379,7 @@ export const CATALOGO = [
           'mano per pescarne una nuova dal mazzo.',
         motivazione:
           `In collezione ci sono solo ${allenatori} carte Allenatore per ` +
-          `${opzioni.numeroMazzi} mazzi da ${opzioni.taglia}: senza i loro effetti di ` +
+          `${quantiMazzi(opzioni)}: senza i loro effetti di ` +
           'pesca le mani piene di carte inutilizzabili resterebbero bloccate.',
       };
     },

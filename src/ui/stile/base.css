@@ -513,6 +513,154 @@ button:hover {
   margin-bottom: 0;
 }
 
+/* Quanto è forte ogni mazzo, sulla scala 0-100.
+   Griglia a quattro colonne invece di quattro <span> in fila: le barre devono
+   partire tutte dallo stesso punto anche quando i nomi hanno lunghezze diverse,
+   altrimenti confrontarle a occhio - che è tutto lo scopo - non funziona. */
+.forza-mazzi {
+  margin-top: var(--spazio);
+}
+
+.elenco-forza {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+}
+
+.elenco-forza li {
+  display: grid;
+  grid-template-columns: auto minmax(4rem, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.forza-nome {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.forza-barra {
+  position: relative;
+  block-size: 0.55rem;
+  background: var(--colore-superficie-2);
+  border-radius: 999px;
+  /* NON `overflow: hidden`: taglierebbe la tacca del riferimento, che sporge
+     apposta sopra e sotto la barra per restare visibile anche quando cade
+     dentro la parte piena. Gli angoli del riempimento se li arrotonda lui. */
+}
+
+/* Dove sta il mazzo di riferimento: la partita e' pari se la barra ci arriva. */
+.tacca-riferimento {
+  position: absolute;
+  inset-block: -0.2rem;
+  inline-size: 2px;
+  background: var(--colore-testo);
+  border-radius: 1px;
+  /* Il posizionamento e' in percentuale, quindi al 100% la tacca uscirebbe di
+     due pixel: la si tira indietro di se stessa. */
+  translate: -1px 0;
+}
+
+/* Il riempimento ha una classe sua e non e' `.forza-barra > span`: quel
+   selettore prendeva anche la tacca del riferimento, e vincendo per
+   specificita' (0,1,1 contro 0,1,0) le imponeva altezza e colore del
+   riempimento. La tacca si vedeva, ma non come doveva. */
+.forza-riempimento {
+  display: block;
+  block-size: 100%;
+  background: var(--colore-primario);
+  border-radius: 999px;
+}
+
+.forza-valore {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* Il dettaglio va a capo occupando tutta la riga: su telefono cinque voci
+   accanto alla barra la schiaccerebbero a niente. */
+.forza-dettaglio {
+  grid-column: 1 / -1;
+  color: var(--colore-testo-tenue);
+  font-size: 0.72rem;
+}
+
+/* Proposta di completamento o correzione: si mostra PRIMA di applicarla, quindi
+   deve staccare dal resto senza sembrare un errore. */
+.proposta {
+  margin: var(--spazio) 0;
+  padding: var(--spazio);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+  background: var(--colore-superficie-2);
+}
+
+.elenco-mosse {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.elenco-mosse li {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  gap: 0.2rem 0.5rem;
+  padding: 0.3rem 0;
+  border-block-start: 1px solid var(--colore-bordo);
+}
+
+.elenco-mosse .segno {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--colore-primario);
+}
+
+.elenco-mosse .togli .segno {
+  color: var(--colore-attenzione);
+}
+
+.elenco-mosse .nome {
+  font-weight: 600;
+}
+
+/* Il perche' va a capo sotto il nome: e' una frase intera, e affiancarla al
+   nome la spezzerebbe in due parole per riga su telefono. */
+.elenco-mosse .perche {
+  grid-column: 2;
+  font-size: 0.75rem;
+  color: var(--colore-testo-tenue);
+}
+
+/* Costruttore del mazzo personalizzato: scelta della taglia. */
+.riga-taglia {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+.riga-taglia select {
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  color: var(--colore-testo);
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio-piccolo);
+}
+
+/* Le carte citate da un avviso: piu' piccole del testo che le introduce, perche'
+   sono l'elenco puntato di una frase, non una frase a se'. */
+.carte-avviso {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  opacity: 0.9;
+  overflow-wrap: anywhere;
+}
+
 /* Mazzi generati, affiancati quando c'è spazio. */
 .elenco-mazzi {
   display: grid;
@@ -581,8 +729,8 @@ button:hover {
   color: var(--colore-testo);
   box-shadow: var(--ombra);
   padding: var(--spazio);
-  width: min(92vw, 34rem);
-  max-height: 80vh;
+  width: min(94vw, 44rem);
+  max-height: 85vh;
   /* dialog ha margini auto: resta centrato anche su schermi piccoli */
 }
 
@@ -606,17 +754,24 @@ button:hover {
   padding: 0;
   display: grid;
   gap: 0.5rem;
-  max-height: 48vh;
+  max-height: 52vh;
   overflow-y: auto;
 }
 
+/* Ogni proposta è scansione + dati, come una card della collezione: fra due
+   Pokémon dello stesso tipo si sceglie guardando PS e costo degli attacchi,
+   e la foto serve poi a ritrovare la carta fisica nella scatola. */
 .dialogo-sostituzione .proposte button {
   display: grid;
-  gap: 0.15rem;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
   text-align: left;
+  padding: 0.55rem;
   background: var(--colore-fondo);
   color: var(--colore-testo);
   border: 1px solid var(--colore-bordo);
+  border-left: 4px solid var(--tipo-colore, var(--colore-bordo));
 }
 
 .dialogo-sostituzione .proposte button:hover {
@@ -624,18 +779,119 @@ button:hover {
   background: var(--colore-fondo);
 }
 
+.dialogo-sostituzione .foto-proposta {
+  position: relative;
+  display: block;
+  aspect-ratio: 63 / 88;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--tipo-tenue, var(--colore-superficie));
+}
+
+.dialogo-sostituzione .foto-proposta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Le carte sono verticali: si tiene la parte alta, dove ci sono nome e
+     illustrazione, invece di centrare su un ritaglio muto. */
+  object-position: center 18%;
+  display: block;
+}
+
+.dialogo-sostituzione .foto-proposta .segnaposto-mini {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--tipo-colore);
+}
+
+.dialogo-sostituzione .foto-proposta .segnaposto-mini svg {
+  width: 45%;
+  height: auto;
+  opacity: 0.75;
+}
+
+/* Quante copie sono ancora libere: è il vincolo che decide se lo scambio può
+   coprire tutte le copie o solo una parte. */
+.dialogo-sostituzione .libere-proposta {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  background: rgb(15 20 35 / 72%);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.1rem 0;
+}
+
+.dialogo-sostituzione .testo-proposta {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .dialogo-sostituzione .nome-proposta {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .dialogo-sostituzione .dettagli-proposta {
   font-size: 0.82rem;
   color: var(--colore-testo-tenue);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.dialogo-sostituzione .ps-proposta {
+  font-weight: 700;
+  color: var(--colore-testo);
+  font-variant-numeric: tabular-nums;
+}
+
+.dialogo-sostituzione .attacchi-proposta {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.dialogo-sostituzione .attacco-proposta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.dialogo-sostituzione .costo-proposta {
+  flex: none;
+  font-weight: 700;
+  color: var(--tipo-colore, var(--colore-testo-tenue));
+  font-variant-numeric: tabular-nums;
+}
+
+/* Il danno resta a destra anche coi nomi lunghi: è il numero che si confronta. */
+.dialogo-sostituzione .danno-proposta {
+  margin-left: auto;
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .dialogo-sostituzione .note-proposta {
   font-size: 0.78rem;
   color: var(--colore-primario);
+}
+
+/* Da tablet in su le proposte stanno su due colonne: la scelta si fa
+   confrontando, e confrontare significa vederne più d'una senza scorrere. */
+@media (min-width: 40rem) {
+  .dialogo-sostituzione .proposte {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Riga di bottoni (export/import). */
@@ -939,11 +1195,51 @@ button.secondario:hover {
   gap: 0.5rem;
 }
 
+/* "Ce l'ho" / "La voglio": due stati esclusivi, quindi due pulsanti in una
+   pastiglia invece di una spunta. Una spunta "e' un desiderio" si legge solo
+   dopo averla trovata; qui la scelta e' sempre visibile e dice quale delle due
+   e' attiva senza dover interpretare niente. */
+.quante-modo {
+  display: flex;
+  flex: none;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 28%);
+}
+
+.quante-modo .modo {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 0;
+  background: transparent;
+  color: rgb(255 255 255 / 80%);
+  cursor: pointer;
+}
+
+.quante-modo .modo.attivo {
+  background: rgb(255 255 255 / 22%);
+  color: #fff;
+}
+
+.quante-etichetta {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-inline-end: 0.2rem;
+}
+
+/* Candidato in modo desiderio: il tasto diventa una stella viola, lo stesso
+   colore usato per i proxy e per le carte desiderate nella griglia. */
+.candidato-desiderio .aggiungi {
+  color: var(--colore-proxy);
+}
+
 .quante-riga {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
   padding: 0.2rem 0.2rem 0.3rem;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1021,9 +1317,17 @@ button.secondario:hover {
 .candidato .mini .segnaposto-mini {
   position: static;
   inset: auto;
-  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
   color: var(--tipo-colore);
-  font-weight: 800;
+}
+
+.candidato .mini .segnaposto-mini svg {
+  width: 55%;
+  height: auto;
+  opacity: 0.75;
 }
 
 .candidato .testo {
