@@ -127,9 +127,9 @@ visore.addEventListener('quantita-cambiata', cambiaQuantita);
 document.querySelector('#bottone-esporta').addEventListener('click', async () => {
   try {
     const nome = await scaricaFile();
-    mostraStato(statoScambio, `Esportato in ${nome}.`);
+    mostraStato(statoScambio, `Dati esportati nel file ${nome}.`);
   } catch (errore) {
-    mostraStato(statoScambio, `Export fallito: ${errore.message}`, true);
+    mostraStato(statoScambio, `Esportazione non riuscita: ${errore.message}`, true);
   }
 });
 
@@ -155,7 +155,7 @@ fileImport.addEventListener('change', async () => {
       `Importate ${esito.importate} carte (${esito.sostituito ? 'sostituzione' : 'unione'}).`,
     );
   } catch (errore) {
-    mostraStato(statoScambio, `Import fallito: ${errore.message}`, true);
+    mostraStato(statoScambio, `Importazione non riuscita: ${errore.message}`, true);
   } finally {
     // Senza questo, riselezionare lo stesso file non scatena 'change'.
     fileImport.value = '';

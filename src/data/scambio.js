@@ -68,10 +68,10 @@ export async function scaricaFile() {
  */
 export function validaImport(dati) {
   if (!dati || typeof dati !== 'object') {
-    throw new Error('Il file non contiene un oggetto JSON.');
+    throw new Error('Il file non contiene dati leggibili.');
   }
   if (dati.formato !== 'pokedeck-famiglia') {
-    throw new Error('Questo file non è un export di PokéDeck Famiglia.');
+    throw new Error('Questo file non è un backup di PokéDeck Famiglia.');
   }
   if (Number(dati.versione) > VERSIONE_FORMATO) {
     throw new Error(
@@ -86,7 +86,7 @@ export function validaImport(dati) {
   dati.carte.forEach((c, indice) => {
     const quantita = Number(c?.quantita);
     if (!c?.idSet || c?.numero === undefined || c?.numero === null) {
-      throw new Error(`Carta n. ${indice + 1}: mancano idSet o numero.`);
+      throw new Error(`Carta n. ${indice + 1}: mancano il codice del set o il numero.`);
     }
     if (!Number.isFinite(quantita) || quantita <= 0) {
       throw new Error(`Carta n. ${indice + 1} (${c.idSet}:${c.numero}): quantità non valida.`);
@@ -111,7 +111,7 @@ export async function importa(testo, opzioni = {}) {
   try {
     dati = JSON.parse(testo);
   } catch (errore) {
-    throw new Error(`Il file non è JSON valido: ${errore.message}`);
+    throw new Error('Il file è danneggiato o non è un backup di PokéDeck Famiglia.');
   }
 
   const voci = validaImport(dati);
