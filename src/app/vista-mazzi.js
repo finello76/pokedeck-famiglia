@@ -670,10 +670,14 @@ async function mostraStato(parametro) {
   }
 
   if (rottaDisegnata === parametro) return;
+  // Si segna PRIMA di disegnare, non dopo: `disegnaPiano()` la legge per
+  // costruire il pulsante "Modifica a mano", che ha bisogno dell'id nel
+  // proprio `data-vai`. Assegnandola dopo, quel pulsante non compariva mai.
+  rottaDisegnata = parametro;
   try {
     await apriSalvato(parametro);
-    rottaDisegnata = parametro;
   } catch (errore) {
+    rottaDisegnata = null;
     risultato.innerHTML = `<p class="errore">Non si riesce ad aprire il mazzo: ${errore.message}</p>`;
   }
 }

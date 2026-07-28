@@ -87,7 +87,9 @@ export function riassunto(piano, opzioni) {
     `${carte} carte`,
     opzioni.taglia ? `da ${opzioni.taglia}` : '',
     forze.length ? `forza ${forze.join(' · ')}` : '',
-    piano.regole?.length ? `${piano.regole.length} regole della casa` : '',
+    piano.regole?.length
+      ? `${piano.regole.length} ${piano.regole.length === 1 ? 'regola' : 'regole'} della casa`
+      : '',
     proxy ? `${proxy} da stampare` : '',
   ].filter(Boolean);
 
