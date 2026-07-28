@@ -108,6 +108,7 @@ const GUSCIO = [
   './src/app/sostituzione.js',
   './src/app/chiedi-nome.js',
   './src/app/chiedi-conferma.js',
+  './src/app/schede-piano.js',
   './src/ui/elenco-salvati/elenco-salvati.js',
   './src/ui/elenco-salvati/elenco-salvati.css',
   './src/app/vista-impostazioni.js',

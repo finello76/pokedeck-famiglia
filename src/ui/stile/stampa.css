@@ -79,6 +79,39 @@
     display: block !important;
   }
 
+  /* Stessa cosa un livello più su: a schermo, quando i mazzi sono più d'uno, si
+     vede solo quello della scheda scelta. Sul foglio ci vanno tutti, o si
+     stamperebbe un mazzo su tre. */
+  mazzo-generato[hidden] {
+    display: block !important;
+  }
+
+  /* Le sezioni richiudibili diventano capitoli: la cornice sparisce e il
+     `<summary>` fa da titolo. Il contenuto lo apre il JavaScript prima di
+     stampare (`#bottone-stampa`), perché un `<details>` chiuso non è reso in
+     modo affidabile su tutti i motori — e un foglio senza le regole della casa
+     sarebbe proprio il foglio che questa app esiste per produrre. */
+  .sezione-piano {
+    border: none;
+    margin: 0 0 6mm;
+  }
+
+  .sezione-piano > summary {
+    padding: 0;
+    border: none !important;
+    font-size: 14pt;
+    font-weight: 700;
+    list-style: none;
+  }
+
+  .sezione-piano > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sezione-piano-corpo {
+    padding: 0;
+  }
+
   mazzo-generato .solo-stampa {
     display: flex !important;
   }
@@ -91,12 +124,14 @@
   }
 
   /* Il foglio regole comincia su pagina nuova: si consegna a chi gioca,
-     separato dalle liste delle carte. */
-  .foglio-regole {
+     separato dalle liste delle carte. Il salto sta sulla sezione che lo
+     contiene, non sulla cornice interna: `break-before` dentro un `<details>`
+     già aperto non stacca la pagina. */
+  .sezione-piano:has(.foglio-regole) {
     break-before: page;
   }
 
-  .foglio-regole h2 {
+  .sezione-piano:has(.foglio-regole) > summary {
     border-block-end: 2px solid #000;
     padding-block-end: 2mm;
   }

@@ -518,6 +518,104 @@ button:hover {
   margin-top: 0.8rem;
 }
 
+/* --- Il dettaglio di un piano di mazzi --- */
+
+/* La riga di dati sintetici sotto il titolo, al posto di tre paragrafi di
+   prosa. Sono le cinque cose che si guardano riaprendo un mazzo. */
+.riassunto-piano {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 var(--spazio);
+}
+
+.riassunto-voce {
+  background: var(--colore-superficie-2);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  color: var(--colore-testo-tenue);
+}
+
+/* Sezioni richiudibili: `<details>` nativi. Prima erano sette blocchi sempre
+   aperti da attraversare per arrivare alla prima carta del primo mazzo. */
+.sezione-piano {
+  background: var(--colore-superficie);
+  border: 1px solid var(--colore-bordo);
+  border-radius: var(--raggio);
+  margin-bottom: 0.6rem;
+}
+
+.sezione-piano > summary {
+  padding: 0.8rem var(--spazio);
+  font-weight: 600;
+  cursor: pointer;
+  /* 44px di bersaglio anche quando il titolo è corto. */
+  min-block-size: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.sezione-piano > summary:hover {
+  color: var(--colore-primario);
+}
+
+.sezione-piano[open] > summary {
+  border-bottom: 1px solid var(--colore-bordo);
+}
+
+.sezione-piano-corpo,
+.sezione-piano > .foglio-proxy-cornice {
+  padding: var(--spazio);
+}
+
+.sezione-piano-corpo > :first-child {
+  margin-block-start: 0;
+}
+
+/* Un mazzo per volta: le schede costano un tocco e tolgono due schermate di
+   scorrimento quando i mazzi sono tre o quattro. Stesso rimedio che
+   <mazzo-generato> applica al proprio elenco carte, un livello più su. */
+.mazzi-schede {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  margin-block: var(--spazio) 0.6rem;
+  /* La riga di schede non deve far scorrere la pagina in orizzontale. */
+  scrollbar-width: thin;
+}
+
+.mazzi-schede button {
+  flex: 0 0 auto;
+  width: auto;
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--colore-testo-tenue);
+}
+
+.mazzi-schede button[aria-selected='true'] {
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+  color: #fff;
+}
+
+/* Sopra i 46rem `.elenco-mazzi` diventa a più colonne e i mazzi ci stanno
+   affiancati: lì le schede toglierebbero il confronto invece di aiutarlo.
+   Stessa soglia della griglia, o si vedrebbe una scheda sola in due colonne. */
+@media (min-width: 46rem) {
+  .mazzi-schede {
+    display: none;
+  }
+
+  .elenco-mazzi mazzo-generato[hidden] {
+    display: block;
+  }
+}
+
 /* Spiegazione di un risultato controintuitivo: si distingue dal resto senza
    sembrare un errore, perché non lo è. */
 .nota-spiegazione {
