@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v51';
+const VERSIONE = 'v52';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -55,6 +55,7 @@ const GUSCIO = [
   './src/data/completamento.js',
   './src/data/energie.js',
   './src/data/rarita.js',
+  './src/data/legalita.js',
   './src/data/prezzi.js',
   './src/data/scambio.js',
   './src/ui/segnaposto.js',
@@ -106,6 +107,7 @@ const GUSCIO = [
   './src/app/foglio-proxy.js',
   './src/app/sostituzione.js',
   './src/app/chiedi-nome.js',
+  './src/app/chiedi-conferma.js',
   './src/ui/elenco-salvati/elenco-salvati.js',
   './src/ui/elenco-salvati/elenco-salvati.css',
   './src/app/vista-impostazioni.js',
@@ -126,6 +128,10 @@ const GUSCIO = [
   // essi le carte dei Kit Allenatore risultano prive di attacchi — cioè
   // proprio i mazzi con cui si gioca in casa.
   './data/ristampe.json',
+  // Marchi di regolamentazione e ammissibilità in Expanded: 11 KB. Serve al
+  // primo set che si apre — il formato si mostra sulla scheda di ogni carta —
+  // e senza, offline, la pastiglia sparisce e il filtro Tornei resta vuoto.
+  './data/legalita.json',
   // Il catalogo dei mazzi prefatti: 50 KB, ed è il termine di paragone della
   // forza. Va precaricato perché senza non si può dire se una partita sarà
   // pari, e quella domanda ci si fa proprio quando si sta per giocare — cioè

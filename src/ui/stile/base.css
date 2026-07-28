@@ -727,29 +727,19 @@ button:hover {
   margin: 0.3rem 0 0;
 }
 
-.elenco-salvati {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* Lo stile dell'elenco dei mazzi salvati sta in
+   `src/ui/elenco-salvati/elenco-salvati.css`, insieme al componente che lo usa. */
+
+/* Il pulsante che cancella qualcosa per sempre. Non è "secondario" — è
+   l'azione principale del dialogo che lo contiene — ma non deve nemmeno
+   somigliare a un Salva: il colore dice cosa succede prima di leggere. */
+.pericolo {
+  background: var(--colore-attenzione);
+  border-color: var(--colore-attenzione);
+  color: #fff;
 }
 
-.elenco-salvati li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--colore-bordo);
-  font-size: 0.9rem;
-}
-
-.comandi-salvato {
-  display: flex;
-  gap: 0.8rem;
-}
-
-/* Dialoghi modali: "Sostituisci carta" e richiesta di un nome. */
+/* Dialoghi modali: "Sostituisci carta", richiesta di un nome, conferme. */
 .dialogo-sostituzione,
 .dialogo-nome {
   border: 1px solid var(--colore-bordo);
@@ -775,6 +765,13 @@ button:hover {
 
 .dialogo-nome h3 {
   margin: 0;
+}
+
+/* Il dialogo di conferma porta la classe `.dialogo-nome` per ereditarne cornice
+   e sfondo; qui c'è solo ciò che lo distingue — non avendo un campo di testo,
+   lo spazio prima dei pulsanti glielo deve dare qualcun altro. */
+.dialogo-conferma .azioni {
+  margin-block-start: 1rem;
 }
 
 .dialogo-sostituzione .proposte {
@@ -928,6 +925,14 @@ button:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
+}
+
+/* Lo stacco da ciò che viene dopo. Non è incondizionato: nei dialoghi la riga
+   di bottoni è l'ultimo elemento, e uno spazio sotto sarebbe un buco in fondo
+   alla finestra. Serve invece dove i bottoni sono in mezzo alla pagina — sotto
+   "Costruisci a mano" l'elenco dei mazzi ci finiva attaccato. */
+.azioni:not(:last-child) {
+  margin-block-end: var(--spazio);
 }
 
 .azioni button {

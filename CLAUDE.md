@@ -77,6 +77,26 @@ Il file ha forma `{da: {...}, nonPokemon: [...]}`: `nonPokemon` sono le pre-evol
 che in realtà sono carte Allenatore (i fossili — Omanyte "evolve" da *Vecchio
 Helixfossile*), che il motore non deve stampare come Pokémon.
 
+Poi la legalità nei tornei:
+
+```bash
+node tools/aggiorna-legalita.mjs   # 8 richieste: scrive data/legalita.json
+```
+
+Salva il **marchio di regolamentazione** di ogni carta (la letterina nel
+quadratino in basso a sinistra) e l'ammissibilità in **Expanded**. Otto richieste
+e non 21.000 perché TCGdex filtra l'elenco per campo — `?regulationMark=H` dà in
+una risposta tutte le carte con quel marchio. Senza, il filtro "Tornei" nella
+collezione resta vuoto e la pastiglia Standard/Expanded non compare.
+
+**Non** si salva `legal.standard`: sarebbe giusto il giorno del download e
+sbagliato dopo la rotazione di aprile. Lo Standard si calcola da
+`MARCHI_STANDARD` in `src/data/legalita.js` — **è quella costante da aggiornare
+a ogni rotazione**, non il file. L'Expanded invece si scarica, perché non è
+deducibile: dentro ogni set c'è qualche carta bandita, e restano fuori set
+interi recenti (Pokémon TCG Pocket, promo McDonald's, Kit Allenatore).
+Vedi `docs/apprendimento/12-regole-o-dati.md`.
+
 Infine i dati di gioco che TCGdex non replica sulle ristampe:
 
 ```bash

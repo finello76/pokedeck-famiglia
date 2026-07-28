@@ -109,6 +109,32 @@ img:not([src]) {
   color: var(--colore-testo-tenue, #666);
 }
 
+/* Il formato da torneo. Verde per lo Standard, ambra per l'Expanded: sono i
+   due gradini di "la puoi giocare", e il colore li distingue prima della
+   lettura. Il "fuori formato" non si stampa affatto (vedi #htmlFormato), così
+   non serve un terzo colore che direbbe soltanto "no". */
+.formato {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+
+.formato[data-formato='standard'] {
+  background: color-mix(in srgb, #2e9e5b 16%, transparent);
+  color: #1f6f40;
+  border: 1px solid color-mix(in srgb, #2e9e5b 40%, transparent);
+}
+
+.formato[data-formato='expanded'] {
+  background: color-mix(in srgb, #d08a1e 16%, transparent);
+  color: #8a5a10;
+  border: 1px solid color-mix(in srgb, #d08a1e 40%, transparent);
+}
+
 .meta {
   margin: 0 0 0.5rem;
   font-size: 0.85rem;

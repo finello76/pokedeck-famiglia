@@ -519,6 +519,27 @@ griglia-collezione {
   color: var(--colore-testo-tenue);
 }
 
+/* Il formato da torneo. Verde per lo Standard, ambra per l'Expanded: sono i due
+   gradini di "la puoi giocare", e il colore li distingue prima della lettura.
+   Il "fuori formato" non porta chip (vedi #card): in una collezione di famiglia
+   sono la maggioranza, e marchiarle tutte vorrebbe dire scrivere "questa non
+   vale" sotto quasi ogni carta.
+
+   Selettori sotto `griglia-collezione`: i CSS dei componenti senza Shadow DOM
+   sono fogli globali, e una classe generica come `.chip-formato` finirebbe per
+   tingere qualunque cosa la usi altrove. */
+griglia-collezione .chip-formato[data-formato='standard'] {
+  background: color-mix(in srgb, #2e9e5b 16%, transparent);
+  color: #2e9e5b;
+  border: 1px solid color-mix(in srgb, #2e9e5b 34%, transparent);
+}
+
+griglia-collezione .chip-formato[data-formato='expanded'] {
+  background: color-mix(in srgb, #d08a1e 16%, transparent);
+  color: #b0741a;
+  border: 1px solid color-mix(in srgb, #d08a1e 34%, transparent);
+}
+
 .stepper {
   display: flex;
   align-items: center;

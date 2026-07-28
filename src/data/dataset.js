@@ -99,8 +99,71 @@ export async function caricaSet(idSet) {
   if (cacheSet.has(idSet)) return cacheSet.get(idSet);
   const set = await leggiJson(`${idSet}.json`);
   set.carte = await completaRistampe(idSet, set.carte ?? []);
+  set.carte = await applicaLegalita(idSet, set.carte);
   cacheSet.set(idSet, set);
   return set;
+}
+
+/** @type {Promise<{marchi: object, espansi: object}>|null} caricamento unico */
+let caricamentoLegalita = null;
+
+/**
+ * Legge un valore da una mappa "dominante più eccezioni" di `legalita.json`.
+ *
+ * Il file comprime i set omogenei in un valore solo (`"sv09": "I"`) e scrive
+ * per esteso solo le deroghe (`"sv08": { "_": "H", "252": "G" }`), dove `_` è
+ * il valore di tutte le altre carte. Sono 11 KB invece di 300.
+ *
+ * @param {string|object|undefined} voce
+ * @param {string} numero
+ * @returns {any} `undefined` se il set non è nel file
+ */
+function valorePerCarta(voce, numero) {
+  if (voce === undefined) return undefined;
+  if (typeof voce !== 'object') return voce;
+  return voce[numero] ?? voce._;
+}
+
+/**
+ * Timbra su ogni carta il marchio di regolamentazione e l'ammissibilità in
+ * Expanded, i due dati da cui `data/legalita.js` ricava il formato da torneo.
+ *
+ * Si fa qui e non nel modulo che li interpreta per lo stesso motivo delle
+ * ristampe: al caricamento del set, una volta sola, così griglia, scheda e
+ * motore vedono tutti le stesse carte senza doversi ricordare di chiamare
+ * qualcosa. E si tiene fuori dai file dei set perché sono due dati che
+ * cambiano — la lista dei banditi si allunga, i marchi di un set nuovo
+ * arrivano dopo — mentre i 6,4 MB di `data/set/` si riscaricano una volta e
+ * poi restano lì.
+ *
+ * `espansa` viene messo **sempre**, anche a `false`: è il campo da cui
+ * `formatoDi()` capisce che la carta è passata di qui e che il silenzio sul
+ * marchio significa "non ne ha", non "non lo so".
+ *
+ * Se il file manca (installazione a metà, cache incompleta) le carte restano
+ * come sono e il filtro per formato non mostrerà niente: è un'informazione in
+ * più, non un requisito per catalogare.
+ *
+ * @param {string} idSet
+ * @param {object[]} carte
+ * @returns {Promise<object[]>}
+ */
+async function applicaLegalita(idSet, carte) {
+  caricamentoLegalita ??= leggiJson('../legalita.json').catch(() => ({}));
+  const { marchi = {}, espansi = {} } = await caricamentoLegalita;
+  if (!Object.keys(espansi).length) return carte;
+
+  const marchiSet = marchi[idSet];
+  const espansiSet = espansi[idSet];
+
+  return carte.map((carta) => {
+    const numero = String(carta.numero);
+    return {
+      ...carta,
+      marchio: valorePerCarta(marchiSet, numero) ?? null,
+      espansa: valorePerCarta(espansiSet, numero) === true,
+    };
+  });
 }
 
 /** @type {Promise<Record<string, object>>|null} caricamento unico di ristampe.json */

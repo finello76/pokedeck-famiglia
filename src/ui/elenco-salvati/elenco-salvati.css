@@ -4,26 +4,141 @@
  * Il file è caricato globalmente (light DOM), quindi ogni classe è prefissata
  * `salvati-` e ancorata al tag: senza, `.nome` o `.dettaglio` finirebbero per
  * colpire le liste dei mazzi generati.
+ *
+ * Le regole di questo componente stavano in `base.css`, lontano dal codice che
+ * le usa. Ora stanno qui, dove si vedono aprendo il componente.
  */
 
 elenco-salvati {
   display: block;
+  /* Le colonne dipendono da quanto è largo il componente, non la finestra: la
+     libreria è dentro un `.pannello` con il suo padding, e a misurare la
+     finestra le card passavano a due colonne prima che ci stessero davvero. */
+  container-type: inline-size;
 }
 
-elenco-salvati h3 {
-  margin-top: 0;
+/* --- Filtro fra mazzi del wizard e mazzi fatti a mano --- */
+
+elenco-salvati .salvati-filtri {
+  display: flex;
+  gap: 0.4rem;
+  margin-block-end: var(--spazio);
 }
 
-elenco-salvati .salvati-descrizione {
+elenco-salvati .salvati-chip {
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--colore-testo-tenue);
+  cursor: pointer;
+}
+
+elenco-salvati .salvati-chip.attivo {
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+  color: #fff;
+}
+
+/* --- La griglia delle card --- */
+
+elenco-salvati .elenco-salvati {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  gap: 0.1rem;
+  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container (min-width: 30rem) {
+  elenco-salvati .elenco-salvati {
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  }
+}
+
+elenco-salvati .salvati-card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  background: var(--colore-superficie-2);
+  border: 1px solid var(--colore-bordo);
+  /* Il colore del tipo entra da `tipi.css` tramite `data-tipo`: senza tipo
+     concorde resta il grigio neutro di `:root`, che è la verità. */
+  border-block-start: 4px solid var(--tipo-colore);
+  border-radius: var(--raggio);
+  overflow: hidden;
+}
+
+/* Tutta la card apre il mazzo: è il gesto che si fa nove volte su dieci, e
+   ridurlo a un "Apri" da centrare col pollice era il motivo per cui prima le
+   righe dovevano essere alte. */
+elenco-salvati .salvati-apri {
+  flex: 1;
+  display: grid;
+  gap: 0.2rem;
+  align-content: start;
+  text-align: start;
+  background: none;
+  border: 0;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-inline-size: 0;
+}
+
+elenco-salvati .salvati-apri:hover {
+  background: color-mix(in srgb, var(--tipo-colore) 8%, transparent);
 }
 
 elenco-salvati .salvati-nome {
   font-weight: 600;
+  /* Un nome lungo non deve allargare la colonna e sfondare la griglia. */
+  overflow-wrap: anywhere;
 }
 
 elenco-salvati .salvati-dettaglio {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--colore-testo-tenue);
+}
+
+/* Da dove viene il mazzo. Il dato era già salvato in `opzioni.personalizzato`
+   e non si vedeva da nessuna parte: chi ne ha di entrambe le specie non
+   distingueva un mazzo generato da uno costruito a mano. */
+elenco-salvati .salvati-segno {
+  display: inline-block;
+  background: var(--tipo-tenue);
+  color: var(--colore-testo);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-inline-end: 0.2rem;
+}
+
+/* Niente barra di forza qui dentro: i punteggi stanno già scritti accanto, e
+   una barra per mazzo aggiungeva una riga alla card senza dire niente di più.
+   La card deve restare più corta della riga che ha sostituito, o il rimedio
+   allo scorrimento diventa la sua causa. */
+
+/* Il cestino è staccato dall'area che apre, ma resta dentro la card: 44px di
+   lato, la misura sotto la quale un pollice sbaglia bersaglio. */
+elenco-salvati .salvati-elimina {
+  flex: 0 0 auto;
+  inline-size: 2.75rem;
+  background: none;
+  border: 0;
+  border-inline-start: 1px solid var(--colore-bordo);
+  color: var(--colore-testo-tenue);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+elenco-salvati .salvati-elimina:hover {
+  background: color-mix(in srgb, var(--colore-attenzione) 12%, transparent);
+  color: var(--colore-attenzione);
 }

@@ -16,6 +16,7 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
+import { formatoDi } from '../../data/legalita.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 
 /** Foglio di stile condiviso da tutte le istanze, caricato una volta sola. */
@@ -123,7 +124,7 @@ export class SchedaCarta extends HTMLElement {
         ${this.#htmlImmagine(c)}
         <div class="dati">
           <h3>${escapeHtml(c.nome)}${quantita}</h3>
-          <p class="set">${escapeHtml(this.#nomeSet)} · n. ${escapeHtml(c.numero)}</p>
+          <p class="set">${escapeHtml(this.#nomeSet)} · n. ${escapeHtml(c.numero)}${this.#htmlFormato(c)}</p>
           ${this.#htmlRigaPokemon(c)}
           ${this.#htmlAttacchi(c)}
         </div>
@@ -175,6 +176,27 @@ export class SchedaCarta extends HTMLElement {
       <button class="apri" type="button" title="Ingrandisci ${escapeHtml(c.nome)}">
         <img data-src="${src}" alt="" />
       </button>`;
+  }
+
+  /**
+   * La pastiglia del formato da torneo, accanto al set.
+   *
+   * Sta lì e non sotto il nome perché è un dato della *stampa*, non della
+   * carta: lo stesso Pikachu è Standard in un set e fuori formato in un altro,
+   * esattamente come il numero di collezione accanto a cui compare.
+   *
+   * Sulle carte fuori formato la pastiglia non si mostra: in una collezione di
+   * famiglia sono la maggioranza, e marchiarle tutte con un'etichetta grigia
+   * vuol dire scrivere "questa non vale" sotto quasi ogni carta. Chi cerca
+   * proprio quelle ha il filtro.
+   *
+   * @param {object} c
+   * @returns {string}
+   */
+  #htmlFormato(c) {
+    const formato = formatoDi(c);
+    if (!formato || formato.codice === 'fuori') return '';
+    return ` <span class="formato" data-formato="${formato.codice}" title="${escapeHtml(formato.spiegazione)}">${escapeHtml(formato.etichetta)}</span>`;
   }
 
   /** @param {object} c */

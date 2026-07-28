@@ -157,3 +157,48 @@ test('le voci senza serie finiscono in un gruppo esplicito', () => {
   assert.equal(gruppi[0].nome, 'Altre serie');
   assert.equal(gruppi[0].set[0].totale, null, 'senza riferimento non c\'è completamento');
 });
+
+test('il filtro per formato usa i campi timbrati dal dataset', () => {
+  const conFormato = [
+    voce('sv09', '001', 'Caterpie', { carta: undefined }),
+    voce('xy6', '077', 'Shaymin EX'),
+    voce('sv08', '252', 'Energia Jet', { categoria: 'Energia' }),
+  ];
+  // I campi li mette `data/dataset.js` al caricamento del set: qui si simulano.
+  conFormato[0].carta.marchio = 'I';
+  conFormato[0].carta.espansa = true;
+  conFormato[1].carta.marchio = null; // bandita: il set è legale, lei no
+  conFormato[1].carta.espansa = false;
+  conFormato[2].carta.marchio = 'G'; // marchio ruotato fuori
+  conFormato[2].carta.espansa = true;
+
+  const nomi = (formato) =>
+    filtra(conFormato, { ...FILTRI_VUOTI, formato }).map((v) => v.carta.nome);
+
+  assert.deepEqual(nomi('standard'), ['Caterpie']);
+  assert.deepEqual(nomi('expanded'), ['Energia Jet']);
+  assert.deepEqual(nomi('fuori'), ['Shaymin EX']);
+  assert.equal(nomi('').length, 3, 'senza filtro restano tutte');
+});
+
+test('una carta mai timbrata non passa il filtro per formato', () => {
+  // "Non lo so" non è "sì": chi chiede le Standard vuole un elenco su cui
+  // fidarsi. La carta resta però visibile senza quel filtro.
+  const ignota = [voce('sv09', '001', 'Caterpie')];
+  assert.equal(filtra(ignota, { ...FILTRI_VUOTI, formato: 'standard' }).length, 0);
+  assert.equal(filtra(ignota, { ...FILTRI_VUOTI, formato: 'fuori' }).length, 0);
+  assert.equal(filtra(ignota, FILTRI_VUOTI).length, 1);
+});
+
+test('il menu Tornei elenca solo i formati presenti in collezione', () => {
+  const carte = collezione();
+  carte[0].carta.marchio = 'I';
+  carte[0].carta.espansa = true;
+  carte[1].carta.marchio = null;
+  carte[1].carta.espansa = false;
+  // Le altre due restano senza timbro: non devono inventare una voce di menu.
+  assert.deepEqual(
+    valoriDisponibili(carte).formati.map((f) => f.codice),
+    ['standard', 'fuori'],
+  );
+});

@@ -28,6 +28,7 @@
 
 import { urlImmagine } from '../../data/dataset.js';
 import { formattaEuro, valoreDi } from '../../data/prezzi.js';
+import { formatoDi } from '../../data/legalita.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 import { FILTRI_VUOTI, filtra, progressoSet, raggruppa, valoriDisponibili } from './raggruppa.js';
 
@@ -221,7 +222,7 @@ export class GrigliaCollezione extends HTMLElement {
 
   /** Disegna la barra di controlli (ricerca, chip, filtri) e il contenitore. */
   #disegna() {
-    const { categorie, tipi, stadi, serie, set, rarita } = valoriDisponibili(this.#voci);
+    const { categorie, tipi, stadi, serie, set, rarita, formati } = valoriDisponibili(this.#voci);
 
     // I set portano l'anno fra parentesi: due set possono avere nomi simili, e
     // l'anno è il modo in cui ci si ricorda le carte che si hanno in mano.
@@ -253,6 +254,7 @@ export class GrigliaCollezione extends HTMLElement {
         this.#filtri.categoria ||
         this.#filtri.stadio ||
         this.#filtri.rarita ||
+        this.#filtri.formato ||
         this.#mostraMancanti,
     );
 
@@ -330,6 +332,17 @@ export class GrigliaCollezione extends HTMLElement {
                 .map(
                   (r) =>
                     `<option value="${r.codice}"${r.codice === this.#filtri.rarita ? ' selected' : ''}>${escapeHtml(r.etichetta)}</option>`,
+                )
+                .join('')}
+            </select>
+          </div>
+          <div>
+            <label for="filtro-formato">Tornei</label>
+            <select id="filtro-formato" data-filtro="formato">
+              <option value="">tutte</option>${formati
+                .map(
+                  (f) =>
+                    `<option value="${f.codice}"${f.codice === this.#filtri.formato ? ' selected' : ''} title="${escapeHtml(f.spiegazione)}">${escapeHtml(f.etichetta)}</option>`,
                 )
                 .join('')}
             </select>
@@ -503,6 +516,14 @@ export class GrigliaCollezione extends HTMLElement {
       c.categoria === 'Pokémon' && c.tipi?.length
         ? `<span class="chip chip-tipo-carta" data-tipo="${escapeHtml(tipo)}">${escapeHtml(tipo)}</span>`
         : `<span class="chip chip-evo">${escapeHtml(c.categoria ?? '')}</span>`;
+    // Il formato da torneo si mostra solo quando è una buona notizia. "Fuori
+    // formato" è la condizione della maggior parte delle carte di casa: dirlo
+    // su ognuna sarebbe rumore, e chi cerca proprio quelle ha il filtro Tornei.
+    const formato = formatoDi(c);
+    const chipFormato =
+      formato && formato.codice !== 'fuori'
+        ? `<span class="chip chip-formato" data-formato="${formato.codice}" title="${escapeHtml(formato.spiegazione)}">${escapeHtml(formato.etichetta)}</span>`
+        : '';
 
     card.innerHTML = `
       <button class="apri-carta" type="button" title="Ingrandisci ${escapeHtml(c.nome)}">
@@ -515,7 +536,7 @@ export class GrigliaCollezione extends HTMLElement {
         <div class="corpo">
           <div class="nome-carta">${escapeHtml(c.nome)}</div>
           <div class="meta-carta">${meta}</div>
-          <div class="chips">${chipTipo}${chipEvo}</div>
+          <div class="chips">${chipTipo}${chipFormato}${chipEvo}</div>
         </div>
       </button>
       ${this.#stepper(voce, mancante)}

@@ -9,6 +9,7 @@
  */
 
 import { classeRarita, classiPresenti } from '../../data/rarita.js';
+import { formatiPresenti, formatoDi } from '../../data/legalita.js';
 
 /** Filtri vuoti: `''` significa "tutti". */
 export const FILTRI_VUOTI = {
@@ -19,6 +20,8 @@ export const FILTRI_VUOTI = {
   serie: '',
   set: '',
   rarita: '',
+  /** Formato da torneo: `'standard'`, `'expanded'`, `'fuori'` (vedi data/legalita.js). */
+  formato: '',
   /**
    * Lista desideri: `''` tutte, `'solo'` solo i desideri, `'escludi'` solo il
    * posseduto. Tre stati e non una spunta, perché "mostra anche i desideri" e
@@ -36,7 +39,7 @@ export const FILTRI_VUOTI = {
  * @returns {object[]}
  */
 export function filtra(voci, filtri) {
-  const { categoria, tipo, stadio, testo, serie, set, rarita, desiderio } = {
+  const { categoria, tipo, stadio, testo, serie, set, rarita, formato, desiderio } = {
     ...FILTRI_VUOTI,
     ...filtri,
   };
@@ -56,9 +59,13 @@ export function filtra(voci, filtri) {
     const { carta } = voce;
     // Carta di un set non più scaricato: si mostra solo quando non c'è nessun
     // filtro sui suoi dati, perché di lei non si sa niente.
-    if (!carta) return !categoria && !tipo && !stadio && !ago && !rarita;
+    if (!carta) return !categoria && !tipo && !stadio && !ago && !rarita && !formato;
 
     if (rarita && classeRarita(carta)?.codice !== rarita) return false;
+    // Una carta di cui non si conosce il formato (`null`) non passa il filtro:
+    // chi chiede "solo le Standard" vuole un elenco su cui fidarsi, e un forse
+    // in mezzo alle carte valide è peggio di una carta in meno.
+    if (formato && formatoDi(carta)?.codice !== formato) return false;
     if (categoria && carta.categoria !== categoria) return false;
     if (tipo && !(carta.tipi ?? []).includes(tipo)) return false;
     if (stadio && carta.stadio !== stadio) return false;
@@ -171,6 +178,7 @@ export function progressoSet(set) {
  * @param {object[]} voci
  * @returns {{categorie: string[], tipi: string[], stadi: string[],
  *   rarita: import('../../data/rarita.js').ClasseRarita[],
+ *   formati: import('../../data/legalita.js').Formato[],
  *   serie: Array<{id: string, nome: string}>,
  *   set: Array<{id: string, nome: string, anno: number|null}>}}
  */
@@ -201,6 +209,9 @@ export function valoriDisponibili(voci) {
     // cui si guarda una collezione, e non è alfabetico né deducibile dal testo
     // grezzo del dataset (vedi data/rarita.js).
     rarita: classiPresenti((voci ?? []).map((v) => v.carta)),
+    // Stesso criterio: dal formato più ristretto, e solo quelli che esistono
+    // davvero nella collezione.
+    formati: formatiPresenti((voci ?? []).map((v) => v.carta)),
     // Alfabetico va bene: "Base" < "Livello 1" < "Livello 2" coincide con
     // l'ordine di gioco. Se comparissero altri stadi (MEGA, VMAX) servirebbe
     // un ordinamento esplicito.

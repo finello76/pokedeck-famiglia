@@ -22,6 +22,7 @@ import { opzioniDaRisposte } from '../ui/procedura-guidata/procedura-guidata.js'
 import { arricchisciProxy, foglioProxy } from './foglio-proxy.js';
 import { apriSostituzione } from './sostituzione.js';
 import { chiediNome } from './chiedi-nome.js';
+import { chiediConferma } from './chiedi-conferma.js';
 import { analizza } from '../engine/analisi.js';
 import '../ui/procedura-guidata/procedura-guidata.js';
 import '../ui/mazzo-generato/mazzo-generato.js';
@@ -781,7 +782,17 @@ salvati.addEventListener('piano-aperto', (evento) => {
   location.hash = `mazzi/${evento.detail.id}`;
 });
 
+// L'eliminazione chiede conferma: nella card il cestino sta accanto all'area
+// che apre il mazzo, e un tocco storto non deve cancellare per sempre il lavoro
+// di una serata. Prima i due comandi erano lontani e non si chiedeva niente.
 salvati.addEventListener('piano-eliminato', async (evento) => {
+  const piano = salvati.piani.find((p) => p.id === evento.detail.id);
+  const confermato = await chiediConferma({
+    titolo: `Eliminare «${piano?.nome ?? 'questo mazzo'}»?`,
+    aiuto: 'Le carte restano in collezione: si perde solo questo salvataggio, e non si recupera.',
+  });
+  if (!confermato) return;
+
   await eliminaPiano(evento.detail.id);
   await mostraSalvati();
 });
