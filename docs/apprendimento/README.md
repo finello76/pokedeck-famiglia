@@ -20,6 +20,7 @@ progetto solo come esempio concreto sotto mano.
 | 10 | [Riunire due rami](10-riunire-due-rami.md) | Cosa succede quando due linee di lavoro costruiscono la stessa cosa due volte? Conflitti che Git non segnala, versioni di schema omonime, e perché un test verde può proteggere un difetto. |
 | 11 | [L'oggetto incompleto](11-oggetti-incompleti.md) | Se tre punti del codice costruiscono "un mazzo", chi garantisce che sia la stessa cosa? Invarianti senza classi, campi derivabili e non, e perché i test si fabbricano input troppo gentili. |
 | 12 | [Regola o dato?](12-regole-o-dati.md) | Della stessa informazione, quale metà si calcola e quale si scarica? Dati che scadono, liste arbitrarie che non si indovinano, e le otto richieste al posto di ventunomila. |
+| 13 | [Stati, rotte e il tasto Indietro](13-stati-e-rotte.md) | Dove si tiene lo stato di una schermata che mostra tre cose diverse? Routing a frammento con parametri, delega degli eventi per elementi che non esistono ancora, `<details>` come fisarmonica nativa — e perché la stampa richiede JavaScript oltre al CSS. |
 
 ## Per chi è scritto
 
