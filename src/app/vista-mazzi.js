@@ -31,12 +31,24 @@ const wizard = document.querySelector('#wizard');
 const risultato = document.querySelector('#risultato-mazzi');
 const salvati = document.querySelector('#mazzi-salvati');
 const zonaWizard = document.querySelector('#zona-wizard');
+const libreria = document.querySelector('#libreria-mazzi');
 
 /** @type {object|null} ultimo piano mostrato */
 let pianoCorrente = null;
 
 /** @type {object|null} risposte del wizard, per poter rigenerare senza rifarlo */
 let ultimeRisposte = null;
+
+/**
+ * Quale salvataggio è già disegnato a schermo.
+ *
+ * Serve a non rileggere il piano da IndexedDB e ridisegnarlo quando la rotta
+ * torna la stessa — per esempio dopo un salvataggio, che cambia l'URL da
+ * `mazzi/risultato` a `mazzi/<id>` senza che i mazzi siano cambiati.
+ *
+ * @type {string|null}
+ */
+let rottaDisegnata = null;
 
 /**
  * Un seme nuovo per ogni generazione.
@@ -50,6 +62,17 @@ let ultimeRisposte = null;
  */
 function nuovoSeme() {
   return Math.floor(Math.random() * 2 ** 31);
+}
+
+/**
+ * @param {string} testo
+ * @returns {string}
+ */
+function escapeHtml(testo) {
+  return String(testo ?? '').replace(
+    /[&<>"']/g,
+    (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch],
+  );
 }
 
 /**
@@ -91,7 +114,6 @@ export async function preparaWizard() {
     // segnala nell'elenco invece di aggiungerne una copia in cima.
     idRiferimentoPrefatto: riferimento?.idPrefatto ?? null,
   };
-  await mostraSalvati();
 }
 
 /**
@@ -126,12 +148,35 @@ function setInCollezione(voci) {
 }
 
 /**
+ * Un errore che ferma la generazione, mostrato senza lasciare il wizard.
+ *
+ * Il wizard resta a schermo apposta: questi errori si correggono tornando
+ * indietro di una domanda (lasciare fuori meno set), e nasconderlo per mostrare
+ * un messaggio significherebbe far ricominciare tutto da capo.
+ *
+ * @param {string} testo
+ * @returns {void}
+ */
+function mostraErroreNelWizard(testo) {
+  let avviso = zonaWizard.querySelector('#errore-generazione');
+  if (!avviso) {
+    avviso = document.createElement('p');
+    avviso.id = 'errore-generazione';
+    avviso.className = 'errore';
+    avviso.setAttribute('role', 'alert');
+    zonaWizard.append(avviso);
+  }
+  avviso.textContent = testo;
+}
+
+/**
  * Genera i mazzi a partire dalle risposte del wizard.
  * @param {object} risposte
  * @returns {Promise<void>}
  */
 async function genera(risposte, seme = nuovoSeme()) {
   ultimeRisposte = risposte;
+  zonaWizard.querySelector('#errore-generazione')?.remove();
   const tutte = await elencoCompleto({ conDesideri: Boolean(opzioniDaRisposte(risposte).usaDesideri) });
 
   // I set esclusi si tolgono QUI, prima del motore: per lui devono essere
@@ -141,15 +186,15 @@ async function genera(risposte, seme = nuovoSeme()) {
   const voci = esclusi.size ? tutte.filter((v) => !esclusi.has(v.idSet)) : tutte;
 
   if (tutte.length === 0) {
-    risultato.innerHTML =
-      '<p class="errore">La collezione è vuota: cataloga qualche carta prima di generare i mazzi.</p>';
+    mostraErroreNelWizard(
+      'La collezione è vuota: cataloga qualche carta prima di generare i mazzi.',
+    );
     return;
   }
 
   if (voci.length === 0) {
-    risultato.hidden = false;
-    risultato.innerHTML = `<p class="errore">Hai escluso tutti i set che possiedi:
-      non resta nessuna carta con cui costruire i mazzi. Torna indietro e lasciane fuori meno.</p>`;
+    mostraErroreNelWizard(`Hai escluso tutti i set che possiedi: non resta nessuna carta
+      con cui costruire i mazzi. Torna indietro e lasciane fuori meno.`);
     return;
   }
 
@@ -234,6 +279,10 @@ async function genera(risposte, seme = nuovoSeme()) {
   }
 
   disegnaPiano(pianoCorrente, opzioni);
+  // Il risultato è uno stato suo nell'URL: il tasto Indietro riporta al wizard
+  // invece di uscire dalla schermata.
+  if (location.hash === '#mazzi/risultato') mostraStato('risultato');
+  else location.hash = 'mazzi/risultato';
 }
 
 /**
@@ -479,8 +528,9 @@ function esitoBersaglio(piano, opzioni, forze) {
  * @param {object} opzioni
  */
 function disegnaPiano(piano, opzioni) {
-  zonaWizard.hidden = true;
-  risultato.hidden = false;
+  // La visibilità dei tre stati la decide `mostraStato()` leggendo l'URL: se la
+  // decidesse anche questa funzione, un piano ridisegnato dopo una sostituzione
+  // riaprirebbe il dettaglio anche stando altrove.
   risultato.replaceChildren();
 
   const incompleti = piano.carenze.filter((c) => c.codice === 'mazzo-incompleto');
@@ -488,7 +538,8 @@ function disegnaPiano(piano, opzioni) {
   const intestazione = document.createElement('div');
   intestazione.className = 'no-stampa';
   intestazione.innerHTML = `
-    <h2>${piano.mazzi.length === 1 ? 'Il mazzo' : 'I mazzi'}</h2>
+    <button type="button" class="indietro" data-vai="mazzi">I miei mazzi</button>
+    <h2>${escapeHtml(piano.nome ?? (piano.mazzi.length === 1 ? 'Il mazzo' : 'I mazzi'))}</h2>
     <p class="aiuto">
       ${contaMazzi(piano.mazzi.length)} da ${opzioni.taglia} carte.
       Pesca le carte elencate dalla tua collezione.
@@ -522,7 +573,16 @@ function disegnaPiano(piano, opzioni) {
           ? '<button type="button" id="bottone-riequilibra" class="secondario">Riequilibra i mazzi</button>'
           : ''
       }
-      <button type="button" id="bottone-nuovo" class="secondario">Ricomincia</button>
+      ${
+        // Un mazzo costruito a mano si riprende dove lo si era lasciato: il
+        // costruttore lo ricarica carta per carta. Per i mazzi del wizard non
+        // avrebbe senso, ne contengono tre o quattro insieme.
+        piano.opzioni?.personalizzato && rottaDisegnata
+          ? `<button type="button" class="secondario"
+               data-vai="personalizzato/${escapeHtml(rottaDisegnata)}">Modifica a mano</button>`
+          : ''
+      }
+      <button type="button" class="secondario" data-vai="mazzi/nuovo">Crea altri mazzi</button>
     </div>
     <p id="stato-mazzi" class="stato" hidden></p>
   `;
@@ -550,7 +610,6 @@ function disegnaPiano(piano, opzioni) {
     document.querySelector('#regole')?.apriFormato(opzioni.taglia);
     location.hash = 'regole';
   });
-  intestazione.querySelector('#bottone-nuovo').addEventListener('click', () => ricomincia());
 
   // Il riequilibrio dopo le modifiche a mano è un pulsante, non un automatismo:
   // se hai appena scelto tu una carta, il motore non deve spostartela altrove
@@ -589,20 +648,22 @@ function disegnaPiano(piano, opzioni) {
     const stato = intestazione.querySelector('#stato-mazzi');
     const nome = await chiediNome({
       titolo: 'Che nome dai a questi mazzi?',
-      aiuto: 'Serve a ritrovarli nell\'elenco "Mazzi salvati", qui sotto.',
+      aiuto: 'Serve a ritrovarli fra "I miei mazzi".',
       valore: piano.nome ?? nomeProposto(piano, opzioni),
     });
     if (nome === null) return;
 
     try {
-      await salvaPiano(piano, piano.opzioni ?? opzioni, nome);
+      const id = await salvaPiano(piano, piano.opzioni ?? opzioni, nome);
       piano.nome = nome;
-      await mostraSalvati();
-      stato.textContent = `Salvato come «${nome}»: lo trovi qui sotto, in "Mazzi salvati".`;
+      stato.textContent = `Salvato come «${nome}»: lo ritrovi fra "I miei mazzi".`;
       stato.hidden = false;
-      // Si va a vedere dove è finito: salvare e non vedere niente cambiare
-      // sembra un salvataggio non riuscito.
-      salvati.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      // Da qui in poi il piano ha un'identità: l'URL la prende, così Indietro
+      // porta alla libreria e non al wizard. `rottaDisegnata` evita di
+      // rileggerlo da IndexedDB e ridisegnarlo: è già quello a schermo.
+      pianoCorrente = piano;
+      rottaDisegnata = id;
+      location.hash = `mazzi/${id}`;
     } catch (errore) {
       stato.textContent = `Salvataggio fallito: ${errore.message}`;
       stato.hidden = false;
@@ -693,13 +754,6 @@ function fogliaRegole(regole) {
   return sezione;
 }
 
-/** Torna al wizard per una nuova generazione. */
-function ricomincia() {
-  risultato.hidden = true;
-  zonaWizard.hidden = false;
-  wizard.ricomincia();
-}
-
 /**
  * Un nome di partenza per il salvataggio: la data e la taglia.
  *
@@ -717,22 +771,65 @@ function nomeProposto(piano, opzioni) {
 
 /** Elenco dei mazzi già salvati: il componente si occupa della resa. */
 async function mostraSalvati() {
-  let elenco = salvati.querySelector('elenco-salvati');
-  if (!elenco) {
-    elenco = document.createElement('elenco-salvati');
-    elenco.addEventListener('piano-aperto', (evento) => {
-      apriSalvato(evento.detail.id).catch((errore) => {
-        risultato.hidden = false;
-        risultato.innerHTML = `<p class="errore">Non si riesce ad aprire il mazzo: ${errore.message}</p>`;
-      });
-    });
-    elenco.addEventListener('piano-eliminato', async (evento) => {
-      await eliminaPiano(evento.detail.id);
-      await mostraSalvati();
-    });
-    salvati.replaceChildren(elenco);
+  salvati.piani = await elencoPiani();
+}
+
+// Aprire è una navigazione, non un ridisegno: l'id finisce nell'URL, così il
+// tasto Indietro del browser riporta all'elenco. Prima il mazzo aperto era uno
+// stato invisibile e Indietro usciva dalla schermata.
+salvati.addEventListener('piano-aperto', (evento) => {
+  location.hash = `mazzi/${evento.detail.id}`;
+});
+
+salvati.addEventListener('piano-eliminato', async (evento) => {
+  await eliminaPiano(evento.detail.id);
+  await mostraSalvati();
+});
+
+/**
+ * Mostra lo stato corrispondente alla rotta: libreria, wizard o dettaglio.
+ *
+ * @param {string} parametro la parte dopo `#mazzi/`
+ * @returns {Promise<void>}
+ */
+async function mostraStato(parametro) {
+  const nelWizard = parametro === 'nuovo';
+  const nelDettaglio = parametro !== '' && !nelWizard;
+
+  libreria.hidden = parametro !== '';
+  zonaWizard.hidden = !nelWizard;
+  risultato.hidden = !nelDettaglio;
+
+  if (parametro === '') {
+    rottaDisegnata = null;
+    await mostraSalvati();
+    return;
   }
-  elenco.piani = await elencoPiani();
+
+  if (nelWizard) {
+    rottaDisegnata = null;
+    // La collezione può essere cambiata da quando si è entrati l'ultima volta:
+    // il wizard va ripreparato ogni volta, non una sola.
+    await preparaWizard();
+    zonaWizard.querySelector('#errore-generazione')?.remove();
+    wizard.ricomincia();
+    return;
+  }
+
+  // Il piano appena generato non ha ancora un id: vive in memoria e basta.
+  // Ricaricando la pagina su questa rotta non c'è niente da mostrare.
+  if (parametro === 'risultato') {
+    if (!pianoCorrente) location.hash = 'mazzi';
+    return;
+  }
+
+  if (rottaDisegnata === parametro) return;
+  try {
+    await apriSalvato(parametro);
+    rottaDisegnata = parametro;
+  } catch (errore) {
+    risultato.innerHTML = `<p class="errore">Non si riesce ad aprire il mazzo: ${errore.message}</p>`;
+  }
 }
 
 /**
@@ -784,13 +881,11 @@ risultato.addEventListener('sostituzione-richiesta', (evento) => {
 
 wizard.addEventListener('completata', (evento) => {
   genera(evento.detail).catch((errore) => {
-    risultato.hidden = false;
-    risultato.innerHTML = `<p class="errore">Generazione fallita: ${errore.message}</p>`;
+    mostraErroreNelWizard(`Generazione fallita: ${errore.message}`);
   });
 });
 
-// Il wizard va ripreparato ogni volta che si entra nella vista: la collezione
-// può essere cambiata nel frattempo.
+// L'unico ingresso: la rotta decide cosa si vede.
 document.addEventListener('vista-cambiata', (evento) => {
-  if (evento.detail.nome === 'mazzi') preparaWizard();
+  if (evento.detail.nome === 'mazzi') mostraStato(evento.detail.parametro ?? '');
 });

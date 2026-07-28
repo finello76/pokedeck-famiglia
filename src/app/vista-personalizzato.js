@@ -25,10 +25,9 @@ import { contaComposizione } from '../engine/mazzo.js';
 import { TAGLIE } from '../engine/proporzioni.js';
 import { elencoPrefatti } from '../data/mazzi-prefatti.js';
 import { leggiRiferimento } from '../data/riferimento.js';
-import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
+import { salvaPiano, leggiPiano } from '../data/mazzi-salvati.js';
 import { chiediNome } from './chiedi-nome.js';
 import '../ui/costruttore-mazzo/costruttore-mazzo.js';
-import '../ui/elenco-salvati/elenco-salvati.js';
 
 const sezione = document.querySelector('#mazzo-personalizzato');
 
@@ -61,6 +60,17 @@ let disponibili = [];
 let tetto = null;
 
 /**
+ * L'id del salvataggio da ricaricare nel costruttore appena è pronto.
+ *
+ * Lo scrive il router leggendo `#personalizzato/<id>`; `preparaPersonalizzato()`
+ * lo consuma e lo azzera, così un ritorno nella vista senza parametro non
+ * ricarica di nuovo il mazzo di prima sopra il lavoro in corso.
+ *
+ * @type {string|null}
+ */
+let daRiaprire = null;
+
+/**
  * Prepara la vista: carica collezione e riferimenti.
  * @returns {Promise<void>}
  */
@@ -68,6 +78,7 @@ export async function preparaPersonalizzato() {
   if (!sezione) return;
 
   sezione.innerHTML = `
+    <button type="button" class="indietro" data-vai="mazzi">I miei mazzi</button>
     <h3>Mazzo personalizzato</h3>
     <p class="aiuto">
       Scegli tu le carte, dalla tua collezione. Il punteggio si aggiorna a ogni
@@ -96,13 +107,12 @@ export async function preparaPersonalizzato() {
     </div>
     <div id="proposta-personalizzato"></div>
     <p id="stato-personalizzato" class="stato" hidden></p>
-    <costruttore-mazzo id="costruttore"></costruttore-mazzo>
     <!--
-      Lo STESSO elenco della sezione "Crea mazzi", non una copia: stesso Web
-      Component, alimentato dallo stesso elencoPiani(). Prima si salvava qui e
-      il mazzo compariva di là, e sembrava perso.
+      Qui non c'e' piu' l'elenco dei mazzi salvati: sta nella libreria, che e'
+      la schermata da cui si entra qui dentro. Tenerne una copia in fondo a una
+      lista lunga come questa voleva dire scorrerla tutta per arrivarci.
     -->
-    <elenco-salvati id="salvati-personalizzato"></elenco-salvati>
+    <costruttore-mazzo id="costruttore"></costruttore-mazzo>
   `;
 
   const costruttore = sezione.querySelector('#costruttore');
@@ -130,7 +140,6 @@ export async function preparaPersonalizzato() {
   // confronto sotto il punteggio, e come scelta rapida nel menu della forza.
   riferimento = await leggiRiferimento().catch(() => null);
   mostraForze();
-  await mostraSalvati(costruttore);
 
   sezione.querySelector('#forza-personalizzato').addEventListener('change', (evento) => {
     forzaObiettivo = Number(evento.target.value);
@@ -158,6 +167,16 @@ export async function preparaPersonalizzato() {
 
   costruttore.addEventListener('scelta-cambiata', () => disegnaEsito(costruttore));
   disegnaEsito(costruttore);
+
+  // `#personalizzato/<id>` significa "riprendi a modificare questo salvataggio":
+  // ci si arriva dal pulsante "Modifica a mano" nel dettaglio del mazzo.
+  if (daRiaprire) {
+    const id = daRiaprire;
+    daRiaprire = null;
+    await riapri(costruttore, id).catch((errore) => {
+      messaggio(`Non è stato possibile riaprirlo: ${errore.message}`);
+    });
+  }
 }
 
 /**
@@ -205,35 +224,6 @@ function mostraForze() {
 }
 
 /**
- * Rilegge i mazzi salvati e li passa al componente.
- *
- * @param {HTMLElement} costruttore
- * @returns {Promise<void>}
- */
-async function mostraSalvati(costruttore) {
-  const elenco = sezione.querySelector('#salvati-personalizzato');
-  if (!elenco) return;
-  elenco.piani = await elencoPiani();
-
-  // Si collegano una volta sola: `#disegna()` del componente rifà le righe, ma
-  // gli ascoltatori stanno sull'elemento, non sulle righe.
-  if (elenco.dataset.collegato) return;
-  elenco.dataset.collegato = 'si';
-
-  elenco.addEventListener('piano-aperto', (evento) => {
-    riapri(costruttore, evento.detail.id).catch((errore) => {
-      messaggio(`Non è stato possibile riaprirlo: ${errore.message}`);
-    });
-  });
-
-  elenco.addEventListener('piano-eliminato', async (evento) => {
-    await eliminaPiano(evento.detail.id);
-    await mostraSalvati(costruttore);
-    messaggio('Mazzo eliminato.');
-  });
-}
-
-/**
  * Rimette nel costruttore le carte di un mazzo salvato.
  *
  * Funziona solo sui salvataggi da un mazzo solo — quelli fatti da qui. Un
@@ -251,8 +241,8 @@ async function riapri(costruttore, id) {
 
   if ((piano.mazzi?.length ?? 0) !== 1) {
     messaggio(
-      `«${piano.nome}» contiene ${piano.mazzi?.length ?? 0} mazzi: si apre da "Crea mazzi", ` +
-        'dove si possono confrontare fra loro.',
+      `«${piano.nome}» contiene ${piano.mazzi?.length ?? 0} mazzi: si guardano fra ` +
+        '"I miei mazzi", dove si possono confrontare fra loro.',
     );
     return;
   }
@@ -708,7 +698,7 @@ async function salva(costruttore) {
   // arrivava dal fondo del deposito invece che dalla schermata.
   const nome = await chiediNome({
     titolo: 'Che nome dai a questo mazzo?',
-    aiuto: 'Serve a ritrovarlo nell\'elenco "Mazzi salvati", qui sotto.',
+    aiuto: 'Serve a ritrovarlo fra "I miei mazzi".',
     valore: nomeProposto(mazzo),
   });
   if (nome === null) return;
@@ -717,18 +707,15 @@ async function salva(costruttore) {
     // Si costruisce un piano finto con un mazzo solo: il formato salvato è
     // quello dei mazzi generati, e riusarlo evita un secondo elenco nella
     // schermata dei salvataggi.
-    await salvaPiano(
+    const id = await salvaPiano(
       { mazzi: [{ ...mazzo, nome }], regole: [], carenze: [], permessi: {} },
       { taglia, numeroMazzi: 1, personalizzato: true },
       nome,
     );
-    await mostraSalvati(costruttore);
-    messaggio(`Salvato come «${nome}»: lo trovi qui sotto, in "Mazzi salvati".`);
-    // Si va a vedere dove è finito: salvare e non vedere niente cambiare
-    // sembra un salvataggio non riuscito.
-    sezione
-      .querySelector('#salvati-personalizzato')
-      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    // Si va a vederlo dove è finito: salvare e non vedere niente cambiare
+    // sembra un salvataggio non riuscito. Prima si scorreva fino in fondo alla
+    // pagina; ora il mazzo salvato ha una schermata sua.
+    location.hash = `mazzi/${id}`;
   } catch (errore) {
     messaggio(`Non è stato possibile salvare: ${errore.message}`);
   }
@@ -753,5 +740,7 @@ function nomeProposto(mazzo) {
 // l'intera collezione, e chi apre l'app sul catalogo non deve pagarne il costo.
 // Stessa scelta fatta per il wizard in `vista-mazzi.js`.
 document.addEventListener('vista-cambiata', (evento) => {
-  if (evento.detail.nome === 'personalizzato') preparaPersonalizzato();
+  if (evento.detail.nome !== 'personalizzato') return;
+  daRiaprire = evento.detail.parametro || null;
+  preparaPersonalizzato();
 });

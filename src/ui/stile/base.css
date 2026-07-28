@@ -328,6 +328,35 @@ main {
   margin-bottom: var(--spazio);
 }
 
+/* Ritorno alla schermata da cui si è entrati. Sta in cima e non in fondo
+   perché è la prima cosa che si cerca quando si è aperta la cosa sbagliata,
+   e su un telefono in fondo vuol dire "dopo tutto il contenuto". */
+.indietro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 0;
+  padding: 0.4rem 0.2rem;
+  margin: 0 0 0.4rem -0.2rem;
+  color: var(--colore-testo-tenue);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-block-size: 2.5rem;
+}
+
+.indietro::before {
+  content: '‹';
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.indietro:hover {
+  color: var(--colore-primario);
+}
+
 /* --- Moduli --- */
 
 label {
