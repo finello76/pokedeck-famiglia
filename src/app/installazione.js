@@ -91,70 +91,104 @@ function suIOS() {
  * @example
  * avviaInvitoInstallazione({ barra: document.querySelector('#barra-installa') });
  */
-export function avviaInvitoInstallazione({ barra }) {
-  if (!barra || giaInstallata() || ricordato(CHIAVE)) return;
+export function avviaInvitoInstallazione({ barra, pannello = null }) {
+  if (giaInstallata()) return;
 
-  const testo = barra.querySelector('[data-testo]');
-  const bottoneInstalla = barra.querySelector('#bottone-installa');
-  const bottonePiuTardi = barra.querySelector('#bottone-installa-dopo');
-  const spunta = barra.querySelector('#non-chiedere-installa');
-
-  /** L'evento del browser, messo da parte per usarlo quando lo decide l'utente. */
+  /**
+   * L'evento del browser, messo da parte per usarlo quando lo decide l'utente.
+   *
+   * **Vive per tutta la sessione e non viene mai buttato via**, nemmeno dopo un
+   * rifiuto. Questa è la lezione del guasto che ha reso "Aggiungi come app"
+   * irraggiungibile su PC: chiamare `preventDefault()` significa **prendersi la
+   * responsabilità** dell'installazione, perché da quel momento il browser non
+   * la propone più da sé. Se poi si chiude la barra e si azzera l'evento, non
+   * resta nessuna via: né la nostra, né quella di Chrome.
+   */
   let invitoBrowser = null;
 
-  const chiudi = () => {
-    // La spunta si legge alla chiusura, qualunque pulsante l'abbia causata:
-    // "Installa" + "non chiedere più" è una combinazione sensata — installo
-    // adesso e non voglio più sentirne parlare — e ignorarla sarebbe una
-    // piccola bugia sull'unico comando che l'utente ha per zittire l'app.
+  /** I punti che sanno offrire l'installazione, da riaccendere quando è possibile. */
+  const bottonePannello = pannello?.querySelector('#bottone-installa-ora') ?? null;
+  const testo = barra?.querySelector('[data-testo]');
+  const bottoneInstalla = barra?.querySelector('#bottone-installa') ?? null;
+  const bottonePiuTardi = barra?.querySelector('#bottone-installa-dopo') ?? null;
+  const spunta = barra?.querySelector('#non-chiedere-installa') ?? null;
+
+  /**
+   * Accende o spegne il pannello permanente in Regole → Installazione.
+   *
+   * È l'ancora di sicurezza: la barra si può chiudere, si può dire "non
+   * chiedermelo più", ma un modo per installare deve restare **sempre
+   * raggiungibile** da qualche parte che non sparisce.
+   */
+  const aggiornaPannello = () => {
+    if (!pannello) return;
+    pannello.hidden = !(invitoBrowser || suIOS());
+  };
+
+  const chiudiBarra = () => {
     if (spunta?.checked) ricorda(CHIAVE);
-    barra.hidden = true;
+    if (barra) barra.hidden = true;
   };
 
-  const mostra = () => {
-    barra.hidden = false;
-  };
-
-  bottonePiuTardi?.addEventListener('click', chiudi);
-
-  bottoneInstalla?.addEventListener('click', async () => {
+  /**
+   * Fa comparire l'installazione vera, o le istruzioni dove non esiste.
+   * @param {HTMLElement|null} dove il contenitore da cui è partito il comando
+   */
+  const installa = async (dove) => {
     if (!invitoBrowser) {
-      // Su iOS il pulsante non installa niente: apre le istruzioni, perché
-      // fingere che ci sia un'installazione automatica sarebbe peggio che
-      // non offrirla. La barra resta aperta mentre si leggono.
-      barra.querySelector('[data-istruzioni]')?.removeAttribute('hidden');
-      bottoneInstalla.hidden = true;
+      // Su iOS non c'è nessuna API: si mostrano le istruzioni. Fingere
+      // un'installazione automatica sarebbe peggio che non offrirla.
+      dove?.querySelector('[data-istruzioni]')?.removeAttribute('hidden');
       return;
     }
-    chiudi();
-    invitoBrowser.prompt();
-    // `userChoice` si risolve comunque, accettata o no. Se ha installato non
-    // c'è nulla da fare: `appinstalled` sotto pensa a non riproporlo.
-    await invitoBrowser.userChoice.catch(() => null);
+    const invito = invitoBrowser;
+    // Un evento già usato non si può riusare: si sgancia PRIMA di chiamarlo,
+    // così un doppio tocco non prova a mostrare due volte lo stesso prompt.
     invitoBrowser = null;
-  });
+    chiudiBarra();
+    try {
+      invito.prompt();
+      await invito.userChoice;
+    } catch {
+      /* prompt già consumato o rifiutato dal browser: sotto si riaccende */
+    }
+    // Rifiutato o fallito, il pannello resta com'era: Chrome rimanda
+    // `beforeinstallprompt` alla visita successiva, e nel frattempo le
+    // istruzioni del menu del browser restano l'altra via.
+    aggiornaPannello();
+  };
+
+  bottonePiuTardi?.addEventListener('click', chiudiBarra);
+  bottoneInstalla?.addEventListener('click', () => installa(barra));
+  bottonePannello?.addEventListener('click', () => installa(pannello));
 
   window.addEventListener('beforeinstallprompt', (evento) => {
-    // Senza questo, Chrome mostra la sua barra e la nostra diventa un doppione.
+    // `preventDefault()` toglie di mezzo la barra automatica di Chrome, che
+    // altrimenti sarebbe un doppione della nostra. Da qui in poi la via
+    // d'installazione la offriamo noi: vedi `invitoBrowser` sopra.
     evento.preventDefault();
     invitoBrowser = evento;
-    mostra();
+    aggiornaPannello();
+    // La barra invadente rispetta il "non chiedermelo più"; il pannello no,
+    // perché quello si va a cercare apposta.
+    if (barra && !ricordato(CHIAVE)) barra.hidden = false;
   });
 
   // Installata durante la sessione: l'invito non ha più senso, e riproporlo
   // dopo che si è appena fatto è il modo più veloce di sembrare rotti.
   window.addEventListener('appinstalled', () => {
-    ricorda(CHIAVE);
-    barra.hidden = true;
+    invitoBrowser = null;
+    if (barra) barra.hidden = true;
+    if (pannello) pannello.hidden = true;
   });
 
   if (suIOS()) {
-    // Niente evento da aspettare: si mostra subito, ma con le istruzioni al
-    // posto dell'installazione automatica.
     if (testo) {
       testo.textContent = 'Aggiungi YouPokèDeck alla schermata Home: funziona anche offline.';
     }
     if (bottoneInstalla) bottoneInstalla.textContent = 'Come si fa';
-    mostra();
+    if (bottonePannello) bottonePannello.textContent = 'Come si fa';
+    if (barra && !ricordato(CHIAVE)) barra.hidden = false;
   }
+  aggiornaPannello();
 }

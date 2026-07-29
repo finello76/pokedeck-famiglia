@@ -145,6 +145,23 @@
         -->
         <section class="pannello no-stampa" id="mazzi-prefatti" hidden></section>
 
+        <!-- Resta `hidden` finché il browser non dichiara l'app installabile:
+             un pulsante "Installa" che non installa niente è peggio che non
+             averlo. Se l'app è già installata non compare. -->
+        <section class="pannello no-stampa" id="pannello-installa" hidden>
+          <h2>Installazione</h2>
+          <p class="aiuto" data-testo>
+            Installata, l'app si apre a schermo intero e funziona anche senza rete.
+          </p>
+          <p class="aiuto istruzioni-ios" data-istruzioni hidden>
+            Tocca <strong>Condividi</strong> in fondo allo schermo, poi
+            <strong>Aggiungi alla schermata Home</strong>.
+          </p>
+          <div class="azioni">
+            <button type="button" id="bottone-installa-ora">Installa l'app</button>
+          </div>
+        </section>
+
         <section class="pannello" id="pannello-dati">
           <h2>Dati</h2>
           <p class="aiuto">

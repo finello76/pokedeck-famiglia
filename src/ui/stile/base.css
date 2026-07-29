@@ -269,7 +269,7 @@ h3 {
   line-height: 1.35;
 }
 
-.barra-installa .istruzioni-ios {
+.istruzioni-ios {
   padding: 0.6rem 0.7rem;
   border-radius: var(--raggio-piccolo);
   background: var(--colore-superficie-2);
@@ -367,7 +367,11 @@ h3 {
 .pie-versione {
   max-width: var(--larghezza-massima);
   margin: 0 auto;
-  padding: 0.5rem var(--spazio) 1.5rem;
+  /* In fondo lo spazio della tab bar fissa (≈4.5rem) piu' la tacca dei
+     telefoni senza tasto Home. E' l'ultimo elemento della pagina: se non se lo
+     riserva lui, il numero di build resta sotto la barra e non c'e' modo di
+     leggerlo — che e' l'unica cosa per cui quel numero esiste. */
+  padding: 0.5rem var(--spazio) calc(5.5rem + env(safe-area-inset-bottom, 0px));
   text-align: center;
 }
 
@@ -394,8 +398,11 @@ main {
   max-width: var(--larghezza-massima);
   margin-inline: auto;
   padding: var(--spazio);
-  /* Spazio in fondo per non finire sotto la tab bar fissa (≈4.5rem + tacca). */
-  padding-block-end: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  /* Lo spazio per la tab bar fissa NON sta qui ma su `.pie-versione`, che nel
+     markup viene dopo `</main>`: la riserva serve all'ULTIMO elemento del
+     flusso, e metterla qui lasciava il piè di pagina — cioè il numero di
+     build — sepolto sotto la barra. Averla in tutti e due significherebbe
+     invece un buco di 90px in fondo a ogni schermata. */
 }
 
 .pannello {

@@ -205,9 +205,12 @@ fileImport.addEventListener('change', async () => {
   try {
     const esito = await importa(await file.text(), { sostituisci });
     await aggiornaCollezione();
+    // I mazzi si nominano solo se ce n'erano: "e 0 mazzi" su un file di sola
+    // collezione sembrerebbe che qualcosa sia andato perso.
+    const conMazzi = esito.mazzi ? ` e ${esito.mazzi} ${esito.mazzi === 1 ? 'mazzo' : 'mazzi'}` : '';
     mostraStato(
       statoScambio,
-      `Importate ${esito.importate} carte (${esito.sostituito ? 'sostituzione' : 'unione'}).`,
+      `Importate ${esito.importate} carte${conMazzi} (${esito.sostituito ? 'sostituzione' : 'unione'}).`,
     );
   } catch (errore) {
     mostraStato(statoScambio, `Importazione non riuscita: ${errore.message}`, true);
@@ -238,6 +241,11 @@ avviaBarraAggiornamento({
 // L'invito a installare. Va dopo la barra di aggiornamento perché le due
 // possono comparire insieme, e in quel caso l'aggiornamento viene prima: è
 // l'unico modo di uscire da una versione rotta, installare può aspettare.
-avviaInvitoInstallazione({ barra: document.querySelector('#barra-installa') });
+avviaInvitoInstallazione({
+  barra: document.querySelector('#barra-installa'),
+  // Il pannello in Regole è l'ancora: la barra si chiude e può essere zittita
+  // per sempre, ma un modo per installare deve restare raggiungibile.
+  pannello: document.querySelector('#pannello-installa'),
+});
 
 mostraVersione(document.querySelector('#versione'));

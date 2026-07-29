@@ -10,8 +10,16 @@
  */
 
 import { elencoCompleto, svuotaTutto, scriviMoltePer } from './collezione.js';
+import { recordSalvati, scriviRecord } from './mazzi-salvati.js';
 
-/** Versione del formato del file, per riconoscere export vecchi in futuro. */
+/**
+ * Versione del formato del file.
+ *
+ * Resta **1** anche dopo l'aggiunta dei mazzi: il campo `mazzi` è facoltativo e
+ * la sua assenza è indistinguibile da "non ne avevo". Un file vecchio si
+ * rilegge senza conversioni, e uno nuovo aperto da una versione vecchia
+ * dell'app perde i mazzi ma non le carte — cioè degrada, non si rompe.
+ */
 const VERSIONE_FORMATO = 1;
 
 /**
@@ -23,10 +31,20 @@ export async function esporta() {
   // perderli spostando la collezione su un altro telefono sarebbe una perdita
   // silenziosa — te ne accorgeresti solo davanti allo scaffale del negozio.
   const righe = await elencoCompleto({ conDesideri: true });
+  // I mazzi salvati sono lavoro fatto a mano — nomi scelti, regole della casa
+  // accettate, punteggi con cui i mazzi sono stati dichiarati pari — e senza
+  // di essi "esporta dati" mantiene solo metà della promessa: si cambia
+  // telefono e i mazzi restano indietro, senza che niente lo dica.
+  const mazzi = await recordSalvati();
   return {
     formato: 'pokedeck-famiglia',
     versione: VERSIONE_FORMATO,
     esportatoIl: new Date().toISOString(),
+    // Il record salvato porta con sé i campi delle carte e la forza calcolata:
+    // si esporta tale e quale, e al reimport torna identico. Pesa più delle
+    // carte, ma un mazzo ricostruito dal dataset di domani non sarebbe lo
+    // stesso mazzo (vedi `istantanea()` in mazzi-salvati.js).
+    mazzi,
     carte: righe.map((r) => ({
       idSet: r.idSet,
       numero: r.numero,
@@ -112,6 +130,39 @@ export function validaImport(dati) {
 }
 
 /**
+ * I mazzi salvati contenuti in un file di scambio, scartando quelli inservibili.
+ *
+ * Funzione **pura**, separata dalla scrittura, per due motivi: si prova senza
+ * un IndexedDB, e soprattutto un mazzo malformato non deve far fallire l'import
+ * delle carte. Le due cose viaggiano insieme nel file ma non dipendono l'una
+ * dall'altra: perdere un mazzo rotto è un danno piccolo, perdere la collezione
+ * per colpa sua no.
+ *
+ * Per questo qui si **scarta in silenzio** invece di lanciare, al contrario di
+ * `validaImport()` sulle carte: là un errore significa che il file non è quello
+ * che dice di essere, qui che una voce su venti è storta.
+ *
+ * @param {any} dati l'oggetto letto dal file
+ * @returns {object[]} i record utilizzabili, eventualmente vuoto
+ * @example
+ * mazziDaImportare({ mazzi: [{ id: '2026-01-01', nome: 'Casa', mazzi: [] }] }).length; // 1
+ * mazziDaImportare({});                                                               // []
+ */
+export function mazziDaImportare(dati) {
+  if (!Array.isArray(dati?.mazzi)) return [];
+  return dati.mazzi.filter(
+    (r) =>
+      r &&
+      typeof r === 'object' &&
+      typeof r.id === 'string' &&
+      r.id !== '' &&
+      // `mazzi` è l'elenco dei mazzi dentro il piano: senza, non c'è niente da
+      // riaprire e la voce comparirebbe nell'elenco come una card vuota.
+      Array.isArray(r.mazzi),
+  );
+}
+
+/**
  * Importa una collezione da testo JSON.
  *
  * @param {string} testo contenuto del file
@@ -135,5 +186,9 @@ export async function importa(testo, opzioni = {}) {
   if (opzioni.sostituisci) await svuotaTutto();
 
   const importate = await scriviMoltePer(voci);
-  return { importate, sostituito: Boolean(opzioni.sostituisci) };
+  // I mazzi si aggiungono sempre, anche con `sostituisci`: quell'opzione parla
+  // della collezione — "queste sono le mie carte, non quelle" — e allargarla
+  // ai mazzi cancellerebbe lavoro che l'utente non ha mai chiesto di buttare.
+  const mazzi = await scriviRecord(mazziDaImportare(dati));
+  return { importate, mazzi, sostituito: Boolean(opzioni.sostituisci) };
 }

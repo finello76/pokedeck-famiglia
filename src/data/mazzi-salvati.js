@@ -210,6 +210,40 @@ export async function elencoPiani() {
 }
 
 /**
+ * I piani **come stanno su disco**, senza idratare e senza riordinare.
+ *
+ * Serve all'export: il record salvato è già autosufficiente — porta con sé i
+ * campi delle carte e la forza calcolata — quindi riscriverlo tale e quale su
+ * un altro dispositivo lo restituisce identico. Idratarlo prima significherebbe
+ * salvare una forma derivata, che al reimport andrebbe disfatta.
+ *
+ * @returns {Promise<object[]>}
+ */
+export function recordSalvati() {
+  return leggiTutto(STORE_MAZZI);
+}
+
+/**
+ * Riscrive dei record letti da un file di scambio.
+ *
+ * Non svuota: i mazzi importati si **aggiungono** a quelli che ci sono già. Un
+ * import che cancellasse i mazzi del dispositivo su cui arriva sarebbe una
+ * perdita silenziosa, e chi importa sta portando roba *dentro*, non
+ * sostituendo. Gli `id` sono le date di creazione: una collisione vera è
+ * possibile solo reimportando lo stesso file, e allora sovrascrivere lo stesso
+ * mazzo con sé stesso è il comportamento giusto.
+ *
+ * I record arrivano già validati da `mazziDaImportare()`: qui si scrive e basta.
+ *
+ * @param {object[]} record
+ * @returns {Promise<number>} quanti ne sono stati scritti
+ */
+export async function scriviRecord(record) {
+  for (const r of record ?? []) await scrivi(STORE_MAZZI, r);
+  return (record ?? []).length;
+}
+
+/**
  * @param {string} id
  * @returns {Promise<object|undefined>}
  */

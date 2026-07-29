@@ -326,6 +326,33 @@ window.navigator.standalone === true   // solo Safari, da sempre
 > altri. Scrivere per il web significa ogni tanto scrivere due volte la stessa
 > funzionalità, e **dichiararlo nel codice** invece di far finta che sia una.
 
+### `preventDefault()` è una promessa, non un interruttore
+
+Questa è costata un guasto vero: su PC «Aggiungi come app» ha smesso di
+funzionare.
+
+Chiamare `evento.preventDefault()` significa **prendersi la responsabilità**
+dell'installazione: da quel momento il browser non la propone più da sé, perché
+gli hai detto che ci pensi tu. Nella prima versione l'evento veniva poi messo a
+`null` dopo un rifiuto, e la barra si chiudeva con «Più tardi». Risultato: né la
+via del browser, né la nostra. L'utente restava senza nessuna strada fino al
+ricaricamento della pagina.
+
+Due regole ne sono uscite:
+
+1. **L'evento non si butta mai via** per tutta la sessione. È l'unico handle che
+   si ha, e il browser non lo rimanda prima della visita successiva.
+2. Se un invito si può chiudere — e deve potersi chiudere — allora da qualche
+   parte serve **un punto d'ingresso che non sparisce**. Qui è il pannello
+   «Installazione» in Regole, che ignora di proposito il «non chiedermelo più»:
+   quella spunta zittisce l'app, non disattiva la funzione.
+
+> È un caso particolare di una regola generale: quando prendi il controllo di
+> un comportamento predefinito del browser — `preventDefault` su un submit, su
+> un drop, su una navigazione — stai **sostituendo** qualcosa che funzionava.
+> Se la tua sostituzione ha un percorso in cui non fa niente, hai tolto una
+> funzionalità invece di migliorarla.
+
 ### Chiedere una volta e poi tacere
 
 Un invito che ritorna a ogni avvio si impara a chiudere senza leggerlo. La
