@@ -65,6 +65,15 @@ const CLASSI = [
     prova: (r) => /^rara$|olografica|^rara bianco e nero$|lucente|^shiny rare/i.test(r),
   },
   {
+    codice: 'classica',
+    etichetta: 'Collezione Classica',
+    // Non è un gradino di rarità ma un sottoinsieme: le 25 ristampe di carte
+    // storiche dentro Celebrations (`cel25cc`). Sta da sola perché è così che
+    // la si cerca — "quelle vecchie ristampate" — e infilarla fra le rare
+    // direbbe una cosa falsa sul suo valore.
+    prova: (r) => /^classic collection$/i.test(r),
+  },
+  {
     codice: 'stella-1',
     etichetta: '★ Una stella',
     prova: (r) => /^une? [ée]toile$|^un chromatique$/i.test(r),
@@ -82,7 +91,13 @@ const CLASSI = [
   {
     codice: 'ultrarara',
     etichetta: 'Ultrarara',
-    prova: (r) => /ultrarara|^rara doppia$|asso tattico|^policrome$/i.test(r),
+    // Le ultime tre in inglese sono le carte da copertina di ere che in Italia
+    // non sono mai uscite (LV.X di Diamante & Perla, Prime e LEGEND di
+    // HeartGold & SoulSilver): i loro set arrivano dal ripiego inglese, e per
+    // quelle rarità un nome italiano non esiste da nessuna parte. Vanno qui
+    // perché è il gradino che occupavano davvero nelle loro bustine.
+    prova: (r) =>
+      /ultrarara|^rara doppia$|asso tattico|^policrome$|lv\.x$|^rare prime$|^legend$/i.test(r),
   },
   {
     codice: 'illustrazione',

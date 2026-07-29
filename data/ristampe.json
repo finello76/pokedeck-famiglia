@@ -1,18 +1,1421 @@
 {
- "generatoIl": "2026-07-25",
+ "generatoIl": "2026-07-29",
  "ristampe": {
-  "bw7/108": {
+  "2011bw/1": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Slam",
+     "costo": [
+      "Erba",
+      "Incolore"
+     ],
+     "danno": "20×"
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "2021swsh/5"
+  },
+  "2011bw/2": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "costo": [
+      "Erba"
+     ],
+     "danno": 20
+    },
+    {
+     "costo": [
+      "Erba",
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw1/11"
+  },
+  "2011bw/3": {
    "ps": 70,
    "attacchi": [
     {
-     "nome": "Copia Universale",
+     "nome": "Ember",
+     "costo": [
+      "Fuoco",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "2021swsh/13"
+  },
+  "2011bw/4": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Water Pulse",
+     "costo": [
+      "Acqua",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "2021swsh/21"
+  },
+  "2011bw/5": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "costo": [
+      "Acqua",
+      "Acqua",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw1/38"
+  },
+  "2011bw/6": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Lampo",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/40"
+  },
+  "2011bw/7": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Psico",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw7/68"
+  },
+  "2011bw/8": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 10
+    },
+    {
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw1/63"
+  },
+  "2011bw/9": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "costo": [
+      "Oscurità"
+     ],
+     "danno": 10
+    },
+    {
+     "costo": [
+      "Oscurità",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw2/66"
+  },
+  "2011bw/10": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Girosmodato",
+     "costo": [
+      "Metallo"
+     ],
+     "danno": "10×"
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "xy11/71"
+  },
+  "2011bw/11": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/84",
+   "approssimati": true
+  },
+  "2011bw/12": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw1/87"
+  },
+  "2012bw/1": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    },
+    {
+     "costo": [
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/3"
+  },
+  "2012bw/2": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw2/1"
+  },
+  "2012bw/3": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "costo": [
+      "Erba",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw3/6"
+  },
+  "2012bw/4": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "costo": [
+      "Fuoco",
+      "Fuoco",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "ritirata": 3,
+   "datiDa": "bw1/17"
+  },
+  "2012bw/5": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "costo": [
+      "Acqua",
+      "Acqua",
+      "Incolore"
+     ],
+     "danno": 40
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/29"
+  },
+  "2012bw/6": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "costo": [
+      "Lampo"
+     ],
+     "danno": 10
+    },
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "ritirata": 0,
+   "datiDa": "bw2/32"
+  },
+  "2012bw/7": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Psico",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw2/36"
+  },
+  "2012bw/9": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/66"
+  },
+  "2012bw/10": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/68"
+  },
+  "2012bw/11": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "costo": [
+      "Metallo"
+     ],
+     "danno": 10
+    },
+    {
+     "costo": [
+      "Metallo",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "bw1/75"
+  },
+  "2012bw/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw3/86"
+  },
+  "2016xy/1": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Fire Soul",
+     "costo": [
+      "Fuoco",
+      "Fuoco"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "dp2/107"
+  },
+  "2016xy/2": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Ember",
+     "costo": [
+      "Fuoco"
+     ],
+     "danno": "20"
+    }
+   ],
+   "datiDa": "2015xy/3"
+  },
+  "2016xy/3": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Fuocofatuo",
+     "costo": [
+      "Fuoco"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "xy1/24"
+  },
+  "2016xy/4": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Azione",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Convulsione",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": "10x"
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "base1/35"
+  },
+  "2016xy/5": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Fury Strikes",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": "10×"
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "2021swsh/18"
+  },
+  "2016xy/6": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Nuzzle",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Quick Attack",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "20+"
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "2014xy/5"
+  },
+  "2016xy/7": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw1/68"
+  },
+  "2016xy/8": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "costo": [
+      "Psico"
+     ],
+     "danno": 20
+    },
+    {
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "20x"
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "2024sv/4"
+  },
+  "2016xy/9": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Poison Barb",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "neo1/51"
+  },
+  "2016xy/10": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Saltamicizia",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Crisi Energetica",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "20×"
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "xy3/34"
+  },
+  "2016xy/11": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Pay Day",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Dig Claws",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "hgss1/75"
+  },
+  "2016xy/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Quick Draw",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 80
+    }
+   ],
+   "ritirata": 2,
+   "datiDa": "2018sm/11"
+  },
+  "2017sm/8": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Swagger",
+     "costo": [
+      "Oscurità"
+     ],
+     "danno": null
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "B2/094",
+   "approssimati": true
+  },
+  "2019sm/1": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Spin Tackle",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 20
+    }
+   ],
+   "datiDa": "neo2/53"
+  },
+  "2019sm/3": {
+   "ps": 80,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    },
+    {
+     "costo": [
+      "Fuoco",
+      "Fuoco",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "datiDa": "bw6/20"
+  },
+  "2019sm/5": {
+   "ps": 120,
+   "attacchi": [
+    {
+     "nome": "Far Spesa",
+     "costo": [
+      "Acqua"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Acquasplash",
+     "costo": [
+      "Acqua",
+      "Acqua",
+      "Incolore"
+     ],
+     "danno": "80+"
+    }
+   ],
+   "datiDa": "xy9/28"
+  },
+  "2019sm/6": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Nuzzle",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Quick Attack",
+     "costo": [
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "20+"
+    }
+   ],
+   "datiDa": "2014xy/5"
+  },
+  "2019sm/7": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Lick",
+     "costo": [
+      "Psico"
+     ],
+     "danno": 10
+    },
+    {
+     "nome": "Energy Conversion",
+     "costo": [
+      "Psico",
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "base3/33"
+  },
+  "2019sm/8": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Mischief",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Light Punch",
+     "costo": [
+      "Lotta",
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "ex6/38"
+  },
+  "2019sm/9": {
+   "ps": 100,
+   "attacchi": [
+    {
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 30
+    },
+    {
+     "costo": [
+      "Lotta",
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    }
+   ],
+   "datiDa": "bw9/61"
+  },
+  "2019sm/10": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Swagger",
+     "costo": [
+      "Oscurità"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "B2/094"
+  },
+  "2019sm/12": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Quick Draw",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 80
+    }
+   ],
+   "datiDa": "2018sm/11"
+  },
+  "A4a/059": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Good Night Song",
      "costo": [
       "Incolore"
      ],
      "danno": null
     }
    ],
-   "datiDa": "A1/205"
+   "datiDa": "basep/36"
+  },
+  "A4a/063": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Jump Catch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/31",
+   "approssimati": true
+  },
+  "A4a/077": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Jump Catch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/31",
+   "approssimati": true
+  },
+  "B2/206": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Sputter",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "neo1/23"
+  },
+  "B2/213": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Let's Play!",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/35"
+  },
+  "B2/223": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Smash Punch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "neo2/66"
+  },
+  "base3/3": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Copy",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ecard3/51"
+  },
+  "base3/18": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Copy",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ecard3/51"
+  },
+  "bw7/108": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Stick On",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xyp/XY40"
+  },
+  "col1/24": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "col1/36": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Smash Punch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "neo2/66"
+  },
+  "col1/46": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Sputter",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "neo1/23"
+  },
+  "col1/47": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Mime",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "dpp/DP22",
+   "approssimati": true
+  },
+  "dp1/42": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Alluring Smile",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/54",
+   "approssimati": true
+  },
+  "dp1/48": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Gather Energy",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/36"
+  },
+  "dp1/69": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Jump Catch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/31"
+  },
+  "dp1/78": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31",
+   "approssimati": true
+  },
+  "dp2/47": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Call for Family",
+     "costo": [],
+     "danno": null
+    },
+    {
+     "nome": "Spring Out",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "pl1/73"
+  },
+  "dp2/88": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Ignite",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "ex12/58"
+  },
+  "dp2/93": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Energy Retrieval",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/20"
+  },
+  "dp3/67": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Blown Kiss",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex10/31"
+  },
+  "dp4/70": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Set Song",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex5/37"
+  },
+  "dp5/97": {
+   "ps": 140,
+   "attacchi": [
+    {
+     "costo": [
+      "Lotta"
+     ],
+     "danno": 60
+    },
+    {
+     "costo": [
+      "Acqua",
+      "Lotta"
+     ],
+     "danno": 100
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "bw6/90"
+  },
+  "dp5/100": {
+   "ps": 130,
+   "attacchi": [
+    {
+     "nome": "Tri Attack",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 50
+    }
+   ],
+   "evolveDa": "Porygon2",
+   "datiDa": "bwp/BW84"
+  },
+  "dp6/27": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Energy Ball",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "ex6/4"
+  },
+  "dp7/45": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Let's Play!",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/35",
+   "approssimati": true
+  },
+  "dp7/96": {
+   "ps": 140,
+   "attacchi": [
+    {
+     "nome": "Reaper Pulse",
+     "costo": [
+      "Psico",
+      "Psico",
+      "Incolore"
+     ],
+     "danno": 70
+    }
+   ],
+   "evolveDa": "Dusclops",
+   "datiDa": "dpp/DP33",
+   "approssimati": true
+  },
+  "dp7/97": {
+   "ps": 120,
+   "attacchi": [
+    {
+     "nome": "Ferrazione",
+     "costo": [
+      "Metallo",
+      "Metallo",
+      "Metallo"
+     ],
+     "danno": 110
+    }
+   ],
+   "datiDa": "A2/120"
+  },
+  "dpp/DP31": {
+   "ps": 120,
+   "attacchi": [
+    {
+     "nome": "Ferrazione",
+     "costo": [
+      "Metallo",
+      "Metallo",
+      "Metallo"
+     ],
+     "danno": 110
+    }
+   ],
+   "datiDa": "A2/120"
+  },
+  "dpp/DP53": {
+   "ps": 120,
+   "attacchi": [
+    {
+     "nome": "Gather Light",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Judgment Blast",
+     "costo": [
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "xyp/XY83"
+  },
+  "ex14/21": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Set Song",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex5/37"
+  },
+  "hgss1/17": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "hgss1/28": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Let's Play!",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/35"
+  },
+  "hgss1/30": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Psykiss",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "neo3/54"
+  },
+  "hgss1/33": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Smash Punch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "neo2/66"
+  },
+  "hgss1/44": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Good Night Song",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/36"
+  },
+  "hgss4/21": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Energy Kick",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ecard2/9"
+  },
+  "hgss4/41": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Sputter",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "neo1/23"
+  },
+  "hgssp/HGSS12": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "hgssp/HGSS13": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Psykiss",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "neo3/54"
+  },
+  "me01/071": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Smash Punch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 30
+    }
+   ],
+   "datiDa": "neo2/66"
+  },
+  "neo1/22": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Energy Kick",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    }
+   ],
+   "ritirata": 1,
+   "datiDa": "ecard2/9"
+  },
+  "neo2/40": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Good Night Song",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/36"
+  },
+  "pl4/25": {
+   "ps": 50,
+   "attacchi": [
+    {
+     "nome": "Let's Play!",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/35",
+   "approssimati": true
+  },
+  "pop9/11": {
+   "ps": 40,
+   "attacchi": [
+    {
+     "nome": "Energy Retrieval",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/20"
   },
   "sm1/76": {
    "ps": 40,
@@ -53,6 +1456,19 @@
    ],
    "datiDa": "sm12/128"
   },
+  "sm10/100": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Gut Blow",
+     "costo": [
+      "Lotta"
+     ],
+     "danno": "10+"
+    }
+   ],
+   "datiDa": "dp6/126"
+  },
   "sm10/121": {
    "ps": 50,
    "attacchi": [
@@ -70,6 +1486,47 @@
     }
    ],
    "datiDa": "sm1/86"
+  },
+  "sm10/131": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31",
+   "approssimati": true
+  },
+  "sm11/77": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Alluring Smile",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/54",
+   "approssimati": true
+  },
+  "sm11/173": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Heave",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": "30x"
+    }
+   ],
+   "datiDa": "dp1/33"
   },
   "sm12/39": {
    "ps": 60,
@@ -112,6 +1569,34 @@
     }
    ],
    "datiDa": "smp/SM128"
+  },
+  "sm12/146": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Jump Catch",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ex2/31",
+   "approssimati": true
+  },
+  "sm12/168": {
+   "ps": 60,
+   "attacchi": [
+    {
+     "nome": "Good Night Song",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/36",
+   "approssimati": true
   },
   "sm5/28": {
    "ps": 60,
@@ -238,6 +1723,125 @@
    "datiDa": "sm1/87",
    "approssimati": true
   },
+  "sv03/080": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "sv03/202": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "sv04.5/031": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Mime",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "dpp/DP22",
+   "approssimati": true
+  },
+  "sv04.5/150": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "sv04.5/157": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Mime",
+     "costo": [
+      "Psico"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "dpp/DP22",
+   "approssimati": true
+  },
+  "sv04/019": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Sputter",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "neo1/23"
+  },
+  "sv04/059": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Energy Kick",
+     "costo": [
+      "Lampo"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "ecard2/9"
+  },
+  "sv04/186": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Sputter",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "neo1/23"
+  },
+  "sv08/075": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Psykiss",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "neo3/54"
+  },
   "sv08/122": {
    "ps": 50,
    "attacchi": [
@@ -288,18 +1892,44 @@
    "datiDa": "sm1/87",
    "approssimati": true
   },
-  "swsh10.5/053": {
-   "ps": 70,
+  "svp/037": {
+   "ps": 30,
    "attacchi": [
     {
-     "nome": "Copia Universale",
+     "nome": "Eek",
      "costo": [
       "Incolore"
      ],
      "danno": null
     }
    ],
-   "datiDa": "A1/205"
+   "datiDa": "basep/31"
+  },
+  "svp/095": {
+   "ps": 30,
+   "attacchi": [
+    {
+     "nome": "Eek",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    }
+   ],
+   "datiDa": "basep/31"
+  },
+  "swsh10.5/053": {
+   "ps": 70,
+   "attacchi": [
+    {
+     "nome": "Stick On",
+     "costo": [
+      "Incolore"
+     ],
+     "danno": 10
+    }
+   ],
+   "datiDa": "xyp/XY40"
   },
   "swsh11/044": {
    "ps": 50,
@@ -346,27 +1976,77 @@
    "ps": 70,
    "attacchi": [
     {
-     "nome": "Copia Universale",
+     "nome": "Stick On",
      "costo": [
       "Incolore"
      ],
-     "danno": null
+     "danno": 10
     }
    ],
-   "datiDa": "A1/205"
+   "datiDa": "xyp/XY40"
   },
   "swsh12.5gg/GG22": {
    "ps": 70,
    "attacchi": [
     {
-     "nome": "Copia Universale",
+     "nome": "Stick On",
      "costo": [
       "Incolore"
      ],
-     "danno": null
+     "danno": 10
     }
    ],
-   "datiDa": "A1/205"
+   "datiDa": "xyp/XY40"
+  },
+  "tk-hs-g/20": {
+   "ps": 130,
+   "attacchi": [
+    {
+     "nome": "Tail Revenge",
+     "costo": [],
+     "danno": "30x"
+    },
+    {
+     "nome": "Wreak Havoc",
+     "costo": [
+      "Acqua",
+      "Incolore"
+     ],
+     "danno": 40
+    },
+    {
+     "nome": "Dragon Beat",
+     "costo": [
+      "Acqua",
+      "Acqua",
+      "Incolore",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 100
+    }
+   ],
+   "ritirata": 3,
+   "evolveDa": "Magikarp",
+   "datiDa": "dp7/19"
+  },
+  "tk-hs-r/19": {
+   "ps": 90,
+   "attacchi": [
+    {
+     "nome": "Gigashock",
+     "costo": [
+      "Lampo",
+      "Lampo",
+      "Lampo",
+      "Lampo"
+     ],
+     "danno": 30
+    }
+   ],
+   "ritirata": 1,
+   "evolveDa": "Pikachu",
+   "datiDa": "base3/14"
   },
   "tk-sm-l/1": {
    "ps": 50,
@@ -1109,14 +2789,14 @@
    "ps": 60,
    "attacchi": [
     {
-     "nome": "Attacco Rapido",
+     "nome": "Quick Attack",
      "costo": [
       "Erba"
      ],
      "danno": "10+"
     }
    ],
-   "datiDa": "xy5/6"
+   "datiDa": "xyp/XY36"
   },
   "tk-xy-latia/11": {
    "ps": 60,
@@ -1184,14 +2864,22 @@
    "ps": 100,
    "attacchi": [
     {
-     "nome": "Raffica di Nebbia",
+     "nome": "Energy Assist",
      "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Sky Heal",
+     "costo": [
+      "Fuoco",
       "Psico"
      ],
-     "danno": 30
+     "danno": 40
     }
    ],
-   "datiDa": "smp/SM87"
+   "datiDa": "dv1/9"
   },
   "tk-xy-latia/16": {
    "ps": 50,
@@ -1267,14 +2955,14 @@
    "ps": 60,
    "attacchi": [
     {
-     "nome": "Attacco Rapido",
+     "nome": "Quick Attack",
      "costo": [
       "Erba"
      ],
      "danno": "10+"
     }
    ],
-   "datiDa": "xy5/6"
+   "datiDa": "xyp/XY36"
   },
   "tk-xy-latia/25": {
    "ps": 130,
@@ -1350,14 +3038,22 @@
    "ps": 100,
    "attacchi": [
     {
-     "nome": "Raffica di Nebbia",
+     "nome": "Energy Assist",
      "costo": [
+      "Incolore"
+     ],
+     "danno": null
+    },
+    {
+     "nome": "Sky Heal",
+     "costo": [
+      "Fuoco",
       "Psico"
      ],
-     "danno": 30
+     "danno": 40
     }
    ],
-   "datiDa": "smp/SM87"
+   "datiDa": "dv1/9"
   },
   "tk-xy-latio/1": {
    "ps": 50,
@@ -1442,24 +3138,24 @@
    "ps": 110,
    "attacchi": [
     {
-     "nome": "Irruzione",
+     "nome": "Suersonic Flight",
      "costo": [
       "Incolore",
       "Incolore"
      ],
-     "danno": 30
+     "danno": 40
     },
     {
-     "nome": "Volo Lagunare",
+     "nome": "Psyburn",
      "costo": [
       "Psico",
-      "Incolore",
+      "Psico",
       "Incolore"
      ],
      "danno": 70
     }
    ],
-   "datiDa": "smp/SM88"
+   "datiDa": "xyp/XY65"
   },
   "tk-xy-latio/14": {
    "ps": 90,
@@ -1658,24 +3354,24 @@
    "ps": 110,
    "attacchi": [
     {
-     "nome": "Irruzione",
+     "nome": "Suersonic Flight",
      "costo": [
       "Incolore",
       "Incolore"
      ],
-     "danno": 30
+     "danno": 40
     },
     {
-     "nome": "Volo Lagunare",
+     "nome": "Psyburn",
      "costo": [
       "Psico",
-      "Incolore",
+      "Psico",
       "Incolore"
      ],
      "danno": 70
     }
    ],
-   "datiDa": "smp/SM88"
+   "datiDa": "xyp/XY65"
   },
   "tk-xy-n/1": {
    "ps": 60,
@@ -2527,23 +4223,23 @@
    "ps": 90,
    "attacchi": [
     {
-     "nome": "Arriccianastro",
+     "nome": "Disarming Voice",
      "costo": [
       "Folletto"
      ],
-     "danno": 30
+     "danno": 20
     },
     {
-     "nome": "Echeggiavoce",
+     "nome": "Fairy Wind",
      "costo": [
       "Folletto",
       "Incolore",
       "Incolore"
      ],
-     "danno": 50
+     "danno": 60
     }
    ],
-   "datiDa": "xy3/72"
+   "datiDa": "xyp/XY04"
   },
   "tk-xy-sy/16": {
    "ps": 90,
@@ -2666,23 +4362,23 @@
    "ps": 90,
    "attacchi": [
     {
-     "nome": "Arriccianastro",
+     "nome": "Disarming Voice",
      "costo": [
       "Folletto"
      ],
-     "danno": 30
+     "danno": 20
     },
     {
-     "nome": "Echeggiavoce",
+     "nome": "Fairy Wind",
      "costo": [
       "Folletto",
       "Incolore",
       "Incolore"
      ],
-     "danno": 50
+     "danno": 60
     }
    ],
-   "datiDa": "xy3/72"
+   "datiDa": "xyp/XY04"
   },
   "tk-xy-w/1": {
    "ps": 60,
@@ -2966,6 +4662,21 @@
     }
    ],
    "datiDa": "xy1/89"
+  },
+  "xyp/XY94": {
+   "ps": 110,
+   "attacchi": [
+    {
+     "nome": "Schiantalbero",
+     "costo": [
+      "Psico",
+      "Incolore",
+      "Incolore"
+     ],
+     "danno": 60
+    }
+   ],
+   "datiDa": "xy1/55"
   }
  }
 }
