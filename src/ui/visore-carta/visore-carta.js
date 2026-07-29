@@ -35,6 +35,8 @@
 
 import { urlImmagine } from '../../data/dataset.js';
 import { bloccaScorrimento, sbloccaScorrimento } from '../../app/blocca-scroll.js';
+import { creaInclinazione, limita, MASSIMO } from './inclinazione.js';
+import { eInglese, SPIEGAZIONE } from '../lingua-set.js';
 
 export class VisoreCarta extends HTMLElement {
   /** @type {HTMLDialogElement|null} */
@@ -45,19 +47,15 @@ export class VisoreCarta extends HTMLElement {
   #indice = 0;
   /** @type {number|null} X d'inizio dello swipe, null se nessun tocco in corso */
   #tocco = null;
-  /** @type {{beta: number, gamma: number}|null} inclinazione del telefono al
-   *  momento dell'apertura: il tilt si misura da lì, non dallo zero assoluto,
-   *  o la carta partirebbe già storta in mano. */
-  #base = null;
+  /** @type {ReturnType<typeof creaInclinazione>} il calcolo del tilt, con la
+   *  presa iniziale e lo smorzamento. Vive in `inclinazione.js` perché è
+   *  l'unica parte del visore verificabile senza un telefono in mano. */
+  #inclinazione = creaInclinazione();
   /** @type {(e: DeviceOrientationEvent) => void} gestore registrato/rimosso all'apertura/chiusura */
   #suOrientamento = (evento) => {
     if (evento.beta == null || evento.gamma == null) return;
-    if (!this.#base) this.#base = { beta: evento.beta, gamma: evento.gamma };
-    // beta = avanti/indietro, gamma = sinistra/destra. Delta rispetto alla
-    // presa iniziale, smorzato e limitato: l'effetto dev'essere un luccichio,
-    // non una giostra.
-    const rx = limita((this.#base.beta - evento.beta) * 0.35, 8);
-    const ry = limita((evento.gamma - this.#base.gamma) * 0.35, 8);
+    // beta = avanti/indietro, gamma = sinistra/destra.
+    const { rx, ry } = this.#inclinazione.passo(evento.beta, evento.gamma);
     this.#inclina(rx, ry);
   };
 
@@ -67,6 +65,7 @@ export class VisoreCarta extends HTMLElement {
         <div class="barra-alto">
           <button class="chiudi" type="button" aria-label="Chiudi">✕</button>
           <span class="posizione"></span>
+          <span class="avviso-lingua" hidden></span>
           <span class="spazio" aria-hidden="true"></span>
         </div>
 
@@ -162,8 +161,10 @@ export class VisoreCarta extends HTMLElement {
     tela.addEventListener('pointermove', (evento) => {
       if (evento.pointerType === 'touch') return;
       const r = cornice.getBoundingClientRect();
-      const ry = limita(((evento.clientX - r.left) / r.width - 0.5) * 16, 8);
-      const rx = limita((0.5 - (evento.clientY - r.top) / r.height) * 16, 8);
+      // Col mouse non c'è nessuna singolarità da schivare: la posizione del
+      // puntatore è già una coordinata lineare. Resta com'era — funziona bene.
+      const ry = limita(((evento.clientX - r.left) / r.width - 0.5) * 16, MASSIMO);
+      const rx = limita((0.5 - (evento.clientY - r.top) / r.height) * 16, MASSIMO);
       this.#inclina(rx, ry);
     });
     tela.addEventListener('pointerleave', () => this.#inclina(0, 0));
@@ -204,7 +205,7 @@ export class VisoreCarta extends HTMLElement {
   /** Attiva il giroscopio. */
   #avviaMovimento() {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    this.#base = null;
+    this.#inclinazione.azzera();
     if (typeof DeviceOrientationEvent === 'undefined') return;
 
     const ascolta = () => window.addEventListener('deviceorientation', this.#suOrientamento);
@@ -228,7 +229,7 @@ export class VisoreCarta extends HTMLElement {
   /** Stacca il giroscopio e riporta la carta piatta. */
   #fermaMovimento() {
     window.removeEventListener('deviceorientation', this.#suOrientamento);
-    this.#base = null;
+    this.#inclinazione.azzera();
     this.#inclina(0, 0);
   }
 
@@ -352,6 +353,15 @@ export class VisoreCarta extends HTMLElement {
     this.querySelector('.posizione').textContent =
       this.#lista.length > 1 ? `${this.#indice + 1} / ${this.#lista.length}` : '';
 
+    // Set senza dati italiani: qui la scansione È il contenuto, e chi la
+    // guarda deve sapere che i nomi degli attacchi che legge non sono quelli
+    // stampati sulla sua copia.
+    const avviso = this.querySelector('.avviso-lingua');
+    const inglese = eInglese(voce);
+    avviso.hidden = !inglese;
+    avviso.textContent = inglese ? 'EN' : '';
+    avviso.title = inglese ? SPIEGAZIONE : '';
+
     this.#rendiCopie(voce);
 
     // Frecce: con una carta sola spariscono; agli estremi si disabilitano.
@@ -396,16 +406,6 @@ export class VisoreCarta extends HTMLElement {
     sbloccaScorrimento();
     this.#fermaMovimento();
   }
-}
-
-/**
- * Limita un valore all'intervallo [-massimo, massimo].
- * @param {number} valore
- * @param {number} massimo
- * @returns {number}
- */
-function limita(valore, massimo) {
-  return Math.min(Math.max(valore, -massimo), massimo);
 }
 
 customElements.define('visore-carta', VisoreCarta);

@@ -11,7 +11,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
     />
-    <title>PokéDeck Famiglia</title>
+    <title>YouPokèDeck</title>
     <meta name="description" content="Catalogo della collezione Pokémon TCG e generatore di mazzi equilibrati per giocare in famiglia." />
     <meta name="theme-color" content="#2a5fd6" />
 
@@ -211,16 +211,41 @@
           <button type="button" class="chiudi-foglio" data-chiudi aria-label="Chiudi">✕</button>
         </div>
         <div class="pannello-cerca">
-          <p class="aiuto">
+          <!-- Due strade per la stessa carta. La frazione è più rapida quando è
+               stampata, ma le promo il totale non ce l'hanno: lì l'unica presa
+               è il nome. Si mostrano entrambe invece di far scegliere prima,
+               perché guardando la carta si vede subito quale delle due si può
+               usare. -->
+          <div class="modi-ricerca" role="group" aria-label="Come cercare la carta">
+            <button type="button" class="modo attivo" data-ricerca="frazione">Numero / totale</button>
+            <button type="button" class="modo" data-ricerca="nome">Nome</button>
+          </div>
+
+          <p class="aiuto" data-per="frazione">
             Digita il numero stampato in basso sulla carta, es. <strong>118/191</strong>.
           </p>
-          <form id="modulo-ricerca" class="riga-frazione">
+          <form id="modulo-ricerca" class="riga-frazione" data-per="frazione">
             <div class="frazione">
               <input id="campo-numero" name="numero" inputmode="numeric" placeholder="118"
                      aria-label="Numero della carta" required />
               <span class="barra-frazione" aria-hidden="true">/</span>
               <input id="campo-totale" name="totale" inputmode="numeric" placeholder="191"
                      aria-label="Totale del set" required />
+            </div>
+            <button type="submit" class="cerca" aria-label="Cerca">↵</button>
+          </form>
+
+          <p class="aiuto" data-per="nome" hidden>
+            Il nome scritto sulla carta. Se leggi anche il numero, aggiungilo:
+            restringe quasi sempre a una carta sola.
+          </p>
+          <form id="modulo-nome" class="riga-frazione" data-per="nome" hidden>
+            <div class="frazione frazione-nome">
+              <input id="campo-nome" name="nome" placeholder="Articuno ex"
+                     autocomplete="off" aria-label="Nome della carta" required />
+              <span class="barra-frazione" aria-hidden="true">n.</span>
+              <input id="campo-numero-nome" name="numero" placeholder="032"
+                     autocomplete="off" aria-label="Numero della carta (facoltativo)" />
             </div>
             <button type="submit" class="cerca" aria-label="Cerca">↵</button>
           </form>
@@ -243,6 +268,26 @@
       "ricarica" e le sue schede non si chiudono mai: senza questa barra non ci
       sarebbe alcun modo di passare alla versione appena pubblicata.
     -->
+    <!-- L'invito a installare. Resta `hidden` finché non c'è davvero una via
+         di installazione: su un browser che non la offre non deve comparire
+         un pulsante che non fa niente. -->
+    <div id="barra-installa" class="barra-installa no-stampa" role="dialog"
+         aria-label="Installa l'app" hidden>
+      <p data-testo>Installa YouPokèDeck sul telefono: si apre a schermo intero e funziona offline.</p>
+      <p class="istruzioni-ios" data-istruzioni hidden>
+        Tocca <strong>Condividi</strong> in fondo allo schermo, poi
+        <strong>Aggiungi alla schermata Home</strong>.
+      </p>
+      <div class="azioni-installa">
+        <button type="button" id="bottone-installa">Installa</button>
+        <button type="button" id="bottone-installa-dopo" class="secondario">Più tardi</button>
+      </div>
+      <label class="non-chiedere">
+        <input type="checkbox" id="non-chiedere-installa" />
+        <span>Non chiedermelo più</span>
+      </label>
+    </div>
+
     <div id="barra-aggiornamento" class="barra-aggiornamento no-stampa" role="status" hidden>
       <span data-testo>È disponibile una versione nuova dell'app.</span>
       <button type="button" id="bottone-aggiorna">Aggiorna</button>

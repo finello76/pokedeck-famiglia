@@ -420,6 +420,168 @@ export async function cercaPerNumeroStampato(numero, totale) {
 }
 
 /**
+ * Indice dei nomi: nome normalizzato → `'idSet:numero idSet:numero …'`.
+ * Prodotto da `tools/genera-indice-nomi.mjs`. Vedi `cercaPerNomeGlobale()`.
+ * @type {Record<string, string>|null}
+ */
+let cacheNomi = null;
+
+/** @type {Promise<void>|null} caricamento in corso, per non lanciarne due */
+let caricamentoNomi = null;
+
+/**
+ * Carica l'indice dei nomi, una volta sola.
+ *
+ * Sta nel guscio del service worker come `evoluzioni.json`: ~250 KB, che è
+ * tanto per un file solo ma è **l'alternativa a scaricare 8,6 MB di set** per
+ * poter cercare un nome. Se manca, la ricerca globale non trova nulla e chi
+ * chiama ripiega sul numero stampato: è un di più, non un requisito.
+ *
+ * @returns {Promise<void>}
+ */
+async function assicuraNomi() {
+  if (cacheNomi) return;
+  caricamentoNomi ??= fetch(new URL('../../data/nomi.json', import.meta.url))
+    .then((r) => (r.ok ? r.json() : {}))
+    .catch(() => ({}))
+    .then((indice) => {
+      cacheNomi = indice ?? {};
+    });
+  await caricamentoNomi;
+}
+
+/**
+ * Quante voci dell'indice può espandere una ricerca parziale.
+ *
+ * Digitando "a" corrisponderebbero migliaia di nomi, e ognuno costringerebbe a
+ * scaricare il file di un set: il tetto tiene la ricerca istantanea invece di
+ * far scaricare mezzo catalogo a chi ha solo sfiorato la tastiera.
+ */
+const MAX_NOMI = 40;
+
+/**
+ * Quanti set può aprire una ricerca. È il tetto che conta davvero: ogni set è
+ * un file da scaricare, e sono i megabyte, non le righe, a far aspettare.
+ */
+const MAX_SET = 12;
+
+/** Quante carte può proporre una ricerca: oltre, la lista non si scorre più. */
+const MAX_CANDIDATE = 60;
+
+/**
+ * Cerca una carta per **nome**, in tutti i set, non solo in quelli caricati.
+ *
+ * È la strada per identificare una carta fisica quando il numero stampato non
+ * basta — le promo, che il totale non ce l'hanno proprio. Il nome da solo è
+ * ambiguo (*Pikachu* esiste in 107 stampe), ma **nome + numero individua una
+ * carta sola nel 97% dei casi**: molto meglio di numero + totale, dove i
+ * candidati arrivano per pura coincidenza aritmetica fra set diversi.
+ *
+ * Scarica **solo** i file dei set che compaiono nell'indice per quel nome.
+ *
+ * @param {string} testo nome anche parziale, accenti e maiuscole indifferenti
+ * @param {string|number|null} [numero] il numero di collezione, se leggibile
+ * @returns {Promise<{trovate: Array<{set: object, carta: object}>, nonLetti: string[], troppi: boolean}>}
+ * @example
+ * await cercaPerNomeGlobale('articuno ex', 32);
+ * // → { trovate: [{ set: {id:'np', …}, carta: {nome:'Articuno ex', …} }], … }
+ */
+export async function cercaPerNomeGlobale(testo, numero = null) {
+  const ago = normalizza(testo);
+  if (!ago) return { trovate: [], nonLetti: [], troppi: false };
+
+  await assicuraNomi();
+
+  // La corrispondenza esatta ha la precedenza: chi scrive tutto il nome non
+  // deve vedersi annegare "Articuno" dentro "Articuno ex" e "Articuno V".
+  const chiavi = cacheNomi[ago]
+    ? [ago]
+    : Object.keys(cacheNomi)
+        .filter((k) => k.includes(ago))
+        .sort((a, b) => a.length - b.length);
+
+  let troppi = chiavi.length > MAX_NOMI;
+  const scelte = chiavi.slice(0, MAX_NOMI);
+
+  /** @type {Map<string, string[]>} idSet → numeri da cercarci dentro */
+  const perSet = new Map();
+  const cercato = numero == null || numero === '' ? null : String(numero).trim();
+  let candidate = 0;
+
+  /**
+   * Se si è raccolto abbastanza e conviene fermarsi.
+   *
+   * Il tetto sui *nomi* da solo non basta, e la differenza si vede solo
+   * provando: cercare "ar" corrisponde a 40 nomi, ma quei 40 nomi sono
+   * ristampati in **147 set diversi** — cioè praticamente l'intero catalogo,
+   * 8 MB, scaricati per una ricerca a due lettere. È esattamente ciò che
+   * questa funzione esisteva per evitare.
+   *
+   * Quindi si contano anche i **set** (ogni set è un file da scaricare, il
+   * costo vero) e le **carte** (ogni carta è una riga da disegnare). Chi ha
+   * digitato troppo poco riceve i primi risultati e l'invito a scrivere di
+   * più, invece di un'attesa di dieci secondi.
+   */
+  const troncare = () => {
+    if (perSet.size < MAX_SET && candidate < MAX_CANDIDATE) return false;
+    troppi = true;
+    return true;
+  };
+
+  for (const chiave of scelte) {
+    if (troncare()) break;
+    for (const posizione of cacheNomi[chiave].split(' ')) {
+      if (troncare()) break;
+      // Si taglia sul **primo** `:` e tutto il resto è il numero: gli id dei
+      // set non lo contengono mai, i numeri di collezione sì (le promo hanno
+      // sigle come `SWSH033`, e non si può escludere niente a priori).
+      const taglio = posizione.indexOf(':');
+      const idSet = posizione.slice(0, taglio);
+      const num = posizione.slice(taglio + 1);
+      if (cercato !== null && !stessoNumero(num, cercato)) continue;
+      if (!perSet.has(idSet)) perSet.set(idSet, []);
+      perSet.get(idSet).push(num);
+      candidate += 1;
+    }
+  }
+
+  const info = new Map((await elencoSet()).map((s) => [s.id, s]));
+  const trovate = [];
+  const nonLetti = [];
+
+  // Un set irraggiungibile — offline, mai aperto prima — non deve far fallire
+  // tutta la ricerca: le altre carte si trovano lo stesso. Ma va detto, o si
+  // crede di non possedere una carta che invece c'è. Il nome del set si tiene
+  // qui perché l'errore di `caricaSet` non lo porta con sé.
+  const esiti = await Promise.all(
+    [...perSet].map(async ([idSet, numeri]) => {
+      try {
+        return { idSet, set: await caricaSet(idSet), numeri };
+      } catch {
+        return { idSet, set: null, numeri };
+      }
+    }),
+  );
+
+  for (const { idSet, set, numeri } of esiti) {
+    if (!set) {
+      nonLetti.push(info.get(idSet)?.nome ?? idSet);
+      continue;
+    }
+    for (const numeroCarta of numeri) {
+      const carta = set.carte.find((c) => String(c.numero) === numeroCarta);
+      if (!carta) continue;
+      trovate.push({
+        set: info.get(idSet) ?? { id: idSet, nome: set.nome },
+        carta: await completaEvoluzione(carta),
+      });
+    }
+  }
+
+  return { trovate, nonLetti, troppi };
+}
+
+/**
  * Cerca carte per nome.
  *
  * **Cerca solo nei set già caricati in memoria**, non in tutti i 190. Non è una

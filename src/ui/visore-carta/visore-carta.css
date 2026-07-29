@@ -105,6 +105,22 @@ visore-carta .barra-alto .posizione {
   font-variant-numeric: tabular-nums;
 }
 
+/* Set senza dati italiani. Nel visore la scansione E' il contenuto — sotto la
+   carta non c'e' altro testo — quindi e' qui che sapere di star leggendo
+   l'inglese conta di piu'. Sta nella barra in alto e non sopra la carta, che
+   non va coperta. Colori pieni e non trasparenti come il chip della griglia:
+   il visore ha fondo scuro fisso, non segue il tema. */
+visore-carta .barra-alto .avviso-lingua {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgb(167 139 250 / 22%);
+  color: #c4b5fd;
+  border: 1px solid rgb(167 139 250 / 45%);
+  cursor: help;
+}
+
 /* --- Corpo: la carta al centro, il contatore in fondo --- */
 visore-carta .corpo-visore {
   flex: 1;

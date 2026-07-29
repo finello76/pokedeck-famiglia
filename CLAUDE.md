@@ -77,6 +77,24 @@ Il file ha forma `{da: {...}, nonPokemon: [...]}`: `nonPokemon` sono le pre-evol
 che in realtà sono carte Allenatore (i fossili — Omanyte "evolve" da *Vecchio
 Helixfossile*), che il motore non deve stampare come Pokémon.
 
+Poi l'indice dei nomi, che è quello che rende catalogabili le **promo**:
+
+```bash
+node tools/genera-indice-nomi.mjs   # ricostruisce data/nomi.json
+```
+
+Sulle promo il totale non è stampato (`032` e basta), quindi la ricerca per
+numero+totale non può funzionare: l'unica presa è il nome. Il file mappa nome
+normalizzato → `'idSet:numero …'` e sta nel `GUSCIO`, perché senza la ricerca
+per nome è muta. `tests/nomi-indice.test.js` verifica che copra **tutti** i set
+presenti: se dimentichi di rilanciarlo dopo `scarica-set.mjs`, il test lo dice —
+altrimenti l'app continuerebbe a funzionare, solo senza le carte nuove.
+
+Attenzione: l'indice lo **scrive** `normalizzaNome` di `src/engine/nomi.js` e lo
+**legge** la `normalizza` privata di `src/data/dataset.js`, che è una copia
+deliberata (`data/` non deve dipendere da `engine/`). Se le due divergono
+l'indice non dà errore: smette di trovare, in silenzio. C'è un test apposta.
+
 Poi la legalità nei tornei:
 
 ```bash
@@ -184,10 +202,23 @@ inglese non permette di ritrovare la carta nel mazzetto — cioè fallisce propr
 TCGdex fornisce nomi, tipi, stadi, attacchi ed **effetti in italiano**, più le scansioni delle
 carte italiane.
 
-- **Il repo contiene TUTTI i set** (190 set, 21.037 carte, ~6,4 MB in `data/set/`).
+- **Il repo contiene TUTTI i set** (189 set, 21.264 carte, ~8,6 MB in `data/set/`).
   La collezione è fatta di **carte sciolte**, non di set interi: qualsiasi carta può venire
   da qualsiasi set, quindi limitarsi a un elenco impedirebbe di catalogare la prossima carta
   che salta fuori. Non esiste più un file di set posseduti.
+  (Il solo set escluso è `wp`, che non ha carte in nessuna lingua.)
+- **79 set hanno i dati in inglese** (5.910 carte: era EX, Neo, e-Card, Diamante & Perla,
+  HeartGold & SoulSilver, le promo vecchie). In italiano TCGdex quei set li elenca ma non
+  ha nemmeno una carta, pur essendo usciti qui davvero: `scarica-set.mjs` ripiega
+  sull'inglese e li marca con **`lingua: 'en'`** nell'indice (assente = italiano).
+  Nome del set, serie e data restano italiani; cambiano nomi delle carte e degli attacchi,
+  e le scansioni. I campi **strutturali sono tradotti** in fase di download — `categoria`,
+  `stadio`, `tipi`, i costi degli attacchi, `rarita` — perché il motore li usa come chiavi
+  (`categoria === 'Pokémon'`) e una carta non tradotta sparirebbe in silenzio da ogni
+  conteggio. Vedi `VOCABOLARIO` in `tools/scarica-set.mjs` e
+  `docs/apprendimento/14-una-lingua-che-manca.md`.
+  Chi mostra una carta **deve dire** quando il set è `lingua: 'en'`: il danno non è
+  l'inglese, è l'inglese spacciato per italiano.
 - **La PWA però non li carica tutti**: il service worker precarica solo `indice.json`
   (~30 KB) e mette in cache il file di un set alla prima lettura. Offline resta disponibile
   ciò che si è davvero usato. Non aggiungere i file dei set all'elenco `GUSCIO` di `sw.js`.

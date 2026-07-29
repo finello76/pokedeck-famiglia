@@ -3,20 +3,28 @@
  *
  * È l'azione più ripetuta dell'app — si usa col telefono in mano mentre si
  * sfogliano le carte fisiche — quindi sta dietro a un pulsante sempre a portata
- * di pollice invece che in fondo alla pagina. Si digita il numero stampato
- * (`118/191`), l'app cerca in tutti i set e mostra i candidati; se il numero è
- * ambiguo (più set con lo stesso totale) si toccano per scegliere.
+ * di pollice invece che in fondo alla pagina.
  *
- * Qui non c'è logica di dominio: la ricerca la fa `cercaPerNumeroStampato`, la
- * scrittura `aggiungiCopie`. Questo modulo raccoglie l'input, disegna i
- * candidati e richiama chi deve aggiornare la collezione.
+ * Ci sono **due strade** per la stessa carta, e a scegliere è la carta:
+ *
+ * - **numero / totale** (`118/191`): la più rapida, ma il totale identifica il
+ *   set solo per coincidenza — 101 è cinque set diversi — quindi i candidati
+ *   possono essere parecchi e si toccano per scegliere;
+ * - **nome (+ numero)**: l'unica possibile sulle **promo**, dove il totale non
+ *   è stampato affatto (`032` e basta). Nome e numero insieme individuano una
+ *   carta sola nel 97% dei casi.
+ *
+ * Qui non c'è logica di dominio: la ricerca la fanno `cercaPerNumeroStampato` e
+ * `cercaPerNomeGlobale`, la scrittura `aggiungiCopie`. Questo modulo raccoglie
+ * l'input, disegna i candidati e richiama chi deve aggiornare la collezione.
  *
  * @module app/aggiunta
  */
 
-import { cercaPerNumeroStampato, urlImmagine } from '../data/dataset.js';
+import { cercaPerNumeroStampato, cercaPerNomeGlobale, urlImmagine } from '../data/dataset.js';
 import { aggiungiCopie, impostaDesiderio } from '../data/collezione.js';
 import { segnaposto, seImmagineRotta } from '../ui/segnaposto.js';
+import { pastigliaLingua } from '../ui/lingua-set.js';
 import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
 
 /**
@@ -33,10 +41,15 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
   const fab = document.querySelector('#fab-aggiungi');
   const foglio = document.querySelector('#foglio-aggiunta');
   const form = document.querySelector('#modulo-ricerca');
+  const formNome = document.querySelector('#modulo-nome');
   const campoNumero = document.querySelector('#campo-numero');
+  const campoNome = document.querySelector('#campo-nome');
   const stato = document.querySelector('#stato-ricerca');
   const risultati = document.querySelector('#risultati');
   if (!fab || !foglio || !form) return;
+
+  /** Quale delle due strade è a schermo: `'frazione'` o `'nome'`. */
+  let modoRicerca = 'frazione';
 
   /** Quante copie aggiunge un tocco su un candidato. */
   let quante = 1;
@@ -49,6 +62,28 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     fab.hidden = !(suCatalogo() && foglio.hidden);
   };
 
+  /**
+   * Mostra una delle due strade di ricerca e nasconde l'altra.
+   *
+   * Il modo **non** si ricorda fra un'apertura e l'altra: si riparte dalla
+   * frazione perché è il caso normale: la stragrande maggioranza delle carte
+   * il totale ce l'ha stampato.
+   *
+   * @param {'frazione'|'nome'} quale
+   */
+  function mostraModo(quale) {
+    modoRicerca = quale;
+    for (const elemento of foglio.querySelectorAll('[data-per]')) {
+      elemento.hidden = elemento.dataset.per !== quale;
+    }
+    for (const bottone of foglio.querySelectorAll('[data-ricerca]')) {
+      bottone.classList.toggle('attivo', bottone.dataset.ricerca === quale);
+    }
+    risultati.replaceChildren();
+    mostraStato('');
+    (quale === 'nome' ? campoNome : campoNumero)?.focus();
+  }
+
   function apri() {
     quante = 1;
     // Si riparte sempre da "ce l'ho": è il caso normale, e ricordare l'ultima
@@ -57,13 +92,14 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     foglio.hidden = false;
     bloccaScorrimento();
     aggiornaFab();
-    campoNumero.focus();
+    mostraModo('frazione');
   }
 
   function chiudi() {
     foglio.hidden = true;
     sbloccaScorrimento();
     form.reset();
+    formNome?.reset();
     risultati.replaceChildren();
     mostraStato('');
     aggiornaFab();
@@ -78,6 +114,8 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
   fab.addEventListener('click', apri);
   foglio.addEventListener('click', (evento) => {
     if (evento.target.closest('[data-chiudi]')) chiudi();
+    const scelta = evento.target.closest('[data-ricerca]');
+    if (scelta) mostraModo(scelta.dataset.ricerca);
   });
   document.addEventListener('vista-cambiata', aggiornaFab);
   aggiornaFab();
@@ -113,8 +151,64 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     }
   });
 
+  formNome?.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    risultati.replaceChildren();
+
+    const dati = new FormData(formNome);
+    const nome = String(dati.get('nome')).trim();
+    // Il numero qui è **facoltativo**: è quello che rende il nome un
+    // identificatore vero, ma su una carta rovinata può non essere leggibile e
+    // non deve bloccare la ricerca.
+    const numero = String(dati.get('numero') ?? '').trim();
+    if (!nome) return;
+
+    mostraStato('Cerco…');
+    try {
+      const { trovate, nonLetti, troppi } = await cercaPerNomeGlobale(nome, numero || null);
+
+      if (trovate.length === 0) {
+        const motivo = nonLetti.length
+          ? ` Non è stato possibile leggere ${nonLetti.length} set (${nonLetti.join(', ')}): ` +
+            'probabilmente sei senza rete e quei set non erano ancora stati aperti.'
+          : numero
+            ? ' Prova senza il numero, o controlla come è scritto il nome.'
+            : ' Controlla come è scritto il nome sulla carta.';
+        mostraStato(`Nessuna carta "${nome}"${numero ? ` n. ${numero}` : ''}.${motivo}`, true);
+        return;
+      }
+
+      const avvisi = [];
+      // Il tetto va detto: chi cerca "ar" vede una manciata di risultati e deve
+      // sapere che non sono tutti, o crede che la sua carta non esista.
+      // Il consiglio cambia col caso: a chi ha già scritto il nome per intero —
+      // "Articuno" esiste in decine di stampe — dire "scrivi di più" non serve
+      // a niente, mentre il numero taglia l'elenco a una carta.
+      if (troppi) {
+        avvisi.push(
+          numero
+            ? 'Ci sono altre carte con questo nome: se non è fra queste, controlla il numero.'
+            : 'Troppe carte con questo nome: aggiungi il numero stampato sulla carta.',
+        );
+      }
+      if (nonLetti.length) avvisi.push(`${nonLetti.length} set non leggibili offline.`);
+      mostraStato(avvisi.join(' '));
+
+      mostraCandidati(trovate);
+    } catch (errore) {
+      mostraStato(`Errore nel caricamento dei dati: ${errore.message}`, true);
+    }
+  });
+
   /**
    * Disegna i candidati e il selettore di quante copie aggiungere.
+   *
+   * La spiegazione dell'ambiguità **dipende dalla strada seguita**, perché le
+   * due ricerche sono ambigue per ragioni diverse: con la frazione i candidati
+   * sono set che per coincidenza hanno lo stesso totale, col nome sono stampe
+   * diverse della stessa carta. Dare la spiegazione sbagliata manda a
+   * cercare la differenza nel posto sbagliato.
+   *
    * @param {Array<{set: object, carta: object}>} trovate
    */
   function mostraCandidati(trovate) {
@@ -124,8 +218,11 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
       const avviso = document.createElement('p');
       avviso.className = 'aiuto';
       avviso.textContent =
-        `${trovate.length} set hanno lo stesso numero di carte: confronta l'illustrazione ` +
-        'con la carta che hai in mano e tocca quella giusta.';
+        modoRicerca === 'nome'
+          ? `${trovate.length} stampe diverse di questa carta: confronta l'illustrazione ` +
+            'con quella che hai in mano e tocca la tua.'
+          : `${trovate.length} set hanno lo stesso numero di carte: confronta l'illustrazione ` +
+            'con la carta che hai in mano e tocca quella giusta.';
       risultati.append(avviso);
     }
 
@@ -215,7 +312,7 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
       <span class="testo">
         <span class="nome-carta">${escapeHtml(carta.nome)}</span>
         <span class="meta-carta">${escapeHtml(set.nome)} · n. ${escapeHtml(numero)}</span>
-        <span class="chips">${chip}</span>
+        <span class="chips">${chip}${pastigliaLingua(set)}</span>
       </span>
       <span class="aggiungi" aria-hidden="true">${desiderio ? '★' : '＋'}</span>
     `;

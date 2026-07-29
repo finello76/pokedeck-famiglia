@@ -45,6 +45,16 @@ const FINTI = {
     nome: 'Set Gamma',
     carte: [{ numero: '007', nome: 'Sette Gamma', categoria: 'Pokémon' }],
   },
+  // L'indice dei nomi: nome normalizzato → 'idSet:numero …'. Nota `rotto`, che
+  // simula il set irraggiungibile anche per questa strada.
+  'nomi.json': {
+    'sette alfa': 'alfa:007',
+    'sette beta': 'beta:007',
+    'sette gamma': 'gamma:007',
+    'codice alfa': 'alfa:TG01',
+    ivyfinta: 'alfa:020',
+    'carta perduta': 'rotto:001',
+  },
 };
 
 globalThis.fetch = async (url) => {
@@ -101,6 +111,69 @@ test('un totale senza set candidati torna vuoto senza errori', async () => {
   const { trovate, nonLetti } = await dataset.cercaPerNumeroStampato('007', 12345);
   assert.deepEqual(trovate, []);
   assert.deepEqual(nonLetti, []);
+});
+
+test('la ricerca per nome trova la carta in un set mai caricato', async () => {
+  const { trovate } = await dataset.cercaPerNomeGlobale('sette beta');
+  assert.deepEqual(
+    trovate.map((t) => `${t.set.nome} · ${t.carta.nome}`),
+    ['Set Beta · Sette Beta'],
+  );
+});
+
+test('il nome parziale trova tutte le stampe, il numero le restringe', async () => {
+  const larga = await dataset.cercaPerNomeGlobale('sette');
+  assert.equal(larga.trovate.length, 3, 'tre "Sette" in tre set diversi');
+
+  // È il motivo per cui il campo numero esiste: da solo il nome non basta.
+  const stretta = await dataset.cercaPerNomeGlobale('sette', '007');
+  assert.equal(stretta.trovate.length, 3, 'qui hanno tutte lo stesso numero');
+
+  const nessuna = await dataset.cercaPerNomeGlobale('sette', '999');
+  assert.deepEqual(nessuna.trovate, [], 'numero che non esiste: nessun candidato');
+});
+
+test('il numero stampato con gli zeri iniziali corrisponde lo stesso', async () => {
+  // Sulla carta c'è `032`, nei dati `32` — o viceversa. È il caso normale
+  // delle promo, non un'eccezione.
+  const { trovate } = await dataset.cercaPerNomeGlobale('sette alfa', '7');
+  assert.equal(trovate.length, 1);
+  assert.equal((await dataset.cercaPerNomeGlobale('sette alfa', '007')).trovate.length, 1);
+});
+
+test('i numeri non numerici si confrontano come testo', async () => {
+  const { trovate } = await dataset.cercaPerNomeGlobale('codice alfa', 'tg01');
+  assert.equal(trovate.length, 1, 'maiuscole indifferenti anche sul numero');
+});
+
+test('la corrispondenza esatta ha la precedenza sulla parziale', async () => {
+  // "sette alfa" è contenuto solo in sé stesso, ma il principio conta quando
+  // un nome è prefisso di un altro ("Articuno" dentro "Articuno ex").
+  const { trovate } = await dataset.cercaPerNomeGlobale('sette alfa');
+  assert.equal(trovate.length, 1);
+});
+
+test('la ricerca per nome ignora accenti e maiuscole', async () => {
+  const { trovate } = await dataset.cercaPerNomeGlobale('SÈTTE ALFA');
+  assert.equal(trovate.length, 1, 'normalizzato come nell\'indice');
+});
+
+test('un set non leggibile non fa fallire la ricerca per nome ma viene segnalato', async () => {
+  const { trovate, nonLetti } = await dataset.cercaPerNomeGlobale('carta perduta');
+  assert.deepEqual(trovate, []);
+  assert.deepEqual(nonLetti, ['Set Irraggiungibile']);
+});
+
+test('un nome che non esiste torna vuoto senza errori', async () => {
+  const { trovate, nonLetti, troppi } = await dataset.cercaPerNomeGlobale('zzz inesistente');
+  assert.deepEqual(trovate, []);
+  assert.deepEqual(nonLetti, []);
+  assert.equal(troppi, false);
+});
+
+test('un nome vuoto non cerca niente', async () => {
+  const { trovate } = await dataset.cercaPerNomeGlobale('   ');
+  assert.deepEqual(trovate, [], 'un campo lasciato vuoto non deve dare risultati');
 });
 
 test("l'URL dell'immagine cambia con l'uso", () => {

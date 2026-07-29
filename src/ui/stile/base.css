@@ -228,6 +228,85 @@ h3 {
 
 /* Avviso di versione nuova: fisso in fondo, sopra tutto il resto. È l'unico
    modo di aggiornare una PWA installata su telefono. */
+/* Set di cui non esistono dati in italiano: nome, attacchi e scansione sono in
+   inglese. Sta qui in `base.css` e non nel foglio di un componente perche' la
+   usano tre host diversi (pannello di aggiunta, griglia, visore) e scritta tre
+   volte diventerebbe tre cose diverse.
+
+   Viola, cioe' un colore che nell'app non significa gia' altro: il verde e'
+   "Standard", l'ambra "Expanded", il giallo e' l'aggiornamento. Serve che si
+   legga come un'ETICHETTA DI PROVENIENZA, non come un giudizio sulla carta. */
+.chip-lingua {
+  background: color-mix(in srgb, var(--colore-proxy) 16%, transparent);
+  color: var(--colore-proxy);
+  border: 1px solid color-mix(in srgb, var(--colore-proxy) 34%, transparent);
+  cursor: help;
+}
+
+/* L'invito a installare: stessa posizione della barra di aggiornamento ma in
+   superficie neutra, non in giallo-accento. L'aggiornamento e' urgente — puo'
+   essere l'unica uscita da una versione rotta — questo e' un suggerimento, e
+   due gialli sovrapposti li renderebbero indistinguibili. */
+.barra-installa {
+  position: fixed;
+  inset-block-end: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  inset-inline: 0.75rem;
+  z-index: 49;
+  margin-inline: auto;
+  max-inline-size: 28rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--raggio);
+  border: 1px solid var(--colore-bordo);
+  background: var(--colore-superficie);
+  color: var(--colore-testo);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 22%);
+  animation: foglio-su 0.26s ease both;
+}
+
+.barra-installa p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.barra-installa .istruzioni-ios {
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--raggio-piccolo);
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo-tenue);
+}
+
+.azioni-installa {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.azioni-installa button {
+  /* `button` e' a tutta larghezza nelle form dell'app: qui i due stanno in riga. */
+  inline-size: auto;
+  flex: 1;
+}
+
+/* La spunta sta SOTTO i pulsanti e in tono minore: e' una preferenza, non una
+   terza scelta da fare adesso. Messa in cima verrebbe letta come una domanda a
+   cui rispondere prima di poter procedere. */
+.non-chiedere {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-block-start: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--colore-testo-tenue);
+  cursor: pointer;
+}
+
+.non-chiedere input {
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: 0;
+  accent-color: var(--colore-primario);
+}
+
 .barra-aggiornamento {
   position: fixed;
   /* Sopra la tab bar fissa (≈4.75rem) e, con essa, sopra la tacca dei telefoni
@@ -1108,7 +1187,18 @@ button.secondario:hover {
    sta sempre a portata di pollice sopra la tab bar, non in fondo alla pagina. */
 .fab {
   position: fixed;
-  inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+  /* Agganciato al bordo destro della COLONNA, non della finestra. Su telefono
+     le due cose coincidono e resta dov'era; su desktop, dove il contenuto e'
+     centrato in 60rem, un pulsante inchiodato al vetro sembrava appartenere al
+     browser invece che alla pagina. Le percentuali di un elemento `fixed` si
+     misurano sulla finestra, quindi 50% e' il suo centro: da li' si torna
+     indietro di meta' colonna. Il `max()` con `1rem` copre il caso in cui la
+     finestra e' piu' stretta della colonna, dove il calcolo va negativo. */
+  inset-inline-end: max(
+    1rem,
+    env(safe-area-inset-right, 0px),
+    calc(50% - var(--larghezza-massima) / 2 + 1rem)
+  );
   inset-block-end: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   z-index: 45;
   inline-size: 56px;
@@ -1318,6 +1408,64 @@ button.secondario:hover {
   inline-size: 58px;
   border-radius: 14px;
   font-size: 1.3rem;
+}
+
+/* Le due strade per trovare la stessa carta: numero/totale oppure nome.
+   Non e' un filtro ma un bivio, quindi due voci sempre visibili — anche perche'
+   quale delle due si puo' usare lo decide la carta che hai in mano, non una
+   preferenza.
+
+   Forma a segmento — un binario incassato con una sola pastiglia sopra —
+   invece di due pulsanti affiancati: due pulsanti pieni sembrano due AZIONI da
+   premere, mentre qui la scelta e' esclusiva e una delle due e' gia' presa.
+   E' lo stesso stampo di `.quante-modo` ("Ce l'ho" / "La voglio"), cosi'
+   nell'app la stessa domanda ha sempre la stessa faccia. */
+.modi-ricerca {
+  display: flex;
+  gap: 0.2rem;
+  margin-block-end: 0.9rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--colore-superficie-2);
+}
+
+.modi-ricerca .modo {
+  flex: 1;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--colore-testo-tenue);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.modi-ricerca .modo:hover:not(.attivo) {
+  color: var(--colore-testo);
+}
+
+.modi-ricerca .modo.attivo {
+  background: var(--colore-superficie);
+  color: var(--colore-primario);
+  box-shadow: var(--ombra);
+}
+
+/* Il nome e' testo lungo, il numero e' corto: senza questo si dividerebbero lo
+   spazio a meta' e il nome resterebbe illeggibile in una finestrella. */
+.frazione-nome #campo-nome {
+  flex: 1 1 auto;
+  text-align: start;
+  font-size: 1.05rem;
+}
+
+.frazione-nome #campo-numero-nome {
+  flex: 0 0 4.5rem;
+}
+
+.frazione-nome .barra-frazione {
+  font-size: 0.9rem;
 }
 
 /* Candidati della ricerca, dentro il foglio. */

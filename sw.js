@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v53';
+const VERSIONE = 'v57';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -45,6 +45,7 @@ const GUSCIO = [
   './src/app/app.js',
   './src/app/registra-sw.js',
   './src/app/barra-aggiornamento.js',
+  './src/app/installazione.js',
   './src/app/tema.js',
   './src/app/aggiunta.js',
   './src/app/blocca-scroll.js',
@@ -59,6 +60,7 @@ const GUSCIO = [
   './src/data/prezzi.js',
   './src/data/scambio.js',
   './src/ui/segnaposto.js',
+  './src/ui/lingua-set.js',
   './src/ui/stile/base.css',
   './src/ui/stile/tipi.css',
   './src/ui/scheda-carta/scheda-carta.js',
@@ -69,6 +71,7 @@ const GUSCIO = [
   './src/ui/contatore-energie/contatore-energie.js',
   './src/ui/contatore-energie/contatore-energie.css',
   './src/ui/visore-carta/visore-carta.js',
+  './src/ui/visore-carta/inclinazione.js',
   './src/ui/visore-carta/visore-carta.css',
   './src/app/viste.js',
   './src/app/vista-mazzi.js',
@@ -125,6 +128,11 @@ const GUSCIO = [
   // L'indice delle evoluzioni: 22 KB, ma serve a ogni generazione di mazzi
   // (recupera i collegamenti che le singole stampe non dichiarano).
   './data/evoluzioni.json',
+  // L'indice dei nomi: 257 KB, il file più pesante del guscio. Ci sta perché
+  // è l'alternativa a scaricare 8,6 MB di set per cercare un nome, ed è
+  // l'unico modo di catalogare le promo, che il totale non ce l'hanno
+  // stampato. Senza, resta la ricerca per numero+totale.
+  './data/nomi.json',
   // I dati di gioco che TCGdex non replica sulle ristampe: 42 KB, e senza di
   // essi le carte dei Kit Allenatore risultano prive di attacchi — cioè
   // proprio i mazzi con cui si gioca in casa.

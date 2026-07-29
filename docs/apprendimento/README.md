@@ -21,6 +21,8 @@ progetto solo come esempio concreto sotto mano.
 | 11 | [L'oggetto incompleto](11-oggetti-incompleti.md) | Se tre punti del codice costruiscono "un mazzo", chi garantisce che sia la stessa cosa? Invarianti senza classi, campi derivabili e non, e perché i test si fabbricano input troppo gentili. |
 | 12 | [Regola o dato?](12-regole-o-dati.md) | Della stessa informazione, quale metà si calcola e quale si scarica? Dati che scadono, liste arbitrarie che non si indovinano, e le otto richieste al posto di ventunomila. |
 | 13 | [Stati, rotte e il tasto Indietro](13-stati-e-rotte.md) | Dove si tiene lo stato di una schermata che mostra tre cose diverse? Routing a frammento con parametri, delega degli eventi per elementi che non esistono ancora, `<details>` come fisarmonica nativa — e perché la stampa richiede JavaScript oltre al CSS. |
+| 14 | [Una lingua che manca](14-una-lingua-che-manca.md) | La fonte non ha i dati che ti servono, ma li ha in un'altra lingua. Quali campi *sembrano* testo e in realtà sono chiavi, perché tradurli è obbligatorio e tradurre gli altri sarebbe falso — e una carta che ha fermato ottanta set di download. |
+| 15 | [Un indice per cercare](15-un-indice-per-cercare.md) | Cercare fra 21.000 carte senza scaricarle tutte. Quando conviene un indice e quanto può pesare, perché un tetto sui risultati non basta se il costo sta altrove, e un accoppiamento fra due file che nessun compilatore sorveglia. |
 
 ## Per chi è scritto
 

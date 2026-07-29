@@ -1,6 +1,6 @@
 {
-  "name": "PokéDeck Famiglia",
-  "short_name": "PokéDeck",
+  "name": "YouPokèDeck",
+  "short_name": "YouPokèDeck",
   "description": "Catalogo della collezione Pokémon TCG e generatore di mazzi equilibrati per giocare in famiglia.",
   "lang": "it",
   "start_url": "./",

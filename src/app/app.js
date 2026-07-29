@@ -21,6 +21,7 @@ import {
   MASSIMO_PER_VOLTA,
 } from '../data/prezzi.js';
 import { avviaBarraAggiornamento } from './barra-aggiornamento.js';
+import { avviaInvitoInstallazione } from './installazione.js';
 import { avviaViste } from './viste.js';
 import { avviaTema } from './tema.js';
 import { avviaAggiunta } from './aggiunta.js';
@@ -233,5 +234,10 @@ avviaBarraAggiornamento({
   barra: document.querySelector('#barra-aggiornamento'),
   versione: document.querySelector('#versione'),
 });
+
+// L'invito a installare. Va dopo la barra di aggiornamento perché le due
+// possono comparire insieme, e in quel caso l'aggiornamento viene prima: è
+// l'unico modo di uscire da una versione rotta, installare può aspettare.
+avviaInvitoInstallazione({ barra: document.querySelector('#barra-installa') });
 
 mostraVersione(document.querySelector('#versione'));

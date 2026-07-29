@@ -284,7 +284,66 @@ commenti in `sw.js`):
 
 ---
 
-## 7. Verifica
+## 7. Farsi installare: un evento che non tutti emettono
+
+Il manifest e il service worker rendono l'app *installabile*, ma il browser
+l'invito lo nasconde in un menu. Serve chiederlo — e qui i browser si dividono
+in due mondi che non si somigliano.
+
+**Chrome, Edge, Android** emettono `beforeinstallprompt` quando i requisiti sono
+soddisfatti. L'evento si può **rimandare**: lo si blocca, si mostra il proprio
+invito, e quello vero si fa comparire quando lo decide l'utente.
+
+```js
+window.addEventListener('beforeinstallprompt', (evento) => {
+  evento.preventDefault();   // senza, Chrome mostra la SUA barra e la nostra è un doppione
+  invitoBrowser = evento;    // si mette da parte
+  mostra();
+});
+```
+
+Il pezzo controintuitivo: `evento.prompt()` si può chiamare **solo** in risposta
+a un gesto dell'utente, e una volta sola. L'evento è un buono spendibile una
+volta, non una funzione richiamabile a piacere.
+
+**Safari su iPhone non lo emette affatto**, e non offre nessuna API equivalente:
+lì l'installazione è solo manuale, da Condividi → «Aggiungi alla schermata
+Home». Quindi l'unica cosa utile è **spiegare come si fa**. È il motivo per cui
+`src/app/installazione.js` ha due modi invece di uno: non è una scorciatoia, è
+che le due piattaforme offrono cose diverse.
+
+Anche capire se l'app è *già* installata richiede due controlli, perché lo
+standard e Safari non concordano:
+
+```js
+window.matchMedia?.('(display-mode: standalone)').matches === true ||
+window.navigator.standalone === true   // solo Safari, da sempre
+```
+
+> Il paragone con Angular è interessante: qui non c'è nessun framework che
+> normalizzi le differenze fra browser. `beforeinstallprompt` non è nemmeno uno
+> standard W3C — è una proposta implementata da alcuni motori e ignorata da
+> altri. Scrivere per il web significa ogni tanto scrivere due volte la stessa
+> funzionalità, e **dichiararlo nel codice** invece di far finta che sia una.
+
+### Chiedere una volta e poi tacere
+
+Un invito che ritorna a ogni avvio si impara a chiudere senza leggerlo. La
+spunta «non chiedermelo più» finisce in `localStorage` — come il tema, e per la
+stessa ragione: è una preferenza, non un dato della collezione.
+
+Due dettagli che sembrano minuzie e non lo sono:
+
+- La spunta si legge **alla chiusura, qualunque pulsante l'abbia causata**.
+  «Installa» + «non chiedermelo più» è una combinazione sensata (installo adesso
+  e non voglio più sentirne parlare), e ignorarla sarebbe una piccola bugia
+  sull'unico comando che l'utente ha per zittire l'app.
+- `localStorage` può **lanciare al solo accesso** in navigazione privata. Il
+  fallimento vale «non ho mai detto di no», che è innocuo; farlo esplodere no.
+
+---
+
+## 8. Verifica
 
 1. Un service worker registrato da `/js/sw.js` riesce a intercettare la
    richiesta di `/index.html`? Perché sì o perché no?

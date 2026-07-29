@@ -30,6 +30,7 @@ import { urlImmagine } from '../../data/dataset.js';
 import { formattaEuro, valoreDi } from '../../data/prezzi.js';
 import { formatoDi } from '../../data/legalita.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
+import { pastigliaLingua } from '../lingua-set.js';
 import { FILTRI_VUOTI, filtra, progressoSet, raggruppa, valoriDisponibili } from './raggruppa.js';
 
 /**
@@ -475,6 +476,9 @@ export class GrigliaCollezione extends HTMLElement {
       idSet: voce.idSet,
       numero: voce.numero,
       quantita: voce.quantita,
+      // Viaggia fino al visore: là la scansione è tutto ciò che si legge, ed è
+      // il punto in cui sapere che è inglese conta di più.
+      linguaSet: voce.linguaSet,
     };
 
     // Carta di un set non più scaricato: non sappiamo nulla, mostriamo solo la
@@ -536,7 +540,7 @@ export class GrigliaCollezione extends HTMLElement {
         <div class="corpo">
           <div class="nome-carta">${escapeHtml(c.nome)}</div>
           <div class="meta-carta">${meta}</div>
-          <div class="chips">${chipTipo}${chipFormato}${chipEvo}</div>
+          <div class="chips">${chipTipo}${pastigliaLingua(voce)}${chipFormato}${chipEvo}</div>
         </div>
       </button>
       ${this.#stepper(voce, mancante)}

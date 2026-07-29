@@ -212,6 +212,11 @@ export async function elencoCompleto({ conDesideri = false } = {}) {
         // set per epoca invece che per nome. La scrive `tools/aggiorna-anni.mjs`;
         // sui dati vecchi può mancare, e allora quel set va in fondo.
         uscitaSet: suo?.uscita ?? null,
+        // `'en'` quando di quel set TCGdex non ha dati in italiano e si è
+        // ripiegato sull'inglese. Assente = italiano. Viaggia con la voce
+        // perché chi mostra la carta **deve poterlo dire**: il danno non è
+        // l'inglese, è l'inglese spacciato per italiano.
+        linguaSet: suo?.lingua ?? null,
       };
     }),
   );
