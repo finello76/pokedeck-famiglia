@@ -24,6 +24,7 @@ progetto solo come esempio concreto sotto mano.
 | 14 | [Una lingua che manca](14-una-lingua-che-manca.md) | La fonte non ha i dati che ti servono, ma li ha in un'altra lingua. Quali campi *sembrano* testo e in realtà sono chiavi, perché tradurli è obbligatorio e tradurre gli altri sarebbe falso — e una carta che ha fermato ottanta set di download. |
 | 15 | [Un indice per cercare](15-un-indice-per-cercare.md) | Cercare fra 21.000 carte senza scaricarle tutte. Quando conviene un indice e quanto può pesare, perché un tetto sui risultati non basta se il costo sta altrove, e un accoppiamento fra due file che nessun compilatore sorveglia. |
 | 16 | [Caricare quando serve](16-caricare-quando-serve.md) | Un interruttore che bloccava la pagina, e i tre costi diversi dietro il blocco. `IntersectionObserver` invece di `scroll`, una fila fatta con una promessa, e perché `requestAnimationFrame` era la scelta sbagliata. |
+| 17 | [Due simboli, un solo angolo](17-due-simboli-uno-spazio.md) | Due funzioni chiedono lo stesso simbolo e lo stesso angolo della card. Quando due stati vogliono un campo solo e quando ne vogliono due, il campo che sparisce a ogni riscrittura del record, un `<button>` dentro un `<button>`, e una vista che è la stessa griglia con un filtro fisso. |
 
 ## Per chi è scritto
 

@@ -330,6 +330,9 @@ griglia-collezione {
 }
 
 .carta-griglia {
+  /* Riferimento per il cuore dei preferiti, che sta sopra la miniatura ma è
+     fratello del pulsante che apre la carta (vedi `#cuore()`). */
+  position: relative;
   display: flex;
   flex-direction: column;
   border-radius: 18px;
@@ -385,6 +388,69 @@ griglia-collezione .nota-ricerca {
 .badge-qty.badge-desiderio {
   background: var(--colore-proxy);
   color: #fff;
+}
+
+/* Il cuore dei preferiti: in alto a SINISTRA, dalla parte opposta al badge
+   delle copie (e a quello ★ dei desideri), perché i due segni non devono mai
+   toccarsi né confondersi. Spento è un contorno bianco sopra l'immagine, acceso
+   è pieno e rosso: la differenza si vede anche in bianco e nero, dove il solo
+   colore non basterebbe. */
+.carta-griglia .cuore {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  /* 36px: il minimo per un bersaglio che si centra col pollice mentre si
+     scorre, senza coprire mezza miniatura. */
+  inline-size: 36px;
+  block-size: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgb(15 20 35 / 45%);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+
+.carta-griglia .cuore svg {
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.carta-griglia .cuore:hover {
+  background: rgb(15 20 35 / 62%);
+}
+
+.carta-griglia .cuore.acceso {
+  color: var(--colore-preferito);
+  background: rgb(255 255 255 / 88%);
+}
+
+/* Il ritorno tattile del tocco: senza, su telefono il cuore sembra non aver
+   reagito finché la griglia non si ridisegna. */
+.carta-griglia .cuore:active {
+  transform: scale(0.86);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carta-griglia .cuore {
+    transition: none;
+  }
+
+  .carta-griglia .cuore:active {
+    transform: none;
+  }
+}
+
+/* Carta preferita: un filo di rosso sul bordo, così si riconosce anche da
+   lontano in mezzo alle altre. Deliberatamente più leggero del tratteggio dei
+   desideri: un preferito è una carta normale che ti piace, non una carta che
+   non hai. */
+.carta-griglia.preferita {
+  border-color: color-mix(in srgb, var(--colore-preferito) 45%, var(--colore-bordo));
 }
 
 .apri-carta {

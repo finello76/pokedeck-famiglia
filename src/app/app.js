@@ -11,6 +11,7 @@
 import {
   aggiungiCopie,
   elencoCompleto,
+  impostaPreferita,
   statistiche,
   SET_ENERGIE_GENERICHE,
 } from '../data/collezione.js';
@@ -37,6 +38,13 @@ import '../ui/visore-carta/visore-carta.js';
 import '../ui/vista-regole/vista-regole.js';
 
 const griglia = document.querySelector('#griglia');
+// La vista Preferiti è la stessa griglia con un filtro che l'utente non può
+// togliere: nessun componente nuovo, nessun secondo modo di disegnare una card.
+const grigliaPreferiti = document.querySelector('#griglia-preferiti');
+grigliaPreferiti.titolo = 'I preferiti';
+grigliaPreferiti.filtriFissi = { preferito: 'solo' };
+/** Le griglie da tenere allineate: quello che vale per una vale per l'altra. */
+const griglie = [griglia, grigliaPreferiti];
 const contatore = document.querySelector('#contatore-energie');
 const riepilogo = document.querySelector('#riepilogo-collezione');
 const statoScambio = document.querySelector('#stato-scambio');
@@ -105,13 +113,20 @@ async function aggiornaCollezione() {
   griglia.cercaMancantiPerNome = (testo) => mancantiPerNome(testo, voci);
   // Le energie base generiche non vanno nella griglia: non hanno scansione né
   // numero di collezione e si contano già nel contatore dedicato qui sotto.
-  griglia.voci = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);
+  const daMostrare = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);
+  griglia.voci = daMostrare;
+  // Alla griglia dei preferiti si passano **tutte** le voci, non solo quelle col
+  // cuore: è il suo filtro fisso a scremarle. Passandole già scremate, i suoi
+  // menu a tendina (serie, set, rarità) si ridurrebbero a ciò che è preferito e
+  // non si capirebbe più cosa stanno filtrando.
+  grigliaPreferiti.voci = daMostrare;
   contatore.dati = stat.energie;
 
   // I prezzi già scaricati si rimostrano subito, anche offline: sono l'ultima
   // quotazione nota, con la sua data. Non si va in rete finché non lo chiede
   // qualcuno col pulsante.
-  griglia.prezzi = await prezziConosciuti().catch(() => new Map());
+  const prezzi = await prezziConosciuti().catch(() => new Map());
+  for (const g of griglie) g.prezzi = prezzi;
 
   // Il riepilogo della collezione (conteggi, sezioni) lo mostra ora la griglia:
   // qui la riga serve solo per errori di caricamento, quindi resta nascosta.
@@ -143,16 +158,31 @@ async function cambiaQuantita(evento) {
   await aggiungiCopie(idSet, numero, delta);
   await aggiornaCollezione();
 }
-griglia.addEventListener('quantita-cambiata', cambiaQuantita);
+for (const g of griglie) g.addEventListener('quantita-cambiata', cambiaQuantita);
 visore.addEventListener('quantita-cambiata', cambiaQuantita);
+
+// Il cuore dei preferiti. La griglia si è già accesa da sola: qui si scrive nel
+// database e si ricarica, così le due viste (catalogo e preferiti) restano
+// d'accordo — togliendo il cuore dai Preferiti, la carta deve sparire di lì.
+for (const g of griglie) {
+  g.addEventListener('preferita-cambiata', async (evento) => {
+    const { idSet, numero, preferita } = evento.detail;
+    await impostaPreferita(idSet, numero, preferita);
+    await aggiornaCollezione();
+  });
+}
 
 // "Calcola quotazione": l'unico punto in cui l'app va in rete di sua volontà.
 // La griglia dice quali carte sta mostrando, qui si scaricano i prezzi e le si
 // restituiscono. Il tetto per volta è di `data/prezzi.js`: una richiesta per
 // carta, e l'intera collezione sarebbero migliaia.
 let quotazioneInCorso = false;
-griglia.addEventListener('quotazione-richiesta', async (evento) => {
+async function chiediQuotazione(evento) {
   if (quotazioneInCorso) return;
+  // Il messaggio va scritto sulla griglia da cui è partita la richiesta: il
+  // pulsante sta in entrambe, e rispondere sempre a quella del catalogo
+  // lascerebbe muta quella dei preferiti.
+  const griglia = evento.currentTarget;
   const voci = evento.detail.voci.filter((v) => v.carta);
 
   if (voci.length === 0) {
@@ -172,7 +202,10 @@ griglia.addEventListener('quotazione-richiesta', async (evento) => {
         griglia.statoQuotazione = `Chiedo i prezzi… ${fatte}/${Math.min(totale, MASSIMO_PER_VOLTA)}`;
       },
     });
-    griglia.prezzi = await prezziConosciuti();
+    // I prezzi sono della collezione, non della vista: si aggiornano entrambe,
+    // o tornando al catalogo la stessa carta risulterebbe non quotata.
+    const aggiornati = await prezziConosciuti();
+    for (const g of griglie) g.prezzi = aggiornati;
     griglia.statoQuotazione =
       `${quotate} carte quotate` +
       (falliti ? `, ${falliti} non lette (rete assente?)` : '') +
@@ -182,7 +215,8 @@ griglia.addEventListener('quotazione-richiesta', async (evento) => {
   } finally {
     quotazioneInCorso = false;
   }
-});
+}
+for (const g of griglie) g.addEventListener('quotazione-richiesta', chiediQuotazione);
 
 document.querySelector('#bottone-esporta').addEventListener('click', async () => {
   try {

@@ -29,6 +29,12 @@ export const FILTRI_VUOTI = {
    * quella che si fa in negozio.
    */
   desiderio: '',
+  /**
+   * Preferiti: `''` tutte, `'solo'` solo quelle col cuore. Due stati e non tre
+   * come i desideri, perché "mostrami tutto tranne i preferiti" non è una
+   * domanda che si fa: il cuore serve a ritrovare, non a escludere.
+   */
+  preferito: '',
 };
 
 /**
@@ -39,7 +45,7 @@ export const FILTRI_VUOTI = {
  * @returns {object[]}
  */
 export function filtra(voci, filtri) {
-  const { categoria, tipo, stadio, testo, serie, set, rarita, formato, desiderio } = {
+  const { categoria, tipo, stadio, testo, serie, set, rarita, formato, desiderio, preferito } = {
     ...FILTRI_VUOTI,
     ...filtri,
   };
@@ -50,6 +56,7 @@ export function filtra(voci, filtri) {
     // le carte di un set non più scaricato.
     if (desiderio === 'solo' && !voce.desiderata) return false;
     if (desiderio === 'escludi' && voce.desiderata) return false;
+    if (preferito === 'solo' && !voce.preferita) return false;
 
     // Serie e set si possono filtrare anche senza i dati della carta: sono
     // scritti sulla riga di collezione, non dentro la carta.

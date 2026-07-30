@@ -53,6 +53,10 @@ export async function esporta() {
       // prima, quindi i file esportati con le versioni vecchie si rileggono
       // senza conversioni.
       ...(r.desiderata ? { desiderata: true } : {}),
+      // Stesso criterio per il cuore dei preferiti: è una scelta fatta a mano,
+      // carta per carta, e rifarla su un telefono nuovo vorrebbe dire riscorrere
+      // tutta la collezione.
+      ...(r.preferita ? { preferita: true } : {}),
       // Solo per leggibilità umana: all'import viene ignorato, perché la
       // verità sta nel dataset. Se un nome cambia, l'import resta valido.
       nome: r.carta?.nome ?? null,
@@ -123,6 +127,11 @@ export function validaImport(dati) {
       // I file esportati prima della lista desideri non hanno il campo: assente
       // vuol dire posseduta, che e' il comportamento di sempre.
       ...(c.desiderata ? { desiderata: true } : {}),
+      // Come sopra: assente vuol dire "non preferita". Un desiderio non può
+      // essere preferito — il cuore sta sulle carte che hai — e la coppia
+      // impossibile la scarta `scriviMoltePer()`, non qui: questa funzione
+      // valida il file, non decide cosa sia coerente.
+      ...(c.preferita ? { preferita: true } : {}),
     });
   });
 

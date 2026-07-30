@@ -75,6 +75,20 @@
         </section>
       </div>
 
+      <!-- I preferiti sono la STESSA griglia del catalogo con un filtro fisso:
+           stessa ricerca, stessi filtri, stesse card. Una vista sua con un
+           elenco tutto suo avrebbe voluto dire due comportamenti da tenere
+           allineati per sempre. -->
+      <div data-vista="preferiti" hidden>
+        <p class="aiuto">
+          Qui stanno le carte col <strong>cuore</strong>. Per aggiungerne una,
+          toccane il cuore in alto a sinistra nel catalogo: il cuore dice
+          «questa mi piace», la stella ★ resta la lista dei desideri, cioè le
+          carte che <em>non</em> hai ancora.
+        </p>
+        <griglia-collezione id="griglia-preferiti"></griglia-collezione>
+      </div>
+
       <!--
         La vista "mazzi" ha tre stati e ne mostra uno solo per volta: libreria,
         wizard, dettaglio. Prima erano tutti impilati nella stessa pagina e i
@@ -189,6 +203,12 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
         </span>
         <span class="etichetta">Catalogo</span>
+      </button>
+      <button type="button" data-vai="preferiti">
+        <span class="icona" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.4 4.6 13a4.6 4.6 0 0 1 6.5-6.5l.9.9.9-.9A4.6 4.6 0 0 1 19.4 13Z"/></svg>
+        </span>
+        <span class="etichetta">Preferiti</span>
       </button>
       <!-- "Crea mazzi" e "Il mio mazzo" erano due porte sulla stessa cosa e
            occupavano due dei cinque posti: ora sono una voce sola, che si apre

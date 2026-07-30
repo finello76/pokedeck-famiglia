@@ -81,11 +81,17 @@ export async function impostaQuantita(idSet, numero, quantita) {
     await cancella(STORE_COLLEZIONE, id);
     return;
   }
+  // La riga si riscrive da capo, quindi il cuore dei preferiti va riletto e
+  // riportato: senza, toccare "+" su una carta preferita la toglieva dai
+  // preferiti in silenzio. Il desiderio no — chi arriva qui sta dichiarando di
+  // possedere la carta, e `aggiungiCopie()` conta proprio su questo.
+  const esistente = await leggi(STORE_COLLEZIONE, id);
   await scrivi(STORE_COLLEZIONE, {
     id,
     idSet,
     numero: String(numero),
     quantita: Math.floor(quantita),
+    ...(esistente?.preferita ? { preferita: true } : {}),
     aggiornatoIl: new Date().toISOString(),
   });
 }
@@ -125,6 +131,47 @@ export async function impostaDesiderio(idSet, numero, quante = 1) {
     desiderata: true,
     aggiornatoIl: new Date().toISOString(),
   });
+}
+
+/**
+ * Segna una carta come preferita, o le toglie il cuore.
+ *
+ * Un preferito è una **scelta di gusto** su una carta che hai: non cambia
+ * quante copie ne possiedi, non entra in nessun conteggio, non tocca il motore.
+ * Per questo è un campo a parte e non un altro valore di `desiderata`: le due
+ * cose non si escludono a vicenda, si parlano di carte diverse — il desiderio
+ * è una carta che *non* hai, il preferito una che hai e ti piace.
+ *
+ * Si può preferire solo ciò che si possiede: su una carta desiderata (o
+ * inesistente in collezione) la chiamata non fa niente e ritorna `false`. È il
+ * livello dati a dirlo, non solo la griglia, perché la stessa regola vale per
+ * l'import di un file scritto a mano.
+ *
+ * Nessuna migrazione dello store, come per `desiderata`: campo assente vale
+ * "non preferita".
+ *
+ * @param {string} idSet
+ * @param {string|number} numero
+ * @param {boolean} [preferita=true]
+ * @returns {Promise<boolean>} lo stato finale del cuore
+ * @example
+ * await impostaPreferita('sv08', 118);         // cuore acceso
+ * await impostaPreferita('sv08', 118, false);  // cuore spento
+ */
+export async function impostaPreferita(idSet, numero, preferita = true) {
+  const riga = await leggi(STORE_COLLEZIONE, chiave(idSet, numero));
+  if (!riga || riga.desiderata) return false;
+
+  // Si toglie il campo invece di scriverlo a `false`: una riga con
+  // `preferita: false` e una senza il campo direbbero la stessa cosa in due
+  // modi, e l'export finirebbe per portarsi dietro rumore.
+  const { preferita: _vecchia, ...resto } = riga;
+  await scrivi(STORE_COLLEZIONE, {
+    ...resto,
+    ...(preferita ? { preferita: true } : {}),
+    aggiornatoIl: new Date().toISOString(),
+  });
+  return Boolean(preferita);
 }
 
 /**
@@ -295,6 +342,10 @@ export function scriviMoltePer(voci) {
       // Il campo si scrive solo quando c'è: le righe possedute restano
       // identiche a prima, e `desiderata` assente vale "posseduta".
       ...(v.desiderata ? { desiderata: true } : {}),
+      // Il cuore si importa solo su ciò che si possiede: un file scritto a mano
+      // con `desiderata` e `preferita` insieme descriverebbe uno stato che
+      // l'app non sa mostrare.
+      ...(v.preferita && !v.desiderata ? { preferita: true } : {}),
       aggiornatoIl: adesso,
     })),
   );

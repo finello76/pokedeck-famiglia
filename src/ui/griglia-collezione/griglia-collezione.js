@@ -16,6 +16,7 @@
  * costruite qui, non delegate a `<scheda-carta>`, proprio per poterle tingere.
  *
  * @fires griglia-collezione#quantita-cambiata - detail: `{ idSet, numero, delta }`
+ * @fires griglia-collezione#preferita-cambiata - detail: `{ idSet, numero, preferita }`
  * @fires griglia-collezione#carta-scelta - detail: `{ carta, nomeSet, lista, indice }`
  *
  * @example
@@ -79,6 +80,16 @@ export class GrigliaCollezione extends HTMLElement {
   #voci = [];
   /** @type {typeof FILTRI_VUOTI} */
   #filtri = { ...FILTRI_VUOTI };
+  /**
+   * Filtri **imposti da fuori**, che l'utente non può togliere: la vista
+   * Preferiti è la stessa griglia con `{preferito: 'solo'}` fisso. Stanno a
+   * parte da `#filtri` e non dentro, perché "azzera filtri" azzera i secondi e
+   * non deve poter svuotare la vista di ciò che la definisce.
+   * @type {Partial<typeof FILTRI_VUOTI>}
+   */
+  #fissi = {};
+  /** @type {string} intestazione della griglia */
+  #titolo = 'La collezione';
   /** @type {boolean} se mostrare anche le carte che mancano a ogni set */
   #mostraMancanti = false;
   /** @type {boolean} se il pannello dei filtri avanzati è aperto */
@@ -138,6 +149,27 @@ export class GrigliaCollezione extends HTMLElement {
 
   get voci() {
     return this.#voci;
+  }
+
+  /**
+   * Filtri fissi della vista (es. `{ preferito: 'solo' }`).
+   * @param {Partial<typeof FILTRI_VUOTI>} valore
+   */
+  set filtriFissi(valore) {
+    this.#fissi = { ...valore };
+    this.#disegna();
+  }
+
+  /** @param {string} valore l'intestazione, se non è "La collezione" */
+  set titolo(valore) {
+    this.#titolo = valore || 'La collezione';
+    const testa = this.querySelector('.testa-collezione .titolo');
+    if (testa) testa.textContent = this.#titolo;
+  }
+
+  /** I filtri scelti dall'utente più quelli imposti dalla vista. */
+  #effettivi() {
+    return { ...this.#filtri, ...this.#fissi };
   }
 
   /**
@@ -222,7 +254,7 @@ export class GrigliaCollezione extends HTMLElement {
         this.dispatchEvent(
           new CustomEvent('quotazione-richiesta', {
             bubbles: true,
-            detail: { voci: filtra(this.#voci, this.#filtri) },
+            detail: { voci: filtra(this.#voci, this.#effettivi()) },
           }),
         );
         return;
@@ -232,6 +264,28 @@ export class GrigliaCollezione extends HTMLElement {
         this.#filtri = { ...FILTRI_VUOTI };
         this.#mostraMancanti = false;
         this.#disegna();
+        return;
+      }
+
+      // Il cuore: si accende subito, senza aspettare il giro nel database e il
+      // ridisegno. È un tocco che deve rispondere come un interruttore, e la
+      // verità arriva comunque dopo — se la scrittura fallisse, il prossimo
+      // aggiornamento della griglia rimetterebbe le cose a posto.
+      const cuore = evento.target.closest('[data-preferita]');
+      if (cuore) {
+        const acceso = cuore.getAttribute('aria-pressed') !== 'true';
+        cuore.classList.toggle('acceso', acceso);
+        cuore.setAttribute('aria-pressed', String(acceso));
+        this.dispatchEvent(
+          new CustomEvent('preferita-cambiata', {
+            bubbles: true,
+            detail: {
+              idSet: cuore.dataset.set,
+              numero: cuore.dataset.numero,
+              preferita: acceso,
+            },
+          }),
+        );
         return;
       }
 
@@ -317,8 +371,14 @@ export class GrigliaCollezione extends HTMLElement {
         this.#filtri.stadio ||
         this.#filtri.rarita ||
         this.#filtri.formato ||
+        this.#filtri.preferito ||
         this.#mostraMancanti,
     );
+
+    // Dentro la vista Preferiti le due domande "solo i preferiti?" e "mostro
+    // anche ciò che non ho?" hanno già una risposta fissa: lasciarle a schermo
+    // sarebbe offrire comandi che non comandano niente.
+    const dentroPreferiti = Boolean(this.#fissi.preferito);
 
     // Chip dei tipi presenti in collezione. "Tutti" non ha data-tipo, così resta
     // neutro (il colore grigio glielo dà il CSS).
@@ -332,7 +392,7 @@ export class GrigliaCollezione extends HTMLElement {
 
     this.innerHTML = `
       <div class="testa-collezione">
-        <span class="titolo">La collezione</span>
+        <span class="titolo">${escapeHtml(this.#titolo)}</span>
         <span class="conteggio-vis"></span>
       </div>
 
@@ -379,7 +439,7 @@ export class GrigliaCollezione extends HTMLElement {
               <option value="">tutti</option>${opzioniSemplici(stadi, this.#filtri.stadio)}
             </select>
           </div>
-          <div>
+          <div${dentroPreferiti ? ' hidden' : ''}>
             <label for="filtro-desiderio">Lista desideri</label>
             <select id="filtro-desiderio" data-filtro="desiderio">
               <option value=""${this.#filtri.desiderio === '' ? ' selected' : ''}>tutto</option>
@@ -387,6 +447,17 @@ export class GrigliaCollezione extends HTMLElement {
               <option value="escludi"${this.#filtri.desiderio === 'escludi' ? ' selected' : ''}>solo ciò che ho</option>
             </select>
           </div>
+          ${
+            dentroPreferiti
+              ? ''
+              : `<div>
+            <label for="filtro-preferito">Preferiti</label>
+            <select id="filtro-preferito" data-filtro="preferito">
+              <option value=""${this.#filtri.preferito === '' ? ' selected' : ''}>tutto</option>
+              <option value="solo"${this.#filtri.preferito === 'solo' ? ' selected' : ''}>solo i preferiti</option>
+            </select>
+          </div>`
+          }
           <div>
             <label for="filtro-rarita">Rarità</label>
             <select id="filtro-rarita" data-filtro="rarita">
@@ -410,7 +481,7 @@ export class GrigliaCollezione extends HTMLElement {
             </select>
           </div>
         </div>
-        <label class="interruttore-mancanti">
+        <label class="interruttore-mancanti"${dentroPreferiti ? ' hidden' : ''}>
           <input type="checkbox" data-mancanti ${this.#mostraMancanti ? 'checked' : ''} />
           <span>
             <strong>Mostra anche le carte che mi mancano</strong>
@@ -446,7 +517,7 @@ export class GrigliaCollezione extends HTMLElement {
     // proprio turno non devono più chiedere niente.
     this.#osservatoreSezioni?.disconnect();
 
-    const voci = filtra(this.#voci, this.#filtri);
+    const voci = filtra(this.#voci, this.#effettivi());
     const gruppi = raggruppa(voci);
     const copie = voci.reduce((s, v) => s + v.quantita, 0);
     const filtriAttivi = Object.values(this.#filtri).some(Boolean);
@@ -481,14 +552,23 @@ export class GrigliaCollezione extends HTMLElement {
    * @returns {boolean}
    */
   #mancantiPerSet() {
-    return this.#mostraMancanti && !this.#filtri.desiderio && !this.#filtri.testo.trim();
+    return this.#mostraMancanti && !this.#soloTue() && !this.#filtri.testo.trim();
   }
 
   /** @see #mancantiPerSet */
   #ricercaGlobale() {
-    return (
-      this.#mostraMancanti && !this.#filtri.desiderio && this.#filtri.testo.trim().length >= 2
-    );
+    return this.#mostraMancanti && !this.#soloTue() && this.#filtri.testo.trim().length >= 2;
+  }
+
+  /**
+   * Se la vista sta rispondendo a una domanda su carte **tue**: la lista dei
+   * desideri e i preferiti lo sono entrambe, e in nessuna delle due ha senso
+   * riempire le sezioni di carte che non hai.
+   * @returns {boolean}
+   */
+  #soloTue() {
+    const { desiderio, preferito } = this.#effettivi();
+    return Boolean(desiderio || preferito);
   }
 
   /**
@@ -552,7 +632,7 @@ export class GrigliaCollezione extends HTMLElement {
         serie: set.serie ?? null,
         linguaSet: set.lingua ?? null,
       })),
-      { ...this.#filtri, testo: '' },
+      { ...this.#effettivi(), testo: '' },
     );
 
     /** @type {Map<string, {nomeSet: string, voci: object[]}>} */
@@ -717,7 +797,7 @@ export class GrigliaCollezione extends HTMLElement {
     // trova `#disegnaTrovate()`, che cerca in tutto il catalogo e non solo qui.
     mancanti = filtra(
       mancanti.map((carta) => this.#voceMancante(carta, set)),
-      this.#filtri,
+      this.#effettivi(),
     );
 
     // Inserimento a blocchi: costruire 250 card in un colpo tiene occupato il
@@ -770,6 +850,7 @@ export class GrigliaCollezione extends HTMLElement {
     card.className = 'carta-griglia';
     if (mancante) card.classList.add('mancante');
     if (voce.desiderata) card.classList.add('desiderata');
+    if (voce.preferita) card.classList.add('preferita');
     // idSet/numero/quantita servono al visore per mostrare e modificare le copie
     // possedute mentre la carta è aperta a schermo intero.
     card._voce = {
@@ -845,6 +926,7 @@ export class GrigliaCollezione extends HTMLElement {
           <div class="chips">${chipTipo}${pastigliaLingua(voce)}${chipFormato}${chipEvo}</div>
         </div>
       </button>
+      ${this.#cuore(voce, mancante)}
       ${this.#stepper(voce, mancante)}
     `;
 
@@ -883,6 +965,44 @@ export class GrigliaCollezione extends HTMLElement {
     // `alt=""`: il nome della carta è già scritto sotto la miniatura, e un
     // testo alternativo comparirebbe a schermo se l'immagine non arrivasse.
     return `<img data-src="${src}" alt="" />`;
+  }
+
+  /**
+   * Il cuore dei preferiti, in alto a sinistra della miniatura.
+   *
+   * **Cuore e non stella**: la stella in questa app è già occupata dal badge
+   * `★2` dei desideri, e due stelle sulla stessa miniatura — una che dice "ne
+   * vorrei due" e una che dice "mi piace" — sarebbero indistinguibili proprio
+   * dove servono, cioè con l'occhio che scorre. Il cuore sta a sinistra, il
+   * badge a destra, e i colori sono diversi (rosso contro viola dei proxy).
+   *
+   * Compare **solo sulle carte che hai**: su un desiderio o su una carta
+   * mancante non c'è niente da preferire, e il livello dati rifiuterebbe
+   * comunque di segnarle (`impostaPreferita()`).
+   *
+   * È fratello di `.apri-carta` e non figlio: un `<button>` dentro un altro
+   * `<button>` è HTML non valido, e i browser lo riscrivono spostandolo fuori
+   * dalla card — con l'aria di un bug del CSS.
+   *
+   * @param {object} voce
+   * @param {boolean} mancante
+   * @returns {string} HTML, vuoto dove il cuore non ha senso
+   */
+  #cuore(voce, mancante) {
+    if (mancante || voce.desiderata || !voce.quantita) return '';
+    const acceso = Boolean(voce.preferita);
+    return `
+      <button type="button" class="cuore${acceso ? ' acceso' : ''}" data-preferita
+              data-set="${escapeHtml(voce.idSet)}" data-numero="${escapeHtml(voce.numero)}"
+              aria-pressed="${acceso}"
+              title="${acceso ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'}"
+              aria-label="${acceso ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'}">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 20.4 4.6 13a4.6 4.6 0 0 1 6.5-6.5l.9.9.9-.9A4.6 4.6 0 0 1 19.4 13Z"
+                fill="${acceso ? 'currentColor' : 'none'}" stroke="currentColor"
+                stroke-width="1.8" stroke-linejoin="round" />
+        </svg>
+      </button>`;
   }
 
   /**
