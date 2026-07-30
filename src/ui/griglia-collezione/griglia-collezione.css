@@ -339,6 +339,16 @@ griglia-collezione {
   box-shadow: 0 3px 10px rgb(28 35 51 / 7%);
 }
 
+/* "cerco le carte che mancano…": sta dentro la griglia, quindi deve prendersi
+   tutte le colonne, altrimenti occupa una cella e la card accanto salta. */
+griglia-collezione .attesa-mancanti {
+  grid-column: 1 / -1;
+  margin: 0.2rem 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--colore-testo-tenue);
+}
+
 /* Carte che NON possiedi (col toggle "Mancanti"): visibili ma sbiadite. */
 .carta-griglia.mancante {
   opacity: 0.55;

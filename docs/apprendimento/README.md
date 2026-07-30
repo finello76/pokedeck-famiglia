@@ -23,6 +23,7 @@ progetto solo come esempio concreto sotto mano.
 | 13 | [Stati, rotte e il tasto Indietro](13-stati-e-rotte.md) | Dove si tiene lo stato di una schermata che mostra tre cose diverse? Routing a frammento con parametri, delega degli eventi per elementi che non esistono ancora, `<details>` come fisarmonica nativa — e perché la stampa richiede JavaScript oltre al CSS. |
 | 14 | [Una lingua che manca](14-una-lingua-che-manca.md) | La fonte non ha i dati che ti servono, ma li ha in un'altra lingua. Quali campi *sembrano* testo e in realtà sono chiavi, perché tradurli è obbligatorio e tradurre gli altri sarebbe falso — e una carta che ha fermato ottanta set di download. |
 | 15 | [Un indice per cercare](15-un-indice-per-cercare.md) | Cercare fra 21.000 carte senza scaricarle tutte. Quando conviene un indice e quanto può pesare, perché un tetto sui risultati non basta se il costo sta altrove, e un accoppiamento fra due file che nessun compilatore sorveglia. |
+| 16 | [Caricare quando serve](16-caricare-quando-serve.md) | Un interruttore che bloccava la pagina, e i tre costi diversi dietro il blocco. `IntersectionObserver` invece di `scroll`, una fila fatta con una promessa, e perché `requestAnimationFrame` era la scelta sbagliata. |
 
 ## Per chi è scritto
 

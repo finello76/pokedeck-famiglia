@@ -54,6 +54,26 @@ const osservatore = new IntersectionObserver(
   { rootMargin: '200px' },
 );
 
+/**
+ * Ridà il controllo al browser, per spezzare un lavoro lungo in tanti corti:
+ * fra un blocco e l'altro la pagina dipinge e raccoglie i tocchi.
+ *
+ * `scheduler.yield()` è fatto esattamente per questo; dove non c'è (Safari,
+ * Firefox) un `setTimeout` di zero millisecondi fa lo stesso mestiere, perché
+ * rimanda al prossimo giro del ciclo degli eventi.
+ *
+ * **Non** si usa `requestAnimationFrame`, che sarebbe la scelta istintiva: in
+ * una scheda in secondo piano non scatta mai, e un inserimento cominciato prima
+ * di cambiare app resterebbe congelato a metà. Inoltre `rAF` gira *prima* del
+ * disegno, quindi le card costruite là dentro peserebbero comunque su quel
+ * frame — che è proprio ciò che si vuole evitare.
+ */
+const cediIlPasso = () =>
+  globalThis.scheduler?.yield?.() ?? new Promise((risolvi) => setTimeout(risolvi, 0));
+
+/** Quante card mancanti si inseriscono per volta. Vedi `#aggiungiMancanti()`. */
+const BLOCCO_MANCANTI = 60;
+
 export class GrigliaCollezione extends HTMLElement {
   /** @type {Array<object>} */
   #voci = [];
@@ -67,6 +87,24 @@ export class GrigliaCollezione extends HTMLElement {
   #prezzi = new Map();
   /** @type {string} messaggio sotto il pulsante della quotazione */
   #statoQuotazione = '';
+  /**
+   * Osservatore delle sezioni-set: chiede le carte mancanti di un set solo
+   * quando quel set sta entrando a schermo. Senza, accendere l'interruttore
+   * senza aver scelto un set faceva partire un caricamento **per ogni set** in
+   * collezione — decine di file JSON e decine di migliaia di card costruite
+   * tutte insieme, cioè la pagina bloccata. Scorrendo, i set a schermo sono uno
+   * o due: lo stesso costo che ha da sempre un set filtrato.
+   * @type {IntersectionObserver|null}
+   */
+  #osservatoreSezioni = null;
+  /**
+   * I caricamenti delle mancanti si mettono in fila invece di partire insieme.
+   * Se possiedi una carta sola di trenta set diversi le sezioni sono basse e a
+   * schermo ce ne stanno tante: senza la fila, l'osservatore le sveglierebbe
+   * tutte nello stesso istante e saremmo di nuovo al punto di partenza.
+   * @type {Promise<void>}
+   */
+  #coda = Promise.resolve();
 
   /**
    * Come procurarsi le carte mancanti di un set. La inietta chi usa il
@@ -202,6 +240,12 @@ export class GrigliaCollezione extends HTMLElement {
         );
       }
     });
+  }
+
+  disconnectedCallback() {
+    // Le sezioni osservate non esistono più: tenerle sotto osservazione
+    // significherebbe solo trattenerle in memoria.
+    this.#osservatoreSezioni?.disconnect();
   }
 
   /**
@@ -353,7 +397,7 @@ export class GrigliaCollezione extends HTMLElement {
           <input type="checkbox" data-mancanti ${this.#mostraMancanti ? 'checked' : ''} />
           <span>
             <strong>Mostra anche le carte che mi mancano</strong>
-            <small>Le carte dei set che possiedi solo in parte compaiono in grigio: così vedi cosa manca per completarli.</small>
+            <small>Le carte dei set che possiedi solo in parte compaiono in grigio: così vedi cosa manca per completarli. Arrivano un set per volta, mentre scorri.</small>
           </span>
         </label>
 
@@ -377,6 +421,10 @@ export class GrigliaCollezione extends HTMLElement {
     const riepilogo = this.querySelector('.riepilogo');
     const conteggio = this.querySelector('.conteggio-vis');
     if (!contenitore) return;
+
+    // Le sezioni di prima stanno per essere buttate: quelle che aspettavano il
+    // proprio turno non devono più chiedere niente.
+    this.#osservatoreSezioni?.disconnect();
 
     const voci = filtra(this.#voci, this.#filtri);
     const gruppi = raggruppa(voci);
@@ -426,8 +474,45 @@ export class GrigliaCollezione extends HTMLElement {
     const griglia = sezione.querySelector('.griglia-carte');
     griglia.replaceChildren(...set.voci.map((voce) => this.#card(voce)));
 
-    if (this.#mostraMancanti && confrontabile(set)) this.#aggiungiMancanti(griglia, set);
+    if (this.#mostraMancanti && confrontabile(set)) {
+      // Il set viaggia sull'elemento, come `_voce` sulle card: quando
+      // l'osservatore chiamerà, l'unica cosa che ha in mano è la sezione.
+      sezione._set = set;
+      this.#osserva(sezione);
+    }
     return sezione;
+  }
+
+  /**
+   * Mette una sezione-set in coda: chiederà le sue carte mancanti quando starà
+   * per entrare a schermo, e una volta sola.
+   * @param {HTMLElement} sezione
+   */
+  #osserva(sezione) {
+    this.#osservatoreSezioni ??= new IntersectionObserver(
+      (voci) => {
+        for (const voce of voci) {
+          if (!voce.isIntersecting) continue;
+          // Prima di tutto smettere di osservare: il caricamento è asincrono e
+          // una seconda intersezione raddoppierebbe le card.
+          this.#osservatoreSezioni.unobserve(voce.target);
+          const griglia = voce.target.querySelector('.griglia-carte');
+          if (!griglia || !voce.target._set) continue;
+          const set = voce.target._set;
+          // Il segnaposto si mette **subito**, non quando arriva il turno:
+          // altrimenti una sezione in fila sembrerebbe semplicemente completa.
+          const attesa = document.createElement('p');
+          attesa.className = 'attesa-mancanti';
+          attesa.textContent = 'cerco le carte che mancano…';
+          griglia.append(attesa);
+          this.#coda = this.#coda.then(() => this.#aggiungiMancanti(griglia, set, attesa));
+        }
+      },
+      // Meno dei 200px delle immagini: qui non si precarica un'immagine, si
+      // scarica un file di set intero. Basta arrivare poco prima.
+      { rootMargin: '100px' },
+    );
+    this.#osservatoreSezioni.observe(sezione);
   }
 
   /**
@@ -435,23 +520,42 @@ export class GrigliaCollezione extends HTMLElement {
    * le tue carte si vedono subito, le mancanti compaiono dopo.
    * @param {HTMLElement} griglia
    * @param {import('./raggruppa.js').GruppoSet} set
+   * @param {HTMLElement} attesa il segnaposto da togliere quando si è finito
    */
-  #aggiungiMancanti(griglia, set) {
-    this.caricaMancanti(set.idSet)
-      .then((mancanti) => {
-        if (!griglia.isConnected) return;
-        griglia.append(
-          ...mancanti.map((carta) =>
+  async #aggiungiMancanti(griglia, set, attesa) {
+    // Filtro cambiato mentre questa sezione era in fila: non c'è più niente da
+    // riempire, e il file del set non va nemmeno chiesto.
+    if (!griglia.isConnected) return;
+
+    let mancanti;
+    try {
+      mancanti = await this.caricaMancanti(set.idSet);
+    } catch {
+      // Set non leggibile offline: meglio niente che riempire di errori.
+      attesa.remove();
+      return;
+    }
+    if (!griglia.isConnected) return;
+    attesa.remove();
+
+    // Inserimento a blocchi: costruire 250 card in un colpo tiene occupato il
+    // thread abbastanza da far scattare lo scorrimento proprio mentre l'utente
+    // sta scorrendo.
+    for (let i = 0; i < mancanti.length; i += BLOCCO_MANCANTI) {
+      if (i > 0) await cediIlPasso();
+      // Fra un blocco e l'altro l'utente può aver cambiato filtro.
+      if (!griglia.isConnected) return;
+      griglia.append(
+        ...mancanti
+          .slice(i, i + BLOCCO_MANCANTI)
+          .map((carta) =>
             this.#card(
               { idSet: set.idSet, numero: carta.numero, quantita: 0, carta, nomeSet: set.nomeSet },
               true,
             ),
           ),
-        );
-      })
-      .catch(() => {
-        /* Set non leggibile offline: meglio niente che riempire di errori. */
-      });
+      );
+    }
   }
 
   /**
