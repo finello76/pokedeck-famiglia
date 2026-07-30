@@ -36,6 +36,8 @@ import { carteMancanti, mancantiPerNome } from '../data/completamento.js';
 import '../ui/contatore-energie/contatore-energie.js';
 import '../ui/visore-carta/visore-carta.js';
 import '../ui/vista-regole/vista-regole.js';
+import '../ui/linea-evolutiva/linea-evolutiva.js';
+import { avviaLineaEvolutiva } from './linea-evolutiva.js';
 
 const griglia = document.querySelector('#griglia');
 // La vista Preferiti è la stessa griglia con un filtro che l'utente non può
@@ -171,6 +173,11 @@ for (const g of griglie) {
     await aggiornaCollezione();
   });
 }
+
+// "Linea evolutiva", il pulsante che nei Preferiti sta al posto degli stepper.
+// La finestra si apre subito e i gradini arrivano dopo: cercare Machop e
+// Machamp nel catalogo può voler dire scaricare il file di un set.
+avviaLineaEvolutiva(griglie, document.querySelector('#linea'));
 
 // "Calcola quotazione": l'unico punto in cui l'app va in rete di sua volontà.
 // La griglia dice quali carte sta mostrando, qui si scaricano i prezzi e le si

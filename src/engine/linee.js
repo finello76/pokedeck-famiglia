@@ -25,9 +25,10 @@
 import { classifica } from './stadi.js';
 import { normalizzaNome } from './nomi.js';
 import { tipiRichiesti } from './fabbisogno.js';
-
-/** Quanti gradini può avere una linea: Base → Livello 1 → Livello 2. */
-const MAX_GRADINI = 3;
+// La risalita verso il Base la fa `catena.js`, che la usa anche per l'altro
+// verso (le evoluzioni): è la stessa camminata sull'indice, e due copie che
+// divergono darebbero due linee diverse per la stessa carta.
+import { catenaVersoIlBasso } from './catena.js';
 
 /**
  * @typedef {object} Gradino
@@ -46,39 +47,6 @@ const MAX_GRADINI = 3;
  * @property {string[]} tipi i tipi della cima
  * @property {number} punteggio quanto conviene, riempito da `ordinaLinee()`
  */
-
-/**
- * Risale i nomi delle pre-evoluzioni di una carta, fino al Base.
- *
- * Prima si crede a `evolveDa` della carta, poi all'indice: la stampa che hai in
- * mano è più affidabile di un indice ricostruito, ma il 41% delle stampe tace
- * il collegamento ed è lì che l'indice salva la linea.
- *
- * @param {object} carta
- * @param {Record<string, string>} indice nome normalizzato → pre-evoluzione
- * @param {Set<string>} nonPokemon nomi che non sono Pokémon: i fossili
- * @returns {string[]} nomi dalla cima al Base, cima inclusa
- */
-function catenaVersoIlBasso(carta, indice, nonPokemon) {
-  const catena = [carta.nome];
-  const visti = new Set([normalizzaNome(carta.nome)]);
-  let precedente = carta.evolveDa ?? indice[normalizzaNome(carta.nome)] ?? null;
-
-  // L'indice è un dato esterno: un ciclo (A←B, B←A) manderebbe il loop
-  // all'infinito, e nessuna linea vera supera i tre gradini.
-  while (precedente && catena.length < MAX_GRADINI) {
-    const chiave = normalizzaNome(precedente);
-    // Omanyte "evolve" da *Vecchio Helixfossile*, che è una carta Allenatore:
-    // la catena finisce qui. Trattarlo da gradino significa stamparlo come
-    // Pokémon Base — carte che nel gioco non esistono, ed è successo davvero.
-    if (nonPokemon.has(chiave)) break;
-    if (visti.has(chiave)) break;
-    visti.add(chiave);
-    catena.push(precedente);
-    precedente = indice[chiave] ?? null;
-  }
-  return catena;
-}
 
 /**
  * Costruisce una linea per ogni Pokémon posseduto.

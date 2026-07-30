@@ -670,3 +670,26 @@ griglia-collezione .chip-formato[data-formato='expanded'] {
   background: var(--colore-primario);
   color: var(--colore-su-primario);
 }
+
+/* Il piede delle card nei Preferiti: al posto degli stepper, un pulsante solo
+   che occupa tutta la larghezza. Largo apposta — è l'unica cosa da toccare in
+   quella vista, e si tocca col pollice mentre si tiene il telefono in mano. */
+.piede-preferito {
+  padding: 0.25rem 0.6rem 0.6rem;
+}
+
+.bottone-linea {
+  inline-size: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--colore-bordo);
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo);
+}
+
+.bottone-linea:hover {
+  border-color: var(--colore-primario);
+  color: var(--colore-primario);
+}

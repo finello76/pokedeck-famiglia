@@ -1,0 +1,181 @@
+/* Stile di <linea-evolutiva>.
+
+   Come il visore, NON sta in uno Shadow DOM: le miniature si tingono del colore
+   del tipo (`tipi.css`), che dentro lo Shadow DOM non arriverebbe. Il foglio è
+   quindi globale, e ogni regola parte da `linea-evolutiva`: `.corrente` o
+   `.assente` da soli finirebbero per colpire altre viste.
+
+   A differenza del visore la finestra NON è sempre scura: qui non si guarda una
+   carta sola, si legge un elenco, e vale il tema dell'app. */
+
+linea-evolutiva {
+  display: contents;
+}
+
+linea-evolutiva dialog.finestra-linea {
+  /* `position: fixed` sempre, non solo da modale: se `showModal()` non
+     agganciasse il top-layer, il dialog resterebbe nel flusso e finirebbe in
+     fondo alla pagina. Stesso tranello documentato in visore-carta.css. */
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  inline-size: 100vw;
+  block-size: 100dvh;
+  max-inline-size: 100vw;
+  max-block-size: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: var(--colore-fondo);
+  color: var(--colore-testo);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Il flex vale SOLO da aperto: un dialog chiuso lo nasconde il foglio del
+   browser con `display: none`, che qualunque `display` d'autore scavalca. */
+linea-evolutiva dialog.finestra-linea[open] {
+  display: flex;
+}
+
+linea-evolutiva dialog.finestra-linea::backdrop {
+  background: rgb(10 14 22 / 62%);
+}
+
+linea-evolutiva .testa-linea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--colore-bordo);
+  background: var(--colore-superficie);
+}
+
+linea-evolutiva .titolo-linea {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+linea-evolutiva .chiudi-linea {
+  flex: none;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo);
+}
+
+linea-evolutiva .corpo-linea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+linea-evolutiva .attesa-linea {
+  margin: 0;
+  color: var(--colore-testo-tenue);
+}
+
+linea-evolutiva .etichetta-gradino {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--colore-testo-tenue);
+}
+
+/* I gradini scorrono in orizzontale, uno per riga: da telefono un livello con
+   sette Raichu non deve spingere in basso il resto della linea, che è proprio
+   la cosa che si è aperta la finestra per vedere. */
+linea-evolutiva .carte-gradino {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scroll-snap-type: x proximity;
+}
+
+linea-evolutiva .carta-linea {
+  flex: none;
+  inline-size: 8.5rem;
+  scroll-snap-align: start;
+  padding: 0.45rem;
+  border-radius: var(--raggio-piccolo);
+  border: 1px solid var(--colore-bordo);
+  background: var(--colore-superficie);
+}
+
+/* Carta che non hai: spenta e col bordo tratteggiato, come nella griglia. */
+linea-evolutiva .carta-linea.assente {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+/* La carta da cui si è partiti. Senza, in una linea dove possiedi due gradini
+   su tre non si capisce più su quale carta si è toccato il pulsante. */
+linea-evolutiva .carta-linea.corrente {
+  border-color: var(--colore-preferito);
+  box-shadow: 0 0 0 1px var(--colore-preferito) inset;
+}
+
+linea-evolutiva .mini-linea {
+  position: relative;
+  aspect-ratio: 63 / 88;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--colore-superficie-2);
+}
+
+linea-evolutiva .mini-linea img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+linea-evolutiva .nome-linea {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+linea-evolutiva .set-linea {
+  font-size: 0.7rem;
+  color: var(--colore-testo-tenue);
+  line-height: 1.3;
+}
+
+linea-evolutiva .stato-linea {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+linea-evolutiva .stato-linea.ce-lhai {
+  background: color-mix(in srgb, var(--colore-primario) 14%, transparent);
+  color: var(--colore-primario);
+}
+
+linea-evolutiva .stato-linea.manca {
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo-tenue);
+}
+
+linea-evolutiva .oltre-linea {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--colore-testo-tenue);
+}

@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v62';
+const VERSIONE = 'v63';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -73,6 +73,9 @@ const GUSCIO = [
   './src/ui/visore-carta/visore-carta.js',
   './src/ui/visore-carta/inclinazione.js',
   './src/ui/visore-carta/visore-carta.css',
+  './src/ui/linea-evolutiva/linea-evolutiva.js',
+  './src/ui/linea-evolutiva/linea-evolutiva.css',
+  './src/app/linea-evolutiva.js',
   './src/app/viste.js',
   './src/app/vista-mazzi.js',
   './src/app/vista-personalizzato.js',
@@ -93,6 +96,7 @@ const GUSCIO = [
   './src/engine/alternative.js',
   './src/engine/casuale.js',
   './src/engine/linee.js',
+  './src/engine/catena.js',
   './src/engine/carenze.js',
   './src/engine/mazzo.js',
   './src/engine/riallinea.js',

@@ -18,6 +18,7 @@
  * @fires griglia-collezione#quantita-cambiata - detail: `{ idSet, numero, delta }`
  * @fires griglia-collezione#preferita-cambiata - detail: `{ idSet, numero, preferita }`
  * @fires griglia-collezione#carta-scelta - detail: `{ carta, nomeSet, lista, indice }`
+ * @fires griglia-collezione#linea-richiesta - detail: `{ voce }` (solo Preferiti)
  *
  * @example
  * const g = document.createElement('griglia-collezione');
@@ -286,6 +287,21 @@ export class GrigliaCollezione extends HTMLElement {
             },
           }),
         );
+        return;
+      }
+
+      // "Linea evolutiva": la card sa già tutto della sua carta, ma
+      // ricostruire la famiglia vuol dire leggere l'indice delle evoluzioni e
+      // cercare nel catalogo — due cose che la griglia non fa. Si chiede e
+      // basta; risponde `app/linea-evolutiva.js`.
+      const linea = evento.target.closest('[data-linea]');
+      if (linea) {
+        const voce = linea.closest('.carta-griglia')?._voce;
+        if (voce?.carta) {
+          this.dispatchEvent(
+            new CustomEvent('linea-richiesta', { bubbles: true, detail: { voce } }),
+          );
+        }
         return;
       }
 
@@ -874,7 +890,7 @@ export class GrigliaCollezione extends HTMLElement {
           <div class="nome-carta">${escapeHtml(voce.idSet)} n. ${escapeHtml(voce.numero)}</div>
           <div class="meta-carta">Set non più disponibile: riscarica i dati.</div>
         </div>
-        ${this.#stepper(voce, mancante)}
+        ${this.#piede(voce, mancante)}
       `;
       return card;
     }
@@ -927,7 +943,7 @@ export class GrigliaCollezione extends HTMLElement {
         </div>
       </button>
       ${this.#cuore(voce, mancante)}
-      ${this.#stepper(voce, mancante)}
+      ${this.#piede(voce, mancante)}
     `;
 
     const img = card.querySelector('img[data-src]');
@@ -1006,7 +1022,39 @@ export class GrigliaCollezione extends HTMLElement {
   }
 
   /**
-   * Il piede con gli stepper. Su una carta che non hai il "−" non ha senso.
+   * Il piede della card, che cambia a seconda della vista.
+   *
+   * Nel catalogo si contano le copie, e il piede sono gli stepper. Nei
+   * **Preferiti** no: là le carte ci sono finite perché ti piacciono, non
+   * perché le stai catalogando, e `+`/`−` sono due bersagli da 38px sotto ogni
+   * miniatura che nessuno tocca mai — anzi, che si toccano per sbaglio
+   * scorrendo. Al loro posto la domanda che in quella vista viene davvero:
+   * *di questo Pokémon ho anche il resto della linea?*
+   *
+   * Le copie restano modificabili aprendo la carta nel visore, quindi non si
+   * perde niente.
+   *
+   * @param {object} voce
+   * @param {boolean} mancante
+   * @returns {string} HTML
+   */
+  #piede(voce, mancante) {
+    if (!this.#fissi.preferito) return this.#stepper(voce, mancante);
+    // Solo i Pokémon hanno una linea evolutiva: su un Allenatore o su
+    // un'Energia il pulsante aprirebbe una finestra con dentro una carta sola.
+    if (voce.carta?.categoria !== 'Pokémon') return '';
+    return `
+      <div class="piede-preferito">
+        <button type="button" class="bottone-linea" data-linea
+                title="Mostra la linea evolutiva di ${escapeHtml(voce.carta.nome)}">
+          Linea evolutiva
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Gli stepper. Su una carta che non hai il "−" non ha senso.
    * @param {object} voce
    * @param {boolean} mancante
    */
