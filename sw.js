@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v73';
+const VERSIONE = 'v74';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -36,7 +36,7 @@ const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
  * nel repo, e sui dispositivi la copia vecchia senza immagini. Si alza solo
  * quando `data/set/` cambia davvero, non a ogni pubblicazione.
  */
-const VERSIONE_DATI = 'd2';
+const VERSIONE_DATI = 'd3';
 const CACHE_DATI = `pokedeck-dati-${VERSIONE_DATI}`;
 
 /**
@@ -105,6 +105,8 @@ const GUSCIO = [
   './src/engine/linee.js',
   './src/engine/catena.js',
   './src/engine/riapertura.js',
+  './src/engine/partita.js',
+  './src/engine/stati-speciali.js',
   './src/engine/carenze.js',
   './src/engine/mazzo.js',
   './src/engine/riallinea.js',
