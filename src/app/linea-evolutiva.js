@@ -56,6 +56,17 @@ const MAX_RICERCHE = 12;
 const SET_PER_CARTA = 2;
 
 /**
+ * Quanti file aprire al **secondo** tentativo, quando la prima passata non ha
+ * trovato nessuna stampa con la scansione.
+ *
+ * Si paga solo per le specie sfortunate, e si paga una volta: la maggior parte
+ * delle carte si risolve al primo colpo con due file. Sei è il numero oltre il
+ * quale, sui set che non hanno scansioni per niente, si continuerebbe a pagare
+ * senza trovare nulla.
+ */
+const SET_PER_CARTA_ALLARGATO = 6;
+
+/**
  * Quante stampe **possedute** della stessa specie si mostrano.
  *
  * Non una sola: Lycanroc Forma Giorno e Lycanroc Forma Notte sono due carte
@@ -228,15 +239,34 @@ function stampeMie(mie, nome, varianti) {
  */
 async function dalCatalogo(nome) {
   try {
-    const { trovate } = await cercaPerNomeGlobale(nome, null, {
-      maxSet: SET_PER_CARTA,
-      maxCandidate: MAX_STAMPE_MIE,
-    });
-    // Si preferisce una stampa con la scansione: mezza schermata di segnaposti
-    // non fa vedere niente, e la stessa specie in un altro set l'immagine ce
-    // l'ha quasi sempre.
-    return trovate.find((t) => t.carta?.immagine) ?? trovate[0] ?? null;
+    const stretta = await conScansione(nome, SET_PER_CARTA);
+    if (stretta?.carta?.immagine) return stretta;
+
+    // Nessuna delle poche stampe guardate ha la scansione. Capita: 1.374 carte
+    // su 21.264 (il 6,5%) non ce l'hanno nei dati di TCGdex, e set interi ne
+    // sono privi — McDonald's, Set Base, le Gallerie Allenatori. Con un tetto
+    // di due file di set si finisce dritti là dentro: la linea di Quaquaval
+    // pescava il Quaxly di McDonald's 2023, che di scansioni non ne ha nemmeno
+    // una. Allora si allarga, una volta sola.
+    const larga = await conScansione(nome, SET_PER_CARTA_ALLARGATO);
+    // Se la seconda passata non trova niente di meglio si tiene la prima: il
+    // nome e il set sono comunque l'informazione principale, e il segnaposto
+    // tinto dice "questa carta la foto non ce l'ha", non "errore".
+    return larga?.carta?.immagine ? larga : (larga ?? stretta);
   } catch {
     return null;
   }
+}
+
+/**
+ * Cerca il nome aprendo al più `maxSet` file, e restituisce la prima stampa che
+ * ha una scansione — o la prima qualsiasi, se nessuna ce l'ha.
+ *
+ * @param {string} nome
+ * @param {number} maxSet
+ * @returns {Promise<{set: object, carta: object}|null>}
+ */
+async function conScansione(nome, maxSet) {
+  const { trovate } = await cercaPerNomeGlobale(nome, null, { maxSet, maxCandidate: maxSet * 2 });
+  return trovate.find((t) => t.carta?.immagine) ?? trovate[0] ?? null;
 }
