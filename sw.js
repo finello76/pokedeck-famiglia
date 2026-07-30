@@ -29,8 +29,15 @@ const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
  * I dati dei set NON sono versionati come il guscio: sopravvivono agli
  * aggiornamenti dell'app. Ributtarli via a ogni pubblicazione costringerebbe a
  * riscaricare set già visti solo perché è cambiato un CSS.
+ *
+ * Hanno però una versione **loro**, da alzare quando cambiano i file dentro
+ * `data/set/`. Senza, un file di set letto una volta resterebbe quello per
+ * sempre: è successo aggiungendo le scansioni ai set in inglese — dati nuovi
+ * nel repo, e sui dispositivi la copia vecchia senza immagini. Si alza solo
+ * quando `data/set/` cambia davvero, non a ogni pubblicazione.
  */
-const CACHE_DATI = 'pokedeck-dati';
+const VERSIONE_DATI = 'd2';
+const CACHE_DATI = `pokedeck-dati-${VERSIONE_DATI}`;
 
 /**
  * Path RELATIVI: risolti rispetto alla posizione di sw.js, quindi funzionano
@@ -208,8 +215,10 @@ self.addEventListener('activate', (evento) => {
       const nomi = await caches.keys();
       await Promise.all(
         nomi
-          // CACHE_DATI non ha suffisso di versione ed è esclusa apposta: i set
-          // già scaricati devono sopravvivere agli aggiornamenti dell'app.
+          // I set già scaricati sopravvivono agli aggiornamenti dell'app: la
+          // loro cache si butta solo quando cambia VERSIONE_DATI, cioè quando
+          // sono cambiati i file. `pokedeck-dati` senza suffisso è il nome
+          // vecchio, e cade qui dentro: va buttato, o resterebbe orfano e pieno.
           .filter((n) => n.startsWith('pokedeck-') && n !== CACHE_DATI && !n.endsWith(VERSIONE))
           .map((n) => caches.delete(n)),
       );

@@ -118,6 +118,25 @@ deducibile: dentro ogni set c'è qualche carta bandita, e restano fuori set
 interi recenti (Pokémon TCG Pocket, promo McDonald's, Kit Allenatore).
 Vedi `docs/apprendimento/12-regole-o-dati.md`.
 
+Le scansioni che mancano ai set in inglese (una richiesta per set):
+
+```bash
+node tools/recupera-immagini.mjs --prova   # dice solo cosa farebbe
+node tools/recupera-immagini.mjs           # scrive
+```
+
+Recupera `immagine` dalla scheda inglese **solo per i set già marcati
+`lingua: 'en'`**, dove la pastiglia "EN" avverte già l'utente. Su un set
+italiano una scansione inglese sarebbe inglese non dichiarato, che è la cosa
+che questo progetto non fa. Al 30/07/2026 recupera **zero** carte: dove la
+scansione manca a noi, manca anche all'inglese. Vale la pena rilanciarlo quando
+TCGdex aggiunge roba.
+
+Dopo aver cambiato qualunque file in `data/set/`, alzare **`VERSIONE_DATI` in
+`sw.js`**: i file dei set stanno in una cache che sopravvive agli aggiornamenti
+dell'app e si svuota solo quando quel numero cambia. Senza, i dati nuovi non
+arrivano mai a chi quel set l'aveva già aperto.
+
 Infine i dati di gioco che TCGdex non replica sulle ristampe:
 
 ```bash
