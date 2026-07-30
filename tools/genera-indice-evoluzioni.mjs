@@ -68,6 +68,8 @@ const evoluzioni = new Map();
 const stadiVisti = new Map();
 /** Tutti i nomi di Pokémon visti, normalizzati: serve a riconoscere i fossili. */
 const speciePokemon = new Set();
+/** Nome normalizzato → nome come sta scritto sulla carta, per riscriverlo bene. */
+const comeScritto = new Map();
 /** Conflitti: la stessa specie con due pre-evoluzioni diverse. */
 const conflitti = [];
 let carteLette = 0;
@@ -77,6 +79,7 @@ for (const nomeFile of file) {
   for (const carta of set.carte ?? []) {
     if (carta.categoria === 'Pokémon') {
       speciePokemon.add(normalizza(carta.nome));
+      if (!comeScritto.has(normalizza(carta.nome))) comeScritto.set(normalizza(carta.nome), carta.nome);
       if (carta.stadio) {
         const chiave = normalizza(carta.nome);
         if (!stadiVisti.has(chiave)) stadiVisti.set(chiave, new Map());
@@ -128,6 +131,68 @@ for (const [nome, conta] of [...stadiVisti].sort(([a], [b]) => a.localeCompare(b
   if (livello >= 0) stadi[nome] = livello;
 }
 
+/**
+ * Deduce i collegamenti che **nessuna stampa dichiara**.
+ *
+ * Il caso che ha fatto scoprire il buco: la linea di *Exeggcute del Team
+ * Rocket* si fermava al Base. Non per un errore del motore — nel dataset
+ * *Exeggutor del Team Rocket* semplicemente non dice da cosa evolve, e non lo
+ * dice **nessuna** delle sue stampe. L'indice recupera i collegamenti taciuti
+ * confrontando stampe diverse della stessa carta, ma qui non c'è niente da
+ * confrontare.
+ *
+ * C'è però una regolarità nei nomi: le carte "a tema" portano tutte lo stesso
+ * qualificatore — *del Team Rocket*, *di Alola*, *di Erika*, *Team Aqua's* — e
+ * la linea vale dentro il tema. Se *Exeggutor* evolve da *Exeggcute*, allora
+ * *Exeggutor del Team Rocket* evolve da *Exeggcute del Team Rocket*, **a patto
+ * che quella carta esista davvero**.
+ *
+ * Due guardie, perché una deduzione sbagliata è peggio di un collegamento
+ * mancante — quello si vede, questa no:
+ *
+ * 1. la pre-evoluzione dedotta deve **esistere** fra le carte lette;
+ * 2. gli stadi devono essere consecutivi. Senza, *Espeon V* risulterebbe
+ *    evoluzione di *Eevee V*: sono due carte **Base** entrambe, e la linea
+ *    sarebbe inventata.
+ *
+ * @param {Record<string, string>} da collegamenti dichiarati
+ * @param {Record<string, number>} stadi stadio di ogni specie
+ * @returns {Record<string, string>} solo i collegamenti nuovi
+ */
+function deduciCollegamenti(da, stadi) {
+  const dedotti = {};
+  const dichiarati = Object.keys(da);
+
+  for (const nome of [...speciePokemon].sort()) {
+    if (da[nome]) continue;
+
+    // La specie dentro il nome: il pezzo più lungo che è già una carta con una
+    // linea nota. "Exeggutor del Team Rocket" contiene "exeggutor", che evolve.
+    const basi = dichiarati.filter((b) => b !== nome && ` ${nome} `.includes(` ${b} `));
+    if (!basi.length) continue;
+    const base = basi.reduce((a, b) => (b.length > a.length ? b : a));
+
+    const preBase = normalizza(da[base]);
+    const qualificatore = nome.replace(base, '').trim();
+    // Il qualificatore può stare davanti o dietro: "Alolan Dugtrio" ma anche
+    // "Muk di Alola". Si provano le due posizioni e si tiene quella che
+    // corrisponde a una carta vera.
+    const candidati = [`${preBase} ${qualificatore}`.trim(), `${qualificatore} ${preBase}`.trim()];
+    const trovato = candidati.find((c) => c !== nome && speciePokemon.has(c));
+    if (!trovato) continue;
+
+    const suo = stadi[nome];
+    const sopra = stadi[trovato];
+    if (!Number.isInteger(suo) || !Number.isInteger(sopra) || suo !== sopra + 1) continue;
+
+    dedotti[nome] = comeScritto.get(trovato) ?? trovato;
+  }
+  return dedotti;
+}
+
+const dedotti = deduciCollegamenti(da, stadi);
+for (const [nome, pre] of Object.entries(dedotti)) da[nome] = pre;
+
 const indice = { da, nonPokemon, stadi };
 writeFileSync(USCITA, `${JSON.stringify(indice, null, 0)}\n`);
 
@@ -135,6 +200,8 @@ const peso = (JSON.stringify(indice).length / 1024).toFixed(1);
 console.log(`Letti ${file.length} set, ${carteLette} carte con evolveDa dichiarato.`);
 console.log(`Scritte ${Object.keys(da).length} specie in ${USCITA} (${peso} KB).`);
 console.log(`Stadio noto per ${Object.keys(stadi).length} specie.`);
+console.log(`Collegamenti dedotti dai nomi a tema: ${Object.keys(dedotti).length}`);
+for (const [nome, pre] of Object.entries(dedotti)) console.log(`   ${nome} ← ${pre}`);
 console.log(`Pre-evoluzioni che non sono Pokémon (fossili e simili): ${nonPokemon.length}`);
 for (const n of nonPokemon) console.log('  ', n);
 if (conflitti.length) {

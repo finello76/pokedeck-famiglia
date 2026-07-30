@@ -80,6 +80,12 @@ stadio di ogni specie come numero (0 Base, 1, 2) e serve a **smentire `da`**: la
 *Dark Crobat* è un Livello 2 e dichiara di evolvere da Zubat, che è il Base — chi
 ricostruisce una linea fidandosi solo di `da` la mette al gradino di Golbat.
 
+Lo strumento **deduce** anche i collegamenti che nessuna stampa dichiara (34 oggi):
+*Exeggutor del Team Rocket* non dice da cosa evolve in nessuna delle sue stampe, ma
+se *Exeggutor* evolve da *Exeggcute* allora la carta a tema evolve dalla carta a tema
+— *purché quella carta esista* e gli stadi siano consecutivi. Senza il controllo sugli
+stadi, *Espeon V* risulterebbe evoluzione di *Eevee V*, e sono due Base.
+
 Poi l'indice dei nomi, che è quello che rende catalogabili le **promo**:
 
 ```bash
