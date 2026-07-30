@@ -19,6 +19,7 @@
  * @fires griglia-collezione#preferita-cambiata - detail: `{ idSet, numero, preferita }`
  * @fires griglia-collezione#carta-scelta - detail: `{ carta, nomeSet, lista, indice }`
  * @fires griglia-collezione#linea-richiesta - detail: `{ voce }` (solo Preferiti)
+ * @fires griglia-collezione#desiderio-richiesto - detail: `{ idSet, numero }`
  *
  * @example
  * const g = document.createElement('griglia-collezione');
@@ -310,6 +311,21 @@ export class GrigliaCollezione extends HTMLElement {
       const apri = evento.target.closest('.apri-carta');
       if (apri) {
         this.#apri(apri.closest('.carta-griglia'));
+        return;
+      }
+
+      // La stella delle carte che non hai: non tocca le copie, mette la carta
+      // nella lista desideri. È un evento suo e non `quantita-cambiata` con un
+      // flag, perché sono due domande diverse — "quante ne ho" e "la voglio" —
+      // e chi ascolta finisce in due funzioni diverse del livello dati.
+      const voglio = evento.target.closest('[data-desiderio]');
+      if (voglio) {
+        this.dispatchEvent(
+          new CustomEvent('desiderio-richiesto', {
+            bubbles: true,
+            detail: { idSet: voglio.dataset.set, numero: voglio.dataset.numero },
+          }),
+        );
         return;
       }
 
@@ -1059,16 +1075,27 @@ export class GrigliaCollezione extends HTMLElement {
    * @param {boolean} mancante
    */
   #stepper(voce, mancante) {
-    const meno = mancante
-      ? ''
-      : `<button type="button" class="meno" data-azione="-1" data-set="${escapeHtml(voce.idSet)}"
-                 data-numero="${escapeHtml(voce.numero)}" aria-label="Togli una copia">−</button>`;
+    // Su una carta che NON hai il "+" era una bugia: diceva "ne ho una in più"
+    // di una carta che non è mai stata nella scatola. Quello che si vuole
+    // davvero, guardando un buco in un set, è segnarsela — quindi una stella,
+    // che in quest'app significa "la voglio" (vedi il badge ★2 dei desideri).
+    if (mancante) {
+      return `
+        <div class="stepper">
+          <button type="button" class="voglio" data-desiderio data-set="${escapeHtml(voce.idSet)}"
+                  data-numero="${escapeHtml(voce.numero)}"
+                  title="Aggiungi alla lista desideri"
+                  aria-label="Aggiungi alla lista desideri">★</button>
+        </div>
+      `;
+    }
     return `
       <div class="stepper">
-        ${meno}
+        <button type="button" class="meno" data-azione="-1" data-set="${escapeHtml(voce.idSet)}"
+                data-numero="${escapeHtml(voce.numero)}" aria-label="Togli una copia">−</button>
         <button type="button" class="piu" data-azione="1" data-set="${escapeHtml(voce.idSet)}"
                 data-numero="${escapeHtml(voce.numero)}"
-                aria-label="${mancante ? 'Aggiungi alla collezione' : 'Aggiungi una copia'}">+</button>
+                aria-label="Aggiungi una copia">+</button>
       </div>
     `;
   }

@@ -638,6 +638,15 @@ griglia-collezione .chip-formato[data-formato='expanded'] {
   padding: 0.25rem 0.6rem 0.6rem;
 }
 
+/* La stella "la voglio" delle carte che non hai. Viola come il badge ★ dei
+   desideri e come i proxy: in quest'app quel colore vuol dire "questa carta non
+   è nella scatola". */
+.stepper .voglio {
+  background: var(--colore-proxy);
+  color: #fff;
+  font-size: 1.15rem;
+}
+
 /* Un solo pulsante (carte mancanti): il "+" resta a destra. */
 .stepper:only-child,
 .mancante .stepper {

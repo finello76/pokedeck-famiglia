@@ -11,6 +11,7 @@
 import {
   aggiungiCopie,
   elencoCompleto,
+  impostaDesiderio,
   impostaPreferita,
   statistiche,
   SET_ENERGIE_GENERICHE,
@@ -171,6 +172,18 @@ for (const g of griglie) {
     const { idSet, numero, preferita } = evento.detail;
     await impostaPreferita(idSet, numero, preferita);
     await aggiornaCollezione();
+  });
+}
+
+// La stella sulle carte che non hai: le mette nella lista desideri, una copia.
+// Non passa da `cambiaQuantita`: là si contano le carte tue, qui si dichiara di
+// volerne una — due store diversi della stessa riga (vedi `impostaDesiderio`).
+for (const g of griglie) {
+  g.addEventListener('desiderio-richiesto', async (evento) => {
+    const { idSet, numero } = evento.detail;
+    await impostaDesiderio(idSet, numero, 1);
+    await aggiornaCollezione();
+    mostraToast('Aggiunta alla lista desideri.');
   });
 }
 
