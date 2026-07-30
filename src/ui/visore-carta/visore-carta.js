@@ -91,6 +91,9 @@ export class VisoreCarta extends HTMLElement {
           <!-- Niente testi sotto la carta: attacchi, PS e tipo sono già stampati
                sulla scansione. Resta solo il contatore copie, che sulla carta
                non c'è. -->
+          <div class="blocco voglio-blocco" hidden>
+            <button class="voglio-visore" type="button">★ La voglio</button>
+          </div>
           <div class="blocco copie-blocco" hidden>
             <span class="etichetta">Copie possedute</span>
             <div class="copie-stepper">
@@ -109,6 +112,20 @@ export class VisoreCarta extends HTMLElement {
     this.querySelector('.succ').addEventListener('click', () => this.#scorri(1));
     this.querySelector('.copie-blocco .meno').addEventListener('click', () => this.#copie(-1));
     this.querySelector('.copie-blocco .piu').addEventListener('click', () => this.#copie(1));
+    // "La voglio": la carta entra nella lista desideri e il visore si chiude.
+    // Non resta aperto perché quella carta ha appena cambiato natura — da buco
+    // in un set a desiderio — e la griglia dietro si sta già ridisegnando.
+    this.querySelector('.voglio-visore').addEventListener('click', () => {
+      const voce = this.#lista[this.#indice];
+      if (!voce || voce.idSet == null || voce.numero == null) return;
+      this.dispatchEvent(
+        new CustomEvent('desiderio-richiesto', {
+          bubbles: true,
+          detail: { idSet: voce.idSet, numero: voce.numero },
+        }),
+      );
+      this.chiudi();
+    });
 
     // L'immagine ad alta risoluzione pesa ~830 KB: finché non è arrivata si
     // mostra un girotondo, altrimenti sfogliando sembra che il tocco non abbia
@@ -386,13 +403,20 @@ export class VisoreCarta extends HTMLElement {
   /** @param {object} voce */
   #rendiCopie(voce) {
     const blocco = this.querySelector('.copie-blocco');
+    const voglio = this.querySelector('.voglio-blocco');
     // Le copie si possono modificare solo se sappiamo dove salvarle. Con una
     // carta arrivata senza contesto (idSet/numero) il blocco sparisce.
     if (voce.idSet == null || voce.numero == null) {
       blocco.hidden = true;
+      voglio.hidden = true;
       return;
     }
-    blocco.hidden = false;
+    // Carta che non hai: il "+" direbbe "ne ho una in più" di una carta mai
+    // posseduta. Al suo posto la stella, come sulle card della griglia.
+    const daVolere = Boolean(voce.mancante) && !voce.desiderata;
+    voglio.hidden = !daVolere;
+    blocco.hidden = daVolere;
+    if (daVolere) return;
     const n = voce.quantita ?? 0;
     this.querySelector('.copie-num').textContent = n;
     this.querySelector('.copie-blocco .meno').disabled = n === 0;

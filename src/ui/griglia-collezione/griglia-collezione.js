@@ -894,6 +894,10 @@ export class GrigliaCollezione extends HTMLElement {
       // Viaggia fino al visore: là la scansione è tutto ciò che si legge, ed è
       // il punto in cui sapere che è inglese conta di più.
       linguaSet: voce.linguaSet,
+      // Anche questo viaggia: nel visore una carta che non hai non deve
+      // mostrare il contatore delle copie, che la aggiungerebbe come posseduta.
+      mancante,
+      desiderata: voce.desiderata,
     };
 
     // Carta di un set non più scaricato: non sappiamo nulla, mostriamo solo la

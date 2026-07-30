@@ -321,6 +321,19 @@ visore-carta .tela .freccia[hidden] {
 }
 
 /* --- Contatore copie: unica cosa sotto la carta --- */
+/* "La voglio", al posto del contatore sulle carte che non hai. Viola come il
+   badge dei desideri nella griglia: stesso significato, stesso colore. */
+visore-carta .voglio-visore {
+  width: auto;
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  background: var(--colore-proxy);
+  color: #fff;
+}
+
 visore-carta .copie-blocco {
   flex: none;
   margin-block-start: 0.75rem;

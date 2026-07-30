@@ -178,14 +178,15 @@ for (const g of griglie) {
 // La stella sulle carte che non hai: le mette nella lista desideri, una copia.
 // Non passa da `cambiaQuantita`: là si contano le carte tue, qui si dichiara di
 // volerne una — due store diversi della stessa riga (vedi `impostaDesiderio`).
-for (const g of griglie) {
-  g.addEventListener('desiderio-richiesto', async (evento) => {
-    const { idSet, numero } = evento.detail;
-    await impostaDesiderio(idSet, numero, 1);
-    await aggiornaCollezione();
-    mostraToast('Aggiunta alla lista desideri.');
-  });
+async function vogliCarta(evento) {
+  const { idSet, numero } = evento.detail;
+  await impostaDesiderio(idSet, numero, 1);
+  await aggiornaCollezione();
+  mostraToast('Aggiunta alla lista desideri.');
 }
+for (const g of griglie) g.addEventListener('desiderio-richiesto', vogliCarta);
+// Anche dal visore a schermo intero, dove la stessa carta si guarda da vicino.
+visore.addEventListener('desiderio-richiesto', vogliCarta);
 
 // "Linea evolutiva", il pulsante che nei Preferiti sta al posto degli stepper.
 // La finestra si apre subito e i gradini arrivano dopo: cercare Machop e
