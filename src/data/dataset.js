@@ -555,12 +555,22 @@ export function distribuisci(gruppi, { maxSet = MAX_SET, maxCandidate = MAX_CAND
  *   una carta in mano (chi scrive tutto "Articuno" non vuole annegare fra
  *   "Articuno ex" e "Articuno V"), va male per **cercare**: chi digita
  *   "pikachu" nella collezione vuole vedere anche i Pikachu ex.
+ * @param {number} [opzioni.maxSet] quanti file di set può aprire questa ricerca.
+ *   Il valore normale (12) serve a chi deve **identificare** una carta fisica e
+ *   vuole tutte le stampe possibili. Chi cerca solo la faccia di un Pokémon —
+ *   la linea evolutiva — abbassa il tetto: aprire dodici file per scegliere la
+ *   prima stampa è tempo in cui la pagina non risponde
+ * @param {number} [opzioni.maxCandidate] quante carte può proporre
  * @returns {Promise<{trovate: Array<{set: object, carta: object}>, nonLetti: string[], troppi: boolean}>}
  * @example
  * await cercaPerNomeGlobale('articuno ex', 32);
  * // → { trovate: [{ set: {id:'np', …}, carta: {nome:'Articuno ex', …} }], … }
  */
-export async function cercaPerNomeGlobale(testo, numero = null, { precedenzaEsatta = true } = {}) {
+export async function cercaPerNomeGlobale(
+  testo,
+  numero = null,
+  { precedenzaEsatta = true, maxSet, maxCandidate } = {},
+) {
   const ago = normalizza(testo);
   if (!ago) return { trovate: [], nonLetti: [], troppi: false };
 
@@ -599,7 +609,9 @@ export async function cercaPerNomeGlobale(testo, numero = null, { precedenzaEsat
     )
     .filter((stampe) => stampe.length);
 
-  const { perSet, troncato } = distribuisci(gruppi);
+  // `undefined` lascia i tetti normali: `distribuisci()` ha i suoi valori di
+  // default, e ripeterli qui vorrebbe dire tenerli allineati a mano.
+  const { perSet, troncato } = distribuisci(gruppi, { maxSet, maxCandidate });
   const troppi = troppiNomi || troncato;
 
   const info = new Map((await elencoSet()).map((s) => [s.id, s]));

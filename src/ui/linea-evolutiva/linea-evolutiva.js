@@ -11,17 +11,29 @@
  * nativo: Esc, fondo oscurato e focus confinato li fa il browser.
  *
  * È un componente **muto**: non sa cos'è un indice delle evoluzioni né come si
- * cerca una carta per nome. Riceve i gradini già risolti da
- * `app/linea-evolutiva.js` e si limita a disegnarli — la stessa divisione di
- * `griglia-collezione`, che riceve `caricaMancanti` da fuori.
+ * cerca una carta per nome. Riceve i gradini da `app/linea-evolutiva.js` e si
+ * limita a disegnarli — la stessa divisione di `griglia-collezione`, che riceve
+ * `caricaMancanti` da fuori.
+ *
+ * Li riceve in **due tempi**: prima la struttura, con le carte che si sanno già
+ * e un posto vuoto per le altre, poi ogni carta trovata nel catalogo con
+ * `completa()`. Il perché sta in `app/linea-evolutiva.js`: cercarle tutte prima
+ * di aprire voleva dire nove secondi di finestra ferma.
+ *
+ * Toccare una carta la ingrandisce nel visore, che si apre **sopra** questa
+ * finestra: due `<dialog>` modali insieme, ed è il motivo per cui il blocco
+ * dello scorrimento ragiona per chiavi (`app/blocca-scroll.js`).
  *
  * Disegna in DOM normale, non Shadow DOM: le miniature si tingono del colore
  * del tipo (`tipi.css`), che nello Shadow DOM non arriverebbe.
  *
+ * @fires linea-evolutiva#carta-scelta - detail: `{ carta, nomeSet, lista, indice }`
+ *
  * @example
  * const finestra = document.querySelector('linea-evolutiva');
- * finestra.apri('Machoke');          // subito, con l'attesa
- * finestra.gradini = gradiniRisolti; // quando i dati sono pronti
+ * finestra.apri('Machoke');            // subito, con l'attesa
+ * finestra.gradini = gradini;          // la struttura, coi buchi da riempire
+ * finestra.completa(2, 0, machamp);    // una carta trovata nel catalogo
  *
  * @module ui/linea-evolutiva
  */
@@ -34,9 +46,27 @@ import { pastigliaLingua } from '../lingua-set.js';
 /** Come si chiama un gradino, per numero di livello. */
 const ETICHETTE = ['Base', 'Livello 1', 'Livello 2'];
 
+/**
+ * Chi tiene bloccato lo scorrimento della pagina.
+ *
+ * Serve una chiave perché sopra questa finestra se ne apre un'altra — il visore
+ * — e chiudendo quella lo scorrimento non deve tornare libero mentre la linea è
+ * ancora aperta. Vedi `app/blocca-scroll.js`.
+ */
+const CHIAVE_SCROLL = 'linea-evolutiva';
+
 export class LineaEvolutiva extends HTMLElement {
   /** @type {HTMLDialogElement|null} */
   #dialogo = null;
+  /**
+   * Le voci a schermo, per `livello|nome`. Serve a due cose: sapere cosa
+   * ingrandire quando si tocca una carta, e ricordare la voce risolta quando
+   * `completa()` sostituisce quella in attesa. Nel DOM non ci starebbe: una
+   * carta è HTML costruito da stringhe, e appenderci sopra l'oggetto vorrebbe
+   * dire ricordarsi di riattaccarlo a ogni ridisegno.
+   * @type {Map<string, object>}
+   */
+  #registro = new Map();
 
   connectedCallback() {
     if (this.#dialogo) return;
@@ -58,7 +88,51 @@ export class LineaEvolutiva extends HTMLElement {
       if (evento.target === this.#dialogo) this.chiudi();
     });
     // `close` copre anche l'uscita con Esc, che non passa da `chiudi()`.
-    this.#dialogo.addEventListener('close', () => sbloccaScorrimento());
+    this.#dialogo.addEventListener('close', () => sbloccaScorrimento(CHIAVE_SCROLL));
+
+    // Toccare una carta la ingrandisce, come nella griglia. Non è il visore a
+    // essere aperto da qui: si annuncia `carta-scelta` e risponde app.js, che è
+    // l'unico posto in cui si sa dove sta il visore. La linea intera viaggia
+    // come elenco scorribile, così dal Machop si passa al Machamp con una
+    // frecciata senza tornare indietro.
+    this.addEventListener('click', (evento) => {
+      const bottone = evento.target.closest('.apri-linea');
+      if (!bottone) return;
+      const card = bottone.closest('.carta-linea');
+      const voce = this.#registro.get(chiaveVoce(card));
+      if (!voce?.carta) return;
+
+      const lista = this.#elenco();
+      this.dispatchEvent(
+        new CustomEvent('carta-scelta', {
+          bubbles: true,
+          detail: {
+            carta: voce.carta,
+            nomeSet: voce.nomeSet ?? '',
+            lista,
+            indice: Math.max(
+              lista.findIndex((v) => v.carta === voce.carta),
+              0,
+            ),
+          },
+        }),
+      );
+    });
+  }
+
+  /**
+   * Le carte a schermo in ordine di lettura, per lo scorrimento del visore.
+   *
+   * Si ricava dal DOM e non dal registro: l'ordine giusto è quello che si vede,
+   * e il registro è una mappa — l'ordine d'inserimento ci sarebbe pure, ma
+   * dipenderebbe da quando le ricerche nel catalogo sono tornate.
+   *
+   * @returns {Array<object>}
+   */
+  #elenco() {
+    return [...this.querySelectorAll('.carta-linea')]
+      .map((el) => this.#registro.get(chiaveVoce(el)))
+      .filter((v) => v?.carta);
   }
 
   /**
@@ -82,19 +156,39 @@ export class LineaEvolutiva extends HTMLElement {
       // `position: fixed` del CSS copre comunque lo schermo.
       this.#dialogo.show();
     }
-    bloccaScorrimento();
+    bloccaScorrimento(CHIAVE_SCROLL);
   }
 
   /**
    * I gradini da disegnare, dal Base in su.
    *
+   * Si assegnano **subito**, con dentro anche le carte che nessuno ha ancora
+   * cercato nel catalogo: quelle arrivano una per volta con `completa()`. Vedi
+   * `app/linea-evolutiva.js` per il perché — in breve, aspettare che siano
+   * pronte tutte voleva dire dieci secondi di finestra vuota e la pagina che
+   * non rispondeva ai tocchi.
+   *
    * @param {Array<{livello: number, oltre: number, voci: Array<object>}>} valore
-   *   ogni voce: `{nome, carta, quantita, nomeSet, linguaSet, corrente}`
+   *   ogni voce: `{nome, carta, quantita, nomeSet, linguaSet, corrente, inCorso}`
    */
   set gradini(valore) {
     const corpo = this.querySelector('.corpo-linea');
     if (!corpo) return;
     const gradini = valore ?? [];
+
+    // Il registro si riempie prima di disegnare, non dentro il disegno: una
+    // funzione che costruisce una stringa HTML e intanto scrive in una mappa è
+    // il genere di cosa che si dimentica di aver fatto.
+    this.#registro.clear();
+    for (const gradino of gradini) {
+      gradino.voci.forEach((voce, posizione) => {
+        this.#registro.set(`${gradino.livello}|${posizione}`, {
+          ...voce,
+          livello: gradino.livello,
+          posizione,
+        });
+      });
+    }
 
     if (!gradini.length) {
       corpo.innerHTML = '<p class="attesa-linea">Di questa carta non si conosce la linea.</p>';
@@ -102,9 +196,50 @@ export class LineaEvolutiva extends HTMLElement {
     }
 
     corpo.innerHTML = gradini.map((g) => this.#rigaGradino(g)).join('');
-    for (const img of corpo.querySelectorAll('img[data-carta]')) {
-      const carta = JSON.parse(img.dataset.carta);
-      seImmagineRotta(img, carta, 'segnaposto-mini');
+    this.#sorvegliaImmagini(corpo);
+  }
+
+  /**
+   * Rimpiazza una carta ancora in attesa con quella trovata nel catalogo.
+   *
+   * L'identità è **livello + posizione nella riga**, non il nome: due carte
+   * possono chiamarsi uguale e non esserlo. Lycanroc Forma Giorno e Lycanroc
+   * Forma Notte sono due carte diverse che nei dati si chiamano tutte e due
+   * "Lycanroc", e con la chiave sul nome la seconda avrebbe sostituito la
+   * prima.
+   *
+   * @param {number} livello
+   * @param {number} posizione indice della carta dentro la sua riga
+   * @param {object} voce la carta risolta
+   * @returns {void}
+   */
+  completa(livello, posizione, voce) {
+    const corpo = this.querySelector('.corpo-linea');
+    const vecchia = [...(corpo?.querySelectorAll('.carta-linea') ?? [])].find(
+      (el) => Number(el.dataset.livello) === livello && Number(el.dataset.posizione) === posizione,
+    );
+    if (!vecchia) return;
+
+    const completa = { ...voce, livello, posizione };
+    // Nel registro va la voce risolta, o il visore aprirebbe ancora la carta
+    // vuota di prima.
+    this.#registro.set(`${livello}|${posizione}`, completa);
+
+    const contenitore = document.createElement('div');
+    contenitore.innerHTML = this.#carta(completa);
+    const nuova = contenitore.firstElementChild;
+    vecchia.replaceWith(nuova);
+    this.#sorvegliaImmagini(nuova);
+  }
+
+  /**
+   * Mette il segnaposto alle immagini che non arrivano.
+   * @param {ParentNode} radice
+   * @returns {void}
+   */
+  #sorvegliaImmagini(radice) {
+    for (const img of radice.querySelectorAll('img[data-carta]')) {
+      seImmagineRotta(img, JSON.parse(img.dataset.carta), 'segnaposto-mini');
     }
   }
 
@@ -122,7 +257,11 @@ export class LineaEvolutiva extends HTMLElement {
     return `
       <section class="gradino-linea">
         <h3 class="etichetta-gradino">${etichetta}</h3>
-        <div class="carte-gradino">${gradino.voci.map((v) => this.#carta(v)).join('')}</div>
+        <div class="carte-gradino">
+          ${gradino.voci
+            .map((_, posizione) => this.#carta(this.#registro.get(`${gradino.livello}|${posizione}`)))
+            .join('')}
+        </div>
         ${oltre}
       </section>
     `;
@@ -131,9 +270,16 @@ export class LineaEvolutiva extends HTMLElement {
   /**
    * Una carta della linea.
    *
-   * Tre stati e non due: la carta di partenza (quella su cui hai toccato il
-   * pulsante), le altre che possiedi, e quelle che ti mancano. Senza il primo,
-   * in una linea di tre Machop non si capirebbe più da dove si è partiti.
+   * Quattro stati e non due: la carta di partenza (quella su cui hai toccato il
+   * pulsante), le altre che possiedi, quelle che ti mancano, e quelle che si
+   * stanno ancora cercando nel catalogo. Senza il primo, in una linea di tre
+   * Machop non si capirebbe più da dove si è partiti.
+   *
+   * Il contenuto sta dentro un `<button>`: una carta si tocca per ingrandirla,
+   * come nella griglia. La carta ancora in attesa **non** è un pulsante — non
+   * c'è niente da ingrandire — ed è per questo che il markup si biforca invece
+   * di disabilitare il pulsante: un bersaglio disabilitato sotto il dito è una
+   * promessa non mantenuta.
    *
    * @param {object} voce
    * @returns {string} HTML
@@ -144,7 +290,7 @@ export class LineaEvolutiva extends HTMLElement {
     const posseduta = (voce.quantita ?? 0) > 0;
     const classi = [
       'carta-linea',
-      posseduta ? 'posseduta' : 'assente',
+      voce.inCorso ? 'in-attesa' : posseduta ? 'posseduta' : 'assente',
       voce.corrente ? 'corrente' : '',
     ]
       .filter(Boolean)
@@ -155,15 +301,26 @@ export class LineaEvolutiva extends HTMLElement {
     const immagine = c
       ? this.#htmlImmagine(c)
       : segnaposto({ nome: voce.nome }, 'segnaposto-mini');
-    const stato = posseduta
-      ? `<span class="stato-linea ce-lhai">ce l'hai ×${voce.quantita}</span>`
-      : '<span class="stato-linea manca">non ce l\'hai</span>';
+    const stato = voce.inCorso
+      ? '<span class="stato-linea cerco">cerco…</span>'
+      : posseduta
+        ? `<span class="stato-linea ce-lhai">ce l'hai ×${voce.quantita}</span>`
+        : '<span class="stato-linea manca">non ce l\'hai</span>';
+
+    const dentro = `
+      <div class="mini-linea">${immagine}</div>
+      <div class="nome-linea">${escapeHtml(c?.nome ?? voce.nome)}</div>
+      ${voce.nomeSet ? `<div class="set-linea">${escapeHtml(voce.nomeSet)}${pastigliaLingua(voce)}</div>` : ''}`;
 
     return `
-      <article class="${classi}" data-tipo="${escapeHtml(tipo)}">
-        <div class="mini-linea">${immagine}</div>
-        <div class="nome-linea">${escapeHtml(c?.nome ?? voce.nome)}</div>
-        ${voce.nomeSet ? `<div class="set-linea">${escapeHtml(voce.nomeSet)}${pastigliaLingua(voce)}</div>` : ''}
+      <article class="${classi}" data-tipo="${escapeHtml(tipo)}"
+               data-livello="${voce.livello ?? 0}" data-posizione="${voce.posizione ?? 0}">
+        ${
+          c
+            ? `<button type="button" class="apri-linea"
+                       title="Ingrandisci ${escapeHtml(c.nome)}">${dentro}</button>`
+            : dentro
+        }
         ${stato}
       </article>
     `;
@@ -191,8 +348,17 @@ export class LineaEvolutiva extends HTMLElement {
   /** @returns {void} */
   chiudi() {
     this.#dialogo?.close();
-    sbloccaScorrimento();
+    sbloccaScorrimento(CHIAVE_SCROLL);
   }
+}
+
+/**
+ * La chiave del registro per una card a schermo.
+ * @param {HTMLElement} el
+ * @returns {string}
+ */
+function chiaveVoce(el) {
+  return `${Number(el.dataset.livello)}|${Number(el.dataset.posizione)}`;
 }
 
 /**

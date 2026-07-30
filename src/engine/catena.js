@@ -9,12 +9,17 @@
  *
  * Il risalire è facile: l'indice delle evoluzioni è già `nome → pre-evoluzione`.
  * Lo scendere no: bisogna **rovesciare** l'indice, e da un solo Pokémon possono
- * uscire molte evoluzioni. Sette da Pikachu (Raichu, Raichu di Alola, Raichu
- * ex, Raichu-GX…), **trentatré da Eevee**: da qui il tetto per livello, che non
- * è un dettaglio di stile ma la differenza fra una schermata leggibile e un
- * muro di trentatré miniature.
+ * uscire molti nomi. Sette da Pikachu (Raichu, Raichu di Alola, Raichu ex,
+ * Raichu-GX…), **trentatré da Eevee**.
  *
- * I nomi che escono da questo modulo sono di due specie diverse, e chi li
+ * Ma quei numeri contano **carte**, e una linea evolutiva non è fatta di carte:
+ * è fatta di **specie**. Rockruff porta a Lycanroc — non a Lycanroc, Lycanroc-ex
+ * e Lycanroc GX, che sono la stessa bestia stampata in tre modi. Quindi i nomi
+ * di un livello si accorpano (`raggruppaPerSpecie()`) e solo dopo si taglia col
+ * tetto: da Eevee restano otto specie, che è esattamente ciò che si vuole
+ * vedere.
+ *
+ * I nomi che escono da questo modulo sono di due provenienze diverse, e chi li
  * mostra deve saperlo: quelli **verso il basso** arrivano dai dati della carta
  * e sono scritti come sulla carta (`Raichu-GX`), quelli **verso l'alto**
  * arrivano dalle chiavi dell'indice e sono normalizzati (`raichu gx`). Sono
@@ -36,10 +41,18 @@ export const MAX_GRADINI = 3;
 const MAX_PER_LIVELLO = 8;
 
 /**
+ * @typedef {object} Specie
+ * @property {string} nome il nome della specie: il più corto del gruppo
+ * @property {string[]} varianti le versioni speciali della stessa specie
+ *   (`Lycanroc-ex`, `Lycanroc GX`), che a schermo non si mostrano ma servono a
+ *   riconoscere le tue carte
+ */
+
+/**
  * @typedef {object} Gradino
  * @property {number} livello 0 il Base, poi 1 e 2
- * @property {string[]} nomi le specie a quel livello, di norma una sola
- * @property {number} oltre quanti nomi sono stati tagliati dal tetto
+ * @property {Specie[]} specie le specie a quel livello, di norma una sola
+ * @property {number} oltre quante specie sono state tagliate dal tetto
  */
 
 /**
@@ -97,25 +110,70 @@ function rovescia(indice) {
 }
 
 /**
- * Ordina i nomi di un livello per **quanto meritano di stare a schermo**.
+ * Riduce i nomi di un livello alle **specie**, mettendo le versioni da parte.
  *
- * Prima quelli che possiedi: se una delle evoluzioni ce l'hai in scatola, è la
- * prima cosa che vuoi vedere e non deve finire fra i tagliati. Poi i nomi
- * corti, che sono le forme normali: da Eevee discendono trentatré nomi, e
- * lasciandoli in ordine d'indice le prime otto caselle se le prendono le
- * varianti (*Dark Espeon*, *Espeon ex*, *Espeon δ*) mentre Flareon, Jolteon e
- * Vaporeon restano fuori. È la stessa regola che usa la ricerca per nome in
- * `data/dataset.js`, per lo stesso motivo.
+ * È la differenza fra le due domande che si possono fare a una linea. *Quali
+ * carte esistono?* dà, da Rockruff, `Lycanroc`, `Lycanroc-ex`, `Lycanroc GX`.
+ * *Com'è fatta la linea?* dà `Lycanroc`, e basta: le altre sono la stessa
+ * specie stampata in un modo speciale. La finestra della linea risponde alla
+ * seconda, quindi qui le versioni si accorpano.
+ *
+ * Non c'è nessun elenco di suffissi da mantenere (`ex`, `GX`, `V`, `VMAX`,
+ * `δ`, `Dark`, `Mega`, `di Alola`, e i prossimi che inventeranno): la regola è
+ * **strutturale**. Ordinati dal più corto, un nome che *contiene* un nome già
+ * tenuto — davanti (`Dark Espeon`), dietro (`Espeon ex`) o in mezzo
+ * (`Mega Gardevoir ex`) — è una versione di quello. Il nome più corto è sempre
+ * la specie.
+ *
+ * Il confronto è **a confine di parola**: senza, `Nidorina` si mangerebbe
+ * `Nidorino`. E avviene solo fra i figli di uno stesso Pokémon, cioè fra nomi
+ * che sono già lo stesso gradino della stessa famiglia — due specie sorelle
+ * come Gallade e Gardevoir non si somigliano abbastanza da confondersi.
  *
  * @param {string[]} nomi
- * @param {Set<string>} possedute nomi normalizzati che hai in collezione
- * @returns {string[]} nuovo array
+ * @returns {Specie[]} un elemento per specie, col nome più corto come capofila
+ * @example
+ * raggruppaPerSpecie(['Espeon ex', 'Espeon', 'Dark Espeon', 'Flareon']);
+ * // → [{nome: 'Espeon', varianti: ['Espeon ex', 'Dark Espeon']}, {nome: 'Flareon', varianti: []}]
  */
-function ordina(nomi, possedute) {
-  return [...nomi].sort((a, b) => {
-    const mia = Number(possedute.has(normalizzaNome(b))) - Number(possedute.has(normalizzaNome(a)));
+function raggruppaPerSpecie(nomi) {
+  // Dal più corto: la specie deve essere trovata **prima** delle sue versioni,
+  // o sarebbe una versione a fare da capofila.
+  const ordinati = [...nomi].sort((a, b) => a.length - b.length || a.localeCompare(b));
+  /** @type {Specie[]} */
+  const specie = [];
+
+  for (const nome of ordinati) {
+    const n = normalizzaNome(nome);
+    // Gli spazi attorno fanno il confine di parola in un colpo solo: inizio,
+    // fine e mezzo.
+    const gruppo = specie.find(({ nome: capofila }) =>
+      ` ${n} `.includes(` ${normalizzaNome(capofila)} `),
+    );
+    if (gruppo) gruppo.varianti.push(nome);
+    else specie.push({ nome, varianti: [] });
+  }
+  return specie;
+}
+
+/**
+ * Ordina le specie di un livello per **quanto meritano di stare a schermo**.
+ *
+ * Prima quelle che possiedi: se un'evoluzione ce l'hai in scatola, è la prima
+ * cosa che vuoi vedere e non deve finire fra le tagliate. Poi i nomi corti, che
+ * è la stessa euristica della ricerca per nome in `data/dataset.js`.
+ *
+ * @param {Specie[]} specie
+ * @param {Set<string>} possedute nomi normalizzati che hai in collezione
+ * @returns {Specie[]} nuovo array
+ */
+function ordina(specie, possedute) {
+  const tua = ({ nome, varianti }) =>
+    Number([nome, ...varianti].some((n) => possedute.has(normalizzaNome(n))));
+  return [...specie].sort((a, b) => {
+    const mia = tua(b) - tua(a);
     if (mia) return mia;
-    return a.length - b.length || a.localeCompare(b);
+    return a.nome.length - b.nome.length || a.nome.localeCompare(b.nome);
   });
 }
 
@@ -133,7 +191,7 @@ function ordina(nomi, possedute) {
  *   riga in cui sta la carta di partenza, per poterla evidenziare
  * @example
  * catenaEvolutiva(machoke, { machoke: 'Machop', machamp: 'Machoke' });
- * // → gradini [['Machop'], ['Machoke'], ['machamp']], livelloCarta 1
+ * // → gradini con specie [['Machop'], ['Machoke'], ['machamp']], livelloCarta 1
  */
 export function catenaEvolutiva(carta, indice = {}, nonPokemon = new Set(), opzioni = {}) {
   const { maxPerLivello = MAX_PER_LIVELLO, possedute = new Set() } = opzioni;
@@ -141,7 +199,11 @@ export function catenaEvolutiva(carta, indice = {}, nonPokemon = new Set(), opzi
 
   // Verso il basso la catena è unica: ogni Pokémon ha una sola pre-evoluzione.
   const dalBasso = [...catenaVersoIlBasso(carta, indice, nonPokemon)].reverse();
-  const gradini = dalBasso.map((nome, livello) => ({ livello, nomi: [nome], oltre: 0 }));
+  const gradini = dalBasso.map((nome, livello) => ({
+    livello,
+    specie: [{ nome, varianti: [] }],
+    oltre: 0,
+  }));
   const livelloCarta = gradini.length - 1;
 
   // Verso l'alto si dirama. `visti` evita che un dato storto (A→B, B→A) faccia
@@ -162,16 +224,21 @@ export function catenaEvolutiva(carta, indice = {}, nonPokemon = new Set(), opzi
     }
     if (!nomi.length) break;
 
-    const mostrati = ordina(nomi, possedute).slice(0, maxPerLivello);
+    // Prima si accorpano le versioni, poi si taglia: il tetto va speso in
+    // specie diverse. Da Eevee i nomi sono trentatré e le specie otto — con
+    // l'ordine inverso, otto caselle piene di Espeon.
+    const tutte = raggruppaPerSpecie(nomi);
+    const mostrate = ordina(tutte, possedute).slice(0, maxPerLivello);
     gradini.push({
       livello: gradini.length,
-      nomi: mostrati,
-      oltre: nomi.length - mostrati.length,
+      specie: mostrate,
+      oltre: tutte.length - mostrate.length,
     });
     // Il livello dopo si calcola solo da ciò che si mostra: cercare le
-    // evoluzioni di nomi tagliati vorrebbe dire riempire l'ultima riga di
-    // carte figlie di una riga che l'utente non sta vedendo.
-    sopra = mostrati;
+    // evoluzioni di specie tagliate vorrebbe dire riempire l'ultima riga di
+    // carte figlie di una riga che l'utente non sta vedendo. Le varianti sì:
+    // Lycanroc VMAX evolve da Lycanroc-V, non da "Lycanroc".
+    sopra = mostrate.flatMap(({ nome, varianti }) => [nome, ...varianti]);
   }
 
   return { gradini, livelloCarta };

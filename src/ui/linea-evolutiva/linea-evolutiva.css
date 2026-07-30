@@ -127,6 +127,30 @@ linea-evolutiva .carta-linea.corrente {
   box-shadow: 0 0 0 1px var(--colore-preferito) inset;
 }
 
+/* Il contenuto della carta è un pulsante: si tocca per ingrandirla. Deve
+   sembrare la carta, non un pulsante — niente sfondo, niente bordo, e la
+   larghezza piena perché il bersaglio sia tutto ciò che si vede. */
+linea-evolutiva .apri-linea {
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: start;
+  font: inherit;
+}
+
+linea-evolutiva .apri-linea:active {
+  transform: scale(0.97);
+}
+
+/* Carta che si sta ancora cercando nel catalogo: non è un pulsante e non deve
+   sembrarlo. */
+linea-evolutiva .carta-linea.in-attesa {
+  opacity: 0.5;
+}
+
 linea-evolutiva .mini-linea {
   position: relative;
   aspect-ratio: 63 / 88;
@@ -167,6 +191,30 @@ linea-evolutiva .stato-linea {
 linea-evolutiva .stato-linea.ce-lhai {
   background: color-mix(in srgb, var(--colore-primario) 14%, transparent);
   color: var(--colore-primario);
+}
+
+/* "cerco…" pulsa piano: dice che qualcosa sta succedendo senza rubare
+   l'attenzione alle carte già arrivate. */
+linea-evolutiva .stato-linea.cerco {
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo-tenue);
+  animation: linea-pulsa 1.2s ease-in-out infinite;
+}
+
+@keyframes linea-pulsa {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  linea-evolutiva .stato-linea.cerco {
+    animation: none;
+  }
+
+  linea-evolutiva .apri-linea:active {
+    transform: none;
+  }
 }
 
 linea-evolutiva .stato-linea.manca {

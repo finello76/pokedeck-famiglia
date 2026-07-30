@@ -38,6 +38,13 @@ import { bloccaScorrimento, sbloccaScorrimento } from '../../app/blocca-scroll.j
 import { creaInclinazione, limita, MASSIMO } from './inclinazione.js';
 import { eInglese, SPIEGAZIONE } from '../lingua-set.js';
 
+/**
+ * Chi tiene bloccato lo scorrimento. Il visore può aprirsi **sopra** la finestra
+ * della linea evolutiva: senza chiavi distinte, chiudendo il visore la pagina
+ * tornerebbe a scorrere sotto una finestra ancora aperta.
+ */
+const CHIAVE_SCROLL = 'visore-carta';
+
 export class VisoreCarta extends HTMLElement {
   /** @type {HTMLDialogElement|null} */
   #dialogo = null;
@@ -179,7 +186,7 @@ export class VisoreCarta extends HTMLElement {
     // classe su <html> lo ferma. `close` copre la chiusura con Esc — e lì
     // vanno staccati anche i sensori, che Esc non passa da `chiudi()`.
     this.#dialogo.addEventListener('close', () => {
-      sbloccaScorrimento();
+      sbloccaScorrimento(CHIAVE_SCROLL);
       this.#fermaMovimento();
     });
   }
@@ -259,7 +266,7 @@ export class VisoreCarta extends HTMLElement {
     } catch {
       this.#dialogo.show();
     }
-    bloccaScorrimento();
+    bloccaScorrimento(CHIAVE_SCROLL);
     this.#avviaMovimento();
 
     // Animazione d'ingresso: si toglie e rimette la classe per farla ripartire
@@ -403,7 +410,7 @@ export class VisoreCarta extends HTMLElement {
   /** @returns {void} */
   chiudi() {
     this.#dialogo?.close();
-    sbloccaScorrimento();
+    sbloccaScorrimento(CHIAVE_SCROLL);
     this.#fermaMovimento();
   }
 }

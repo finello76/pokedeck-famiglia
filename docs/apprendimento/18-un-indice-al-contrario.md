@@ -87,22 +87,10 @@ Dark Espeon · Dark Flareon · Dark Jolteon · Dark Vaporeon · Espeon · Espeon
 ```
 
 Le quattro varianti "Dark" si prendevano metà schermo e **Flareon, Jolteon,
-Vaporeon restavano fuori**. Il criterio corretto non è alfabetico ma *quanto un
-nome merita lo spazio*, e sono due regole in fila:
-
-```js
-const mia = Number(possedute.has(normalizzaNome(b))) - Number(possedute.has(normalizzaNome(a)));
-if (mia) return mia;
-return a.length - b.length || a.localeCompare(b);
-```
-
-- **prima le carte che possiedi**: un'evoluzione che hai in scatola non deve mai
-  finire fra le tagliate;
-- **poi i nomi corti**: le forme normali sono più corte delle varianti, sempre.
-  È la stessa euristica che `data/dataset.js` usa da tempo nella ricerca per
-  nome ("Pikachu" prima di "Pikachu ex Ultra Rara").
-
-Risultato: Espeon, Flareon, Glaceon, Jolteon, Leafeon, Sylveon, Umbreon.
+Vaporeon restavano fuori**. Il primo rimedio è stato ordinare meglio prima di
+tagliare — le carte che possiedi davanti, poi i nomi corti, che è la stessa
+euristica della ricerca per nome. Migliorava le cose e **non era ancora la
+domanda giusta**: vedi la Parte 5, dove il tetto quasi non serve più.
 
 ## Parte 2 — Dove passa il confine
 
@@ -137,9 +125,12 @@ fatto nulla — e il secondo tocco arriverebbe subito dopo. Quindi il componente
 due momenti distinti:
 
 ```js
-finestra.apri(voce.carta.nome);           // subito: titolo e "ricostruisco…"
-finestra.gradini = await risolviLinea(…); // dopo: il contenuto
+finestra.apri(voce.carta.nome);              // subito: titolo e "ricostruisco…"
+finestra.gradini = (await struttura(…)).gradini;  // i gradini, coi buchi
+for (…) finestra.completa(livello, posizione, await dalCatalogo(nome));
 ```
+
+(Tre momenti, in realtà, e il terzo è arrivato dopo: vedi la Parte 5.)
 
 È lo stesso schema del *resolver* di Angular ribaltato: là la rotta aspetta i
 dati, qui la vista si apre e li accoglie. E come ogni cosa asincrona che
@@ -180,6 +171,141 @@ Due cose valgono più della riga in sé:
   un'Energia aprirebbe una finestra con dentro una carta sola. Un comando che
   non fa niente insegna a diffidare di tutti gli altri.
 
+## Parte 5 — Tre difetti trovati usandola
+
+La prima versione funzionava e aveva tre difetti, tutti e tre visti da chi la
+usava e non da chi la scriveva. Vale la pena guardarli insieme, perché nessuno
+dei tre è un errore di logica: sono tre modi diversi di aver deciso troppo
+presto che un caso non esisteva.
+
+### «Manca lo zoom»
+
+Una griglia di carte, in quest'app, si tocca per ingrandire. La finestra della
+linea mostrava carte e non si toccavano: chi la usa non ha imparato una nuova
+regola, ha pensato che mancasse un pezzo. Aveva ragione.
+
+Il rimedio è di tre righe, ma la parte interessante è **chi apre il visore**: non
+questa finestra. Si annuncia `carta-scelta`, e risponde `app.js`, che è l'unico
+posto in cui si sa dove il visore stia:
+
+```js
+this.dispatchEvent(new CustomEvent('carta-scelta', {
+  bubbles: true,
+  detail: { carta: voce.carta, nomeSet, lista, indice },
+}));
+```
+
+`lista` è tutta la linea, così dal Machop si passa al Machamp con una frecciata.
+Ed è lo stesso evento che emette la griglia: un ascoltatore solo, su `document`,
+serve due sorgenti che non si conoscono.
+
+Il visore però si apre **sopra** questa finestra: due `<dialog>` modali insieme.
+Funziona (il top layer li impila nell'ordine di apertura), ma ha fatto emergere
+un difetto in un modulo che stava lì da mesi: `blocca-scroll.js` aveva un solo
+interruttore, e chiudendo il visore la pagina tornava a scorrere **sotto** una
+finestra ancora aperta. Ora ogni pannello si presenta con una chiave:
+
+```js
+export function sbloccaScorrimento(chiave = 'pannello') {
+  chiHaChiesto.delete(chiave);
+  if (chiHaChiesto.size) return;   // qualcun altro lo tiene ancora
+  …
+}
+```
+
+Un contatore sarebbe stato più corto e **sbagliato**: `chiudi()` del visore
+sblocca, e l'evento `close` che ne segue sblocca una seconda volta. Con un
+insieme la ripetizione non fa niente; con un contatore il conto sarebbe andato
+sotto zero. *Idempotente* batte *contato* ogni volta che il numero di chiamate
+non è sotto il tuo controllo.
+
+### «Lycanroc di notte sì, di giorno no»
+
+Il difetto segnalato: la linea di Rockruff mostrava **quattro** caselle —
+`Lycanroc`, `Lycanroc`, `Lycanroc-ex`, `Lycanroc GX` — dove il gradino è uno.
+
+La prima diagnosi è stata parziale. Guardando i due `Lycanroc` uguali si è visto
+un difetto vero: la collezione era indicizzata per nome tenendo, di ogni nome,
+**una sola** stampa — quella con più copie —, e chi possiede Forma Giorno e
+Forma Notte (due carte diverse, che nei dati si chiamano tutte e due `Lycanroc`:
+la forma non è scritta da nessuna parte) ne vedeva sparire una. Quello si è
+corretto: le tue stampe si mostrano tutte.
+
+Ma il difetto **principale** era un altro, ed è una domanda mal posta più che un
+bug. Rovesciando l'indice si ottengono i **nomi delle carte** che evolvono da
+Rockruff. Una linea evolutiva non è fatta di carte: è fatta di **specie**.
+`Lycanroc-ex` e `Lycanroc GX` non sono gradini, sono la stessa bestia stampata
+in modo speciale.
+
+Quindi i nomi di un livello si accorpano prima di qualunque taglio:
+
+```js
+const gruppo = specie.find(({ nome: capofila }) =>
+  ` ${n} `.includes(` ${normalizzaNome(capofila)} `),
+);
+```
+
+Tre cose di questa riga:
+
+- **Nessun elenco di suffissi.** Sarebbe stato istintivo scrivere
+  `['ex','gx','v','vmax','vstar','δ','dark','mega',…]` e togliere quelli. È un
+  elenco che invecchia a ogni espansione nuova. La regola qui è *strutturale*:
+  ordinati dal più corto, un nome che ne contiene un altro già tenuto è una sua
+  versione. Il nome corto è sempre la specie.
+- **Gli spazi attorno** fanno il confine di parola in un colpo solo, e coprono
+  i tre casi: `Dark Espeon` (davanti), `Espeon ex` (dietro),
+  `Mega Gardevoir ex` (in mezzo — che senza il caso "in mezzo" restava fuori, ed
+  è stato trovato provando la regola sull'indice vero).
+- **Senza il confine, `Nidorina` si mangerebbe `Nidorino`.** È l'unico modo in
+  cui questa regola può fare danno, e si prova in due righe di test.
+
+L'effetto sul caso che aveva fatto arrabbiare il tetto:
+
+| | prima | dopo |
+|---|---|---|
+| Eevee, livello 1 | 33 nomi, 8 mostrati, «e altre 25» | **8 specie**, tutte |
+| Rockruff, livello 1 | 4 caselle | **1 specie** (più le tue stampe) |
+
+Il tetto non è stato tolto — serve ancora se un giorno una specie ne generasse
+davvero nove — ma ha smesso di essere la difesa principale. **Accorpare non è
+tagliare**: `oltre` resta a zero, perché non manca niente.
+
+Le varianti non si buttano: restano attaccate alla specie in `varianti`, e
+servono a rispondere "ce l'hai?" per chi di Lycanroc possiede solo il GX. La
+sua carta esiste e quel gradino lo occupa lei.
+
+### «Ogni tanto si blocca il touch»
+
+Il difetto più istruttivo, perché non era visibile in nessuna delle prove fatte
+scrivendolo. La prima versione risolveva tutte le carte mancanti così:
+
+```js
+await Promise.all(nomi.map(dalCatalogo));   // tutte insieme
+```
+
+Su Eevee sono nove ricerche in parallelo, e ogni ricerca poteva aprire fino a
+**dodici file di set** (è il tetto di `cercaPerNomeGlobale`, tarato per un uso
+diverso: identificare una carta fisica, dove vuoi vedere tutte le stampe). Ogni
+file che arriva è un `JSON.parse` da qualche megabyte, e `JSON.parse` è
+**sincrono**: il thread principale si ferma. Non abbastanza da sembrare un
+crash, abbastanza da mangiarsi i tocchi. *Si blocca e poi si riprende.*
+
+Tre rimedi, in ordine di importanza:
+
+1. **Prima la struttura, poi le carte.** La finestra riceve subito gradini e
+   nomi — che sono l'informazione principale — e ogni carta arriva dopo, al
+   posto del suo segnaposto. L'attesa percepita passa da nove secondi a zero.
+2. **Una ricerca per volta**, non nove insieme. Il costo totale è lo stesso ma è
+   spalmato: fra una e l'altra la pagina respira e raccoglie i tocchi.
+3. **Un tetto più basso per questo uso**: `cercaPerNomeGlobale` ha imparato a
+   ricevere `maxSet`. Qui ne bastano due — la domanda è *che faccia ha questo
+   Pokémon*, e una stampa vale l'altra.
+
+Il punto 3 merita una nota di progettazione: la funzione aveva un tetto giusto
+*per il suo primo chiamante*. Il secondo chiamante aveva bisogni diversi, e la
+scelta è stata **parametrizzare il tetto lasciando invariato il default**, non
+abbassarlo per tutti. Chi c'era prima non se ne accorge.
+
 ## Domande di verifica
 
 1. **La direzione mancante.** `rovescia()` ricostruisce la mappa a ogni apertura
@@ -191,11 +317,10 @@ Due cose valgono più della riga in sé:
    contenesse `alfa → Beta` e `beta → Alfa`, cosa succederebbe alla risalita
    senza il `Set` dei nomi già visti? E alla discesa? (Ce n'è un test.)
 
-3. **Il tetto giusto.** Il tetto è 8 per livello. Sul livello 1 di Eevee ne
-   restano fuori 25. Proponi un'alternativa al taglio — mostrare tutto con lo
-   scorrimento? un pulsante "mostra le altre"? raggruppare le varianti sotto la
-   forma normale? — e argomenta cosa costa ciascuna *in richieste di rete*,
-   ricordando che ogni nome non posseduto costa una ricerca nel catalogo.
+3. **Il tetto giusto.** Dopo l'accorpamento per specie, sul livello 1 di Eevee
+   non resta fuori niente. Il tetto di 8 serve ancora a qualcosa? Cerca nei dati
+   una specie che ne generi più di otto — e se non la trovi, di' se toglieresti
+   il tetto o lo lasceresti, e perché.
 
 4. **Il tetto delle ricerche.** `MAX_RICERCHE = 12` in `app/linea-evolutiva.js`
    limita quante carte si vanno a cercare. Cosa vede l'utente per una carta
@@ -206,3 +331,22 @@ Due cose valgono più della riga in sé:
    immaginare il contrario — `catena.js` che importa da `linee.js` — e spiega
    perché sarebbe sbagliato guardando cosa altro si porterebbe dietro
    (`fabbisogno.js`, `stadi.js`, i punteggi dei mazzi).
+
+6. **Il pannello sopra il pannello.** Apri la linea, ingrandisci una carta,
+   chiudi il visore con Esc invece che col pulsante. Segui il codice: quante
+   volte viene chiamato `sbloccaScorrimento` e con quali chiavi?
+
+7. **Sincrono di nascosto.** `JSON.parse` di un file di set blocca il thread. Il
+   progetto non usa Web Worker: quali altre operazioni dell'app hanno lo stesso
+   profilo, e perché finora non si sono notate? (Guarda `caricaSet` e chi lo
+   chiama.)
+
+8. **Il nome come chiave.** Cerca nel progetto altri punti in cui il nome di una
+   carta viene usato come identità. Per ciascuno, di' se il caso Lycanroc lo
+   romperebbe o no, e perché.
+
+9. **La regola strutturale.** `raggruppaPerSpecie()` accorpa senza conoscere né
+   `ex` né `GX`. Scrivi due nomi di Pokémon veri che la ingannerebbero, poi
+   verifica sull'indice (`data/evoluzioni.json`) se possono davvero comparire
+   come figli dello stesso Pokémon. Se non possono, la regola è sbagliata lo
+   stesso?

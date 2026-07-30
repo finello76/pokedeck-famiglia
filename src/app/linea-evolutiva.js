@@ -8,8 +8,20 @@
  * quindi scaricare il file di qualche set. È lo stesso confine di
  * `caricaMancanti` in `app.js`.
  *
- * Le carte si cercano prima in collezione e solo dopo nel catalogo: la stampa
- * che hai in mano è quella che vuoi vedere, non una qualsiasi.
+ * ## Prima la struttura, poi le carte
+ *
+ * La prima versione aspettava che tutte le carte fossero risolte e poi
+ * riempiva la finestra in un colpo solo. Sulla linea di Eevee, che di
+ * evoluzioni ne ha trentatré, voleva dire **nove secondi** di attesa — e
+ * durante quei nove secondi i tocchi non venivano raccolti: le ricerche
+ * partivano tutte insieme e ogni file di set che arriva è un `JSON.parse` da
+ * qualche megabyte, cioè il thread principale fermo a tratti. Sembrava che
+ * l'app si bloccasse e poi si riprendesse.
+ *
+ * Ora la finestra riceve **subito** la struttura — i gradini, i nomi, e le
+ * carte che possiedi, che sono già in memoria — e le carte da cercare arrivano
+ * **una per volta**, ognuna che rimpiazza il suo segnaposto. Il costo totale è
+ * lo stesso, ma è spalmato: fra una ricerca e l'altra la pagina respira.
  *
  * @module app/linea-evolutiva
  */
@@ -25,12 +37,36 @@ import {
 /**
  * Quante carte si vanno a cercare nel catalogo per una sola linea.
  *
- * Ogni nome che non possiedi costa una ricerca, e ogni ricerca può scaricare il
- * file di un set. Tre gradini più il ventaglio delle evoluzioni ci stanno
- * comodamente sotto; il tetto esiste per il caso Eevee, dove il ventaglio è di
- * trentatré.
+ * Ogni nome che non possiedi costa una ricerca. Tre gradini più il ventaglio
+ * delle evoluzioni ci stanno comodamente sotto; il tetto esiste per il caso
+ * Eevee, dove il ventaglio è di trentatré.
  */
 const MAX_RICERCHE = 12;
+
+/**
+ * Quanti file di set può aprire la ricerca di **una** carta della linea.
+ *
+ * La ricerca per nome normalmente ne apre fino a dodici, perché serve a
+ * identificare una carta fisica e vuole mostrare tutte le stampe possibili. Qui
+ * la domanda è un'altra — *che faccia ha questo Pokémon* — e una stampa vale
+ * l'altra: aprire dodici file per scegliere la prima è tempo buttato, ed è il
+ * tempo in cui la pagina non risponde.
+ */
+const SET_PER_CARTA = 2;
+
+/**
+ * Quante stampe **possedute** della stessa specie si mostrano.
+ *
+ * Non una sola: Lycanroc Forma Giorno e Lycanroc Forma Notte sono due carte
+ * diverse che nei dati di TCGdex si chiamano tutte e due "Lycanroc" — la forma
+ * non è scritta da nessuna parte. Mostrandone una, chi le possiede entrambe
+ * vede sparire la sua. Il tetto serve a chi di Pikachu ha dieci stampe.
+ *
+ * Sono le *tue* carte: le versioni speciali della specie (`Lycanroc-ex`,
+ * `Lycanroc GX`) qui non entrano — le ha già accorpate `engine/catena.js`,
+ * perché una linea evolutiva è fatta di specie, non di stampe.
+ */
+const MAX_STAMPE_MIE = 3;
 
 /**
  * Collega le griglie alla finestra: al `linea-richiesta` di una card risponde
@@ -54,12 +90,28 @@ export function avviaLineaEvolutiva(griglie, finestra) {
       const mio = ++giro;
       finestra.apri(voce.carta.nome);
       try {
-        const gradini = await risolviLinea(voce, griglia.voci ?? []);
-        if (mio === giro) finestra.gradini = gradini;
+        const { gradini, daCercare } = await struttura(voce, griglia.voci ?? []);
+        if (mio !== giro) return;
+        finestra.gradini = gradini;
+
+        // Una ricerca per volta, non tutte insieme: vedi l'intestazione del
+        // modulo. L'ordine è quello di lettura, così la linea si riempie
+        // dall'alto come ci si aspetta guardandola.
+        for (const { livello, posizione, nome } of daCercare) {
+          const trovata = await dalCatalogo(nome);
+          if (mio !== giro) return;
+          finestra.completa(livello, posizione, {
+            nome: trovata?.carta?.nome ?? nome,
+            carta: trovata?.carta ?? null,
+            quantita: 0,
+            nomeSet: trovata?.set?.nome ?? '',
+            linguaSet: trovata?.set?.lingua ?? null,
+            corrente: false,
+          });
+        }
       } catch {
-        // Offline, o un set che non si scarica: la linea che si conosce
-        // comunque è meglio di una finestra vuota, ma qui non ne abbiamo
-        // nessuna. Si dice, invece di lasciare l'attesa che gira per sempre.
+        // Offline, o l'indice delle evoluzioni che non si carica: si dice,
+        // invece di lasciare l'attesa che gira per sempre.
         if (mio === giro) finestra.gradini = [];
       }
     });
@@ -67,27 +119,34 @@ export function avviaLineaEvolutiva(griglie, finestra) {
 }
 
 /**
- * Trasforma una voce di collezione nei gradini pronti da disegnare.
+ * La struttura della linea, con dentro le carte che si conoscono già.
+ *
+ * Non va in rete: l'indice delle evoluzioni è in cache dopo il primo uso e la
+ * collezione è in memoria. Quello che manca esce in `daCercare`, con la sua
+ * posizione a schermo, e lo risolve il chiamante una carta per volta.
  *
  * @param {object} voce la carta da cui si parte
  * @param {Array<object>} collezione le voci della vista, per sapere cosa hai
- * @returns {Promise<Array<{livello: number, oltre: number, voci: Array<object>}>>}
+ * @returns {Promise<{gradini: Array<object>, daCercare: Array<{livello: number, posizione: number, nome: string}>}>}
  */
-async function risolviLinea(voce, collezione) {
+async function struttura(voce, collezione) {
   const [indice, nonPokemon] = await Promise.all([
     indiceEvoluzioni(),
     preEvoluzioniNonPokemon(),
   ]);
-  // La collezione indicizzata per nome: le stampe della stessa specie sono
-  // equivalenti per una linea evolutiva, quindi si tiene quella con più copie —
-  // è la risposta alla domanda "quante ne ho".
+
+  // La collezione indicizzata per nome. Le stampe dello stesso nome si tengono
+  // **tutte** — sono carte diverse, anche quando il nome è lo stesso: Lycanroc
+  // Forma Giorno e Forma Notte si chiamano uguale — ordinate dalla più
+  // posseduta, che è la risposta più utile a "quante ne ho".
   const mie = new Map();
   for (const v of collezione) {
-    if (!v.carta || v.desiderata) continue;
+    if (!v.carta || v.desiderata || !(v.quantita > 0)) continue;
     const chiave = normalizzaNome(v.carta.nome);
-    const gia = mie.get(chiave);
-    if (!gia || (v.quantita ?? 0) > (gia.quantita ?? 0)) mie.set(chiave, v);
+    if (!mie.has(chiave)) mie.set(chiave, []);
+    mie.get(chiave).push(v);
   }
+  for (const stampe of mie.values()) stampe.sort((a, b) => b.quantita - a.quantita);
 
   // I nomi che possiedi servono al motore *prima* di tagliare il ventaglio:
   // un'evoluzione che hai in scatola non deve finire fra le "altre 25 non
@@ -97,40 +156,58 @@ async function risolviLinea(voce, collezione) {
   });
 
   const corrente = `${voce.idSet}:${voce.numero}`;
-  let ricerche = 0;
+  const daCercare = [];
 
-  return Promise.all(
-    gradini.map(async (gradino) => ({
-      livello: gradino.livello,
-      oltre: gradino.oltre,
-      voci: await Promise.all(
-        gradino.nomi.map(async (nome) => {
-          const mia = mie.get(normalizzaNome(nome));
-          if (mia) {
-            return {
-              nome: mia.carta.nome,
-              carta: mia.carta,
-              quantita: mia.quantita ?? 0,
-              nomeSet: mia.nomeSet,
-              linguaSet: mia.linguaSet,
-              corrente: `${mia.idSet}:${mia.numero}` === corrente,
-            };
-          }
-          // Non ce l'hai: si va a vedere nel catalogo com'è fatta, così la
-          // prossima volta che ti capita in mano la riconosci.
-          const trovata = ricerche++ < MAX_RICERCHE ? await dalCatalogo(nome) : null;
-          return {
-            nome: trovata?.carta?.nome ?? nome,
-            carta: trovata?.carta ?? null,
-            quantita: 0,
-            nomeSet: trovata?.set?.nome ?? '',
-            linguaSet: trovata?.set?.lingua ?? null,
-            corrente: false,
-          };
-        }),
-      ),
-    })),
-  );
+  const pronti = gradini.map((gradino) => {
+    const voci = [];
+    for (const { nome, varianti } of gradino.specie) {
+      const stampe = stampeMie(mie, nome, varianti).slice(0, MAX_STAMPE_MIE);
+      if (stampe.length) {
+        for (const mia of stampe) {
+          voci.push({
+            nome: mia.carta.nome,
+            carta: mia.carta,
+            quantita: mia.quantita ?? 0,
+            nomeSet: mia.nomeSet,
+            linguaSet: mia.linguaSet,
+            corrente: `${mia.idSet}:${mia.numero}` === corrente,
+          });
+        }
+        continue;
+      }
+      // Non ce l'hai: la si va a vedere nel catalogo, ma dopo. Per ora è un
+      // posto vuoto con sopra il nome — che è già l'informazione principale.
+      if (daCercare.length < MAX_RICERCHE) {
+        daCercare.push({ livello: gradino.livello, posizione: voci.length, nome });
+        voci.push({ nome, carta: null, quantita: 0, inCorso: true, corrente: false });
+      } else {
+        voci.push({ nome, carta: null, quantita: 0, corrente: false });
+      }
+    }
+    return { livello: gradino.livello, oltre: gradino.oltre, voci };
+  });
+
+  return { gradini: pronti, daCercare };
+}
+
+/**
+ * Le tue stampe di una specie.
+ *
+ * Prima quelle che si chiamano **esattamente** come la specie: sono le carte
+ * normali, quelle che la linea vuole mostrare. Solo se non ne hai nessuna si
+ * ripiega sulle versioni speciali — se di Lycanroc possiedi soltanto il GX, il
+ * gradino deve dire "ce l'hai", non "non ce l'hai": la carta è tua e in una
+ * linea evolutiva quel posto lo occupa lei.
+ *
+ * @param {Map<string, object[]>} mie collezione per nome normalizzato
+ * @param {string} nome la specie
+ * @param {string[]} varianti le sue versioni speciali
+ * @returns {object[]}
+ */
+function stampeMie(mie, nome, varianti) {
+  const normali = mie.get(normalizzaNome(nome)) ?? [];
+  if (normali.length) return normali;
+  return varianti.flatMap((variante) => mie.get(normalizzaNome(variante)) ?? []);
 }
 
 /**
@@ -146,7 +223,10 @@ async function risolviLinea(voce, collezione) {
  */
 async function dalCatalogo(nome) {
   try {
-    const { trovate } = await cercaPerNomeGlobale(nome);
+    const { trovate } = await cercaPerNomeGlobale(nome, null, {
+      maxSet: SET_PER_CARTA,
+      maxCandidate: MAX_STAMPE_MIE,
+    });
     // Si preferisce una stampa con la scansione: mezza schermata di segnaposti
     // non fa vedere niente, e la stessa specie in un altro set l'immagine ce
     // l'ha quasi sempre.
