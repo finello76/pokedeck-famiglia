@@ -111,6 +111,36 @@ test('il ventaglio si taglia al tetto e dichiara quante specie restano fuori', (
   assert.equal(gradini[1].oltre, 9, 'le altre nove si contano, non si nascondono');
 });
 
+test('un Livello 2 non finisce fra i Livello 1, anche se l’indice lo dice', () => {
+  // Il caso vero: la carta Dark Crobat è un Livello 2 e dichiara di evolvere da
+  // Zubat, che è il Base. Leggendo solo l'indice finisce accanto a Golbat.
+  const indice = { golbat: 'Zubat', crobat: 'Golbat', 'dark crobat': 'Zubat' };
+  const stadi = { zubat: 0, golbat: 1, crobat: 2, 'dark crobat': 2 };
+  const { gradini } = catenaEvolutiva(
+    { nome: 'Zubat', categoria: 'Pokémon', stadio: 'Base' },
+    indice,
+    new Set(),
+    { stadi },
+  );
+
+  assert.deepEqual(nomiDi(gradini)[1], ['golbat'], 'al gradino di Golbat solo Golbat');
+  // Dark Crobat non si butta: sale al gradino suo, dove è una versione di
+  // Crobat — così chi la possiede si sente dire "ce l'hai".
+  assert.deepEqual(nomiDi(gradini)[2], ['crobat']);
+  assert.deepEqual(gradini[2].specie[0].varianti, ['dark crobat']);
+});
+
+test('senza lo stadio della carta di partenza non si sposta niente', () => {
+  // Nessun punto fermo da cui contare i gradini: meglio l'indice così com'è che
+  // una correzione fatta a caso.
+  const indice = { golbat: 'Zubat', 'dark crobat': 'Zubat' };
+  const { gradini } = catenaEvolutiva({ nome: 'Zubat', categoria: 'Pokémon' }, indice, new Set(), {
+    stadi: { golbat: 1, 'dark crobat': 2 },
+  });
+
+  assert.deepEqual(nomiDi(gradini)[1].sort(), ['dark crobat', 'golbat']);
+});
+
 test('la linea non supera mai i tre gradini', () => {
   // Una catena di cinque: dal Base si sale, ma il gioco non ha un quarto stadio
   // e una linea più lunga vorrebbe dire che l'indice è sporco.

@@ -49,6 +49,23 @@ const file = readdirSync(CARTELLA_SET)
 
 /** @type {Map<string, string>} nome normalizzato → nome della pre-evoluzione */
 const evoluzioni = new Map();
+/**
+ * Quante stampe di ogni specie dichiarano ciascuno stadio.
+ *
+ * Serve perché **l'indice, da solo, mente**: la carta *Dark Crobat* (neo4 #2) è
+ * un Livello 2 e dichiara `evolveDa: Zubat`, che è il Base. Chi ricostruisce
+ * una linea leggendo solo `da` mette Dark Crobat al gradino di Golbat — un
+ * Livello 2 in mezzo ai Livello 1. Lo stadio è l'unico dato che permette di
+ * accorgersene, ed è scritto sulla carta.
+ *
+ * Si conta invece di tenere il primo perché le stampe si contraddicono fra loro
+ * (`Crobat ex` sta senza stadio in un set e come Livello 2 in un altro): vince
+ * la maggioranza, che è la lettura più difendibile senza guardare le carte a
+ * una a una.
+ *
+ * @type {Map<string, Map<string, number>>} nome normalizzato → stadio → quante
+ */
+const stadiVisti = new Map();
 /** Tutti i nomi di Pokémon visti, normalizzati: serve a riconoscere i fossili. */
 const speciePokemon = new Set();
 /** Conflitti: la stessa specie con due pre-evoluzioni diverse. */
@@ -58,7 +75,15 @@ let carteLette = 0;
 for (const nomeFile of file) {
   const set = JSON.parse(readFileSync(join(CARTELLA_SET, nomeFile), 'utf8'));
   for (const carta of set.carte ?? []) {
-    if (carta.categoria === 'Pokémon') speciePokemon.add(normalizza(carta.nome));
+    if (carta.categoria === 'Pokémon') {
+      speciePokemon.add(normalizza(carta.nome));
+      if (carta.stadio) {
+        const chiave = normalizza(carta.nome);
+        if (!stadiVisti.has(chiave)) stadiVisti.set(chiave, new Map());
+        const conta = stadiVisti.get(chiave);
+        conta.set(carta.stadio, (conta.get(carta.stadio) ?? 0) + 1);
+      }
+    }
     if (carta.categoria !== 'Pokémon' || !carta.evolveDa) continue;
     carteLette++;
 
@@ -88,12 +113,28 @@ const nonPokemon = [
   ),
 ].sort((a, b) => a.localeCompare(b));
 
-const indice = { da, nonPokemon };
+/**
+ * Lo stadio di ogni specie, come numero: 0 Base, 1 Livello 1, 2 Livello 2.
+ *
+ * Solo i tre stadi canonici. VMAX, TURBO, MEGA e compagnia non sono gradini di
+ * una linea: sono modi di stampare una carta, e messi in scala falserebbero il
+ * livello della specie.
+ */
+const SCALA = ['Base', 'Livello 1', 'Livello 2'];
+const stadi = {};
+for (const [nome, conta] of [...stadiVisti].sort(([a], [b]) => a.localeCompare(b))) {
+  const [vincitore] = [...conta].sort((x, y) => y[1] - x[1]);
+  const livello = SCALA.indexOf(vincitore[0]);
+  if (livello >= 0) stadi[nome] = livello;
+}
+
+const indice = { da, nonPokemon, stadi };
 writeFileSync(USCITA, `${JSON.stringify(indice, null, 0)}\n`);
 
 const peso = (JSON.stringify(indice).length / 1024).toFixed(1);
 console.log(`Letti ${file.length} set, ${carteLette} carte con evolveDa dichiarato.`);
 console.log(`Scritte ${Object.keys(da).length} specie in ${USCITA} (${peso} KB).`);
+console.log(`Stadio noto per ${Object.keys(stadi).length} specie.`);
 console.log(`Pre-evoluzioni che non sono Pokémon (fossili e simili): ${nonPokemon.length}`);
 for (const n of nonPokemon) console.log('  ', n);
 if (conflitti.length) {

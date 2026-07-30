@@ -30,6 +30,7 @@ import { catenaEvolutiva } from '../engine/catena.js';
 import { normalizzaNome } from '../engine/nomi.js';
 import {
   indiceEvoluzioni,
+  indiceStadi,
   preEvoluzioniNonPokemon,
   cercaPerNomeGlobale,
 } from '../data/dataset.js';
@@ -130,9 +131,10 @@ export function avviaLineaEvolutiva(griglie, finestra) {
  * @returns {Promise<{gradini: Array<object>, daCercare: Array<{livello: number, posizione: number, nome: string}>}>}
  */
 async function struttura(voce, collezione) {
-  const [indice, nonPokemon] = await Promise.all([
+  const [indice, nonPokemon, stadi] = await Promise.all([
     indiceEvoluzioni(),
     preEvoluzioniNonPokemon(),
+    indiceStadi(),
   ]);
 
   // La collezione indicizzata per nome. Le stampe dello stesso nome si tengono
@@ -153,6 +155,9 @@ async function struttura(voce, collezione) {
   // mostrate".
   const { gradini } = catenaEvolutiva(voce.carta, indice, nonPokemon, {
     possedute: new Set(mie.keys()),
+    // Senza, un Livello 2 che dichiara di evolvere da un Base — succede, vedi
+    // Dark Crobat — comparirebbe al gradino sbagliato.
+    stadi,
   });
 
   const corrente = `${voce.idSet}:${voce.numero}`;

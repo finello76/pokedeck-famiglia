@@ -48,6 +48,14 @@ let caricamentoEvoluzioni = null;
 let cacheNonPokemon = null;
 
 /**
+ * Stadio noto di ogni specie, come numero: 0 Base, 1 Livello 1, 2 Livello 2.
+ * Vedi `indiceStadi()`: serve a smentire l'indice quando dice che un Livello 2
+ * evolve direttamente da un Base.
+ * @type {Record<string, number>|null}
+ */
+let cacheStadi = null;
+
+/**
  * Scarica un JSON dalla cartella dei dati.
  * @param {string} nomeFile
  * @returns {Promise<any>}
@@ -248,7 +256,7 @@ function stessoNumero(a, b) {
 /**
  * Carica l'indice delle evoluzioni, una volta sola.
  *
- * È un file piccolo (~22 KB) e sta nel guscio del service worker: a differenza
+ * È un file piccolo (~65 KB) e sta nel guscio del service worker: a differenza
  * dei set, serve praticamente sempre.
  *
  * @returns {Promise<void>}
@@ -268,6 +276,10 @@ async function assicuraEvoluzioni() {
       const nuovo = indice && typeof indice.da === 'object';
       cacheEvoluzioni = nuovo ? indice.da : indice ?? {};
       cacheNonPokemon = new Set((nuovo ? indice.nonPokemon ?? [] : []).map(normalizza));
+      // `stadi` è arrivato dopo `da` e `nonPokemon`: un file vecchio rimasto
+      // nella cache del service worker non ce l'ha, e chi lo legge deve
+      // sopravvivere a una mappa vuota.
+      cacheStadi = (nuovo ? indice.stadi : null) ?? {};
     });
   await caricamentoEvoluzioni;
 }
@@ -301,6 +313,21 @@ function normalizza(nome) {
 export async function preEvoluzioneDi(nome) {
   await assicuraEvoluzioni();
   return cacheEvoluzioni[normalizza(nome)] ?? null;
+}
+
+/**
+ * Lo stadio noto di ogni specie: 0 Base, 1 Livello 1, 2 Livello 2.
+ *
+ * Serve a **non fidarsi** dell'indice delle evoluzioni. La carta *Dark Crobat*
+ * è un Livello 2 e dichiara di evolvere da Zubat, che è il Base: chi ricostruisce
+ * una linea leggendo solo `da` la mette al gradino di Golbat. Lo stadio è
+ * stampato sulla carta ed è l'unico modo di accorgersene.
+ *
+ * @returns {Promise<Record<string, number>>}
+ */
+export async function indiceStadi() {
+  await assicuraEvoluzioni();
+  return cacheStadi ?? {};
 }
 
 /**

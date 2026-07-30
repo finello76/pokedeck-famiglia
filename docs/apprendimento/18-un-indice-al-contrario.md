@@ -171,12 +171,12 @@ Due cose valgono più della riga in sé:
   un'Energia aprirebbe una finestra con dentro una carta sola. Un comando che
   non fa niente insegna a diffidare di tutti gli altri.
 
-## Parte 5 — Tre difetti trovati usandola
+## Parte 5 — Quattro difetti trovati usandola
 
-La prima versione funzionava e aveva tre difetti, tutti e tre visti da chi la
+La prima versione funzionava e aveva quattro difetti, tutti visti da chi la
 usava e non da chi la scriveva. Vale la pena guardarli insieme, perché nessuno
-dei tre è un errore di logica: sono tre modi diversi di aver deciso troppo
-presto che un caso non esisteva.
+è un errore di logica: sono quattro modi diversi di aver deciso troppo presto
+che un caso non esisteva.
 
 ### «Manca lo zoom»
 
@@ -274,6 +274,53 @@ Le varianti non si buttano: restano attaccate alla specie in `varianti`, e
 servono a rispondere "ce l'hai?" per chi di Lycanroc possiede solo il GX. La
 sua carta esiste e quel gradino lo occupa lei.
 
+### «Dark Crobat sta al gradino di Golbat»
+
+Zubat → Golbat → Crobat. La finestra però metteva `Dark Crobat` accanto a
+Golbat: un Livello 2 in mezzo ai Livello 1.
+
+Non era un difetto del codice. Nel dataset, la carta *Dark Crobat* (neo4 #2) è
+un `Livello 2` e dichiara `evolveDa: Zubat`, che è il Base. L'indice riporta
+fedelmente quello che c'è scritto, e chi ricostruisce la linea leggendo solo
+`da` ottiene una linea sbagliata. (Non è un caso isolato: *Dark Golbat* in
+base5 #24 dichiara di evolvere da **Weavile**.)
+
+Qui c'è una lezione che vale oltre questo progetto: **quando un dato esterno si
+contraddice, cerca il campo che permette di accorgersene.** La contraddizione
+era già tutta nella carta — stadio `Livello 2`, pre-evoluzione un Base — solo
+che nessuno la stava leggendo. Lo stadio è stampato sulla carta vera, `evolveDa`
+è un nome scritto a mano: fra i due, il primo è più affidabile.
+
+Quindi `tools/genera-indice-evoluzioni.mjs` ora salva anche `stadi`, lo stadio
+di ogni specie come numero (0 Base, 1, 2), e `catena.js` lo usa come giudice:
+
+```js
+const suo = stadi[chiave];
+if (atteso !== null && Number.isInteger(suo) && suo !== atteso) {
+  if (suo > atteso) rimandati.push({ nome: figlio, livello: suo });
+  continue;
+}
+```
+
+Tre dettagli che valgono più della regola:
+
+- **Rimandare, non buttare.** Un nome arrivato troppo presto si mette da parte e
+  torna al gradino suo. Dark Crobat riappare al livello 2, dove `raggruppaPerSpecie()`
+  lo assorbe dentro Crobat — invisibile, ma se *quella* carta ce l'hai, il
+  gradino dice "ce l'hai" invece di "non ce l'hai".
+- **Il punto fermo.** I gradini sono posizioni in un array, gli stadi sono un
+  dato della carta: per confrontarli serve sapere a che stadio corrisponde il
+  gradino zero. Lo dà lo stadio della carta di partenza. Se non si conosce
+  (`classifica()` torna `null`), **non si corregge niente**: meglio l'indice
+  così com'è che una correzione fatta a caso. C'è un test anche per questo.
+- **La maggioranza.** Le stampe si contraddicono anche sullo stadio, quindi il
+  generatore conta e vince lo stadio più frequente. Non è la verità, è la
+  lettura più difendibile senza guardare 21.000 carte a una a una.
+
+Costo: `data/evoluzioni.json` passa da 35 a 65 KB. Sta nel guscio del service
+worker, quindi si scarica sempre — è il prezzo di una linea giusta, e si paga
+una volta.
+
 ### «Ogni tanto si blocca il touch»
 
 Il difetto più istruttivo, perché non era visibile in nessuna delle prove fatte
@@ -350,3 +397,8 @@ abbassarlo per tutti. Chi c'era prima non se ne accorge.
    verifica sull'indice (`data/evoluzioni.json`) se possono davvero comparire
    come figli dello stesso Pokémon. Se non possono, la regola è sbagliata lo
    stesso?
+
+10. **Fidarsi dei dati.** `stadi` serve a smentire `da`. Cerca nel dataset altre
+    coppie di campi in cui uno può smentire l'altro (per esempio `stadio` ed
+    `evolveDa` sulla stessa carta, o `totale` e i numeri di collezione di un
+    set) e di' quale dei due crederesti, e perché.

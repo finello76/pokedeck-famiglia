@@ -33,6 +33,7 @@
  */
 
 import { normalizzaNome } from './nomi.js';
+import { classifica } from './stadi.js';
 
 /** Quanti gradini può avere una linea: Base → Livello 1 → Livello 2. */
 export const MAX_GRADINI = 3;
@@ -187,6 +188,8 @@ function ordina(specie, possedute) {
  * @param {number} [opzioni.maxPerLivello=8] tetto ai nomi per livello
  * @param {Set<string>} [opzioni.possedute] nomi normalizzati in collezione:
  *   le carte tue non vengono mai tagliate dal tetto
+ * @param {Record<string, number>} [opzioni.stadi] stadio noto di ogni specie
+ *   (0 Base, 1, 2). Dove c'è, comanda lui: l'indice sbaglia (vedi `alGradinoGiusto`)
  * @returns {{gradini: Gradino[], livelloCarta: number}} `livelloCarta` è la
  *   riga in cui sta la carta di partenza, per poterla evidenziare
  * @example
@@ -194,7 +197,7 @@ function ordina(specie, possedute) {
  * // → gradini con specie [['Machop'], ['Machoke'], ['machamp']], livelloCarta 1
  */
 export function catenaEvolutiva(carta, indice = {}, nonPokemon = new Set(), opzioni = {}) {
-  const { maxPerLivello = MAX_PER_LIVELLO, possedute = new Set() } = opzioni;
+  const { maxPerLivello = MAX_PER_LIVELLO, possedute = new Set(), stadi = {} } = opzioni;
   if (!carta?.nome) return { gradini: [], livelloCarta: 0 };
 
   // Verso il basso la catena è unica: ogni Pokémon ha una sola pre-evoluzione.
@@ -212,16 +215,46 @@ export function catenaEvolutiva(carta, indice = {}, nonPokemon = new Set(), opzi
   const visti = new Set(dalBasso.map(normalizzaNome));
   let sopra = [carta.nome];
 
+  // A che stadio del gioco corrisponde il gradino più basso della catena. Serve
+  // a confrontare i gradini (che sono posizioni in un array) con gli stadi
+  // (che sono un dato della carta). `null` dove lo stadio della carta di
+  // partenza non si conosce: senza quel punto fermo non si confronta niente.
+  const livelloCartaVero = classifica(carta).livello;
+  const livelloDelPrimo = livelloCartaVero === null ? null : livelloCartaVero - livelloCarta;
+
+  // Nomi arrivati troppo presto: `Dark Crobat` esce fra i figli di Zubat, ma è
+  // un Livello 2 e il suo posto è due gradini più su. Si mettono da parte e si
+  // riprendono quando tocca a loro, invece di buttarli — se possiedi proprio
+  // quella carta, il gradino giusto deve dire "ce l'hai".
+  /** @type {Array<{nome: string, livello: number}>} */
+  const rimandati = [];
+
   while (gradini.length < MAX_GRADINI) {
+    const atteso = livelloDelPrimo === null ? null : livelloDelPrimo + gradini.length;
     const nomi = [];
+
     for (const nome of sopra) {
       for (const figlio of giu.get(normalizzaNome(nome)) ?? []) {
         const chiave = normalizzaNome(figlio);
         if (visti.has(chiave)) continue;
         visti.add(chiave);
+
+        const suo = stadi[chiave];
+        if (atteso !== null && Number.isInteger(suo) && suo !== atteso) {
+          // Più in su: lo si aspetta. Più in giù (un Base fra le evoluzioni di
+          // un Base) è un dato senza rimedio, e si scarta.
+          if (suo > atteso) rimandati.push({ nome: figlio, livello: suo });
+          continue;
+        }
         nomi.push(figlio);
       }
     }
+
+    // Chi era stato messo da parte per questo gradino torna adesso.
+    for (let i = rimandati.length - 1; i >= 0; i -= 1) {
+      if (rimandati[i].livello === atteso) nomi.push(...rimandati.splice(i, 1).map((r) => r.nome));
+    }
+
     if (!nomi.length) break;
 
     // Prima si accorpano le versioni, poi si taglia: il tetto va speso in
