@@ -194,6 +194,67 @@ scrittura fallisse, il ridisegno rimetterebbe il cuore com'era.
 `aria-pressed` non è decorazione: è ciò che rende il cuore un **interruttore** per
 chi usa uno screen reader, che altrimenti sentirebbe solo "pulsante".
 
+## Il comando che mentiva
+
+Molto dopo, usando l'app: nella griglia, con "mostra anche le carte che mi
+mancano" acceso, sotto ogni carta opaca c'era un `+`. Toccandolo, la carta
+entrava in collezione **come posseduta**.
+
+Non era un bug di scrittura: `impostaQuantita()` faceva esattamente quel che
+gli si chiedeva. Il difetto era nel comando. `+` significa *ne ho una in più* —
+detto di una carta che nella scatola non c'è mai stata, è una frase falsa. Chi
+guarda un buco in un set vuole fare un'altra cosa: **segnarsela**.
+
+E il simbolo per dirlo esisteva già, deciso in questo stesso documento: la
+stella dei desideri. La correzione è quindi meno "aggiungere una funzione" che
+**far coincidere il comando con il significato che il simbolo aveva già**.
+
+### Un evento nuovo, non un parametro in più
+
+La strada corta sarebbe stata riusare l'evento che c'è:
+
+```js
+// no
+detail: { idSet, numero, delta: 1, comeDesiderio: true }
+```
+
+Si è preferito un evento suo, `desiderio-richiesto`. Il criterio: *le due strade
+si dividono già al livello sotto*. `quantita-cambiata` finisce in
+`aggiungiCopie()`, il desiderio in `impostaDesiderio()` — due funzioni diverse,
+due significati diversi. Un flag booleano dentro l'evento avrebbe solo spostato
+un `if` da chi emette a chi ascolta, e ogni futuro lettore di `cambiaQuantita()`
+avrebbe dovuto ricordarsi che a volte quella funzione non parla di quantità.
+
+Regola pratica: **un flag che seleziona quale funzione chiamare è un evento
+mascherato.** Se il `detail` contiene un booleano che al primo `if` manda in due
+rami che non si riuniscono più, quei rami volevano due nomi.
+
+### La seconda porta
+
+Sistemata la griglia, la stessa carta restava aggiungibile **dal visore a
+schermo intero**, dove il contatore "Copie possedute" era sempre lì. Stesso
+errore, altra superficie.
+
+Il visore non poteva accorgersene: la voce che riceve dalla griglia portava la
+quantità, ma non *se quella carta fosse una mancante*. Zero copie non basta a
+distinguere — una carta che possiedi e da cui hai appena tolto l'ultima copia ha
+zero copie anche lei, e lì il `+` ha perfettamente senso.
+
+```js
+card._voce = { carta, nomeSet, idSet, numero, quantita, linguaSet, mancante, desiderata };
+```
+
+Due lezioni:
+
+- **Un dato assente non è un dato falso, ma se ne comporta come uno.** Il visore
+  stava deducendo "questa carta si può contare" da un'informazione che non
+  aveva. Ha smesso di sbagliare quando l'informazione è arrivata esplicita.
+- **Una regola di dominio applicata in un punto solo non è applicata.** "Sulle
+  carte che non hai non si contano le copie" viveva nella griglia. Le superfici
+  che mostrano una carta erano due, e la seconda l'ha scoperta chi usava l'app.
+  Vale la pena, dopo ogni correzione di questo tipo, cercare l'altra porta:
+  qui si trovava con `grep quantita-cambiata`, che dava due ascoltatori.
+
 ## Esercizi
 
 1. **Il campo che sparisce.** `impostaDesiderio()` riscrive la riga da capo, come
@@ -216,3 +277,12 @@ chi usa uno screen reader, che altrimenti sentirebbe solo "pulsante".
    confine dell'immagine della carta. Apri gli strumenti di sviluppo e verifica
    il contrasto sopra un'illustrazione chiara. Cosa cambieresti nel CSS —
    l'opacità dello sfondo, un bordo, un'ombra? Provalo.
+
+5. **L'evento mascherato.** Cerca in `src/ui/` un evento che porta nel `detail`
+   un booleano. Applica il criterio della sezione "un evento nuovo, non un
+   parametro in più": i due rami si riuniscono o no? Se no, come lo chiameresti
+   il secondo evento?
+
+6. **La terza porta.** La stella "la voglio" ora sta nella griglia e nel visore.
+   Esiste un terzo punto dell'app da cui si può aggiungere una carta? Trovalo e
+   di' se soffre dello stesso difetto, oppure perché no.
