@@ -105,6 +105,76 @@ decina di KB.
 > l'unità che pago*. Spesso non è quella che stai contando. Qui il rapporto fra
 > le due era 1 a 3,5 — e solo la misura l'ha rivelato.
 
+## La seconda trappola: il tetto giusto, speso male
+
+I tetti sopra sono quelli corretti, e per mesi hanno funzionato. Poi un uso
+normale li ha smentiti:
+
+```
+"Quax" → Quaxly, Quaxwell        ✔
+"Qua"  → Quaxly, Quagsire        ✘  e Quaxwell?
+```
+
+**Scrivendo meno lettere si trovava meno roba.** È il contrario di quello che
+una ricerca promette, ed è il tipo di difetto che nessun test coglie se i test
+si scrivono sui casi che uno immagina — "Quax" funzionava benissimo.
+
+Il filtro non c'entrava: i nomi che contengono `qua` sono 54, e *quaxwell* era
+fra loro. Il difetto stava in **come** si spendeva il budget:
+
+```js
+for (const chiave of scelte) {           // nome per nome…
+  for (const posizione of cacheNomi[chiave].split(' ')) {   // …tutte le sue stampe
+```
+
+Una visita **in profondità**: tutte e nove le stampe di *Quaxly*, poi tutte e
+quattordici quelle di *Quagsire*. Due nomi bastavano a riempire i dodici set
+consentiti, e il terzo non veniva nemmeno guardato. Con "Quax" i nomi erano due
+in tutto, e il problema non poteva manifestarsi.
+
+Il rimedio è visitare **in ampiezza**: a ogni giro ogni nome prende *una* stampa.
+
+```js
+// src/data/dataset.js — distribuisci()
+for (let preso = true; preso && candidate < maxCandidate; ) {
+  preso = false;
+  for (const stampe of restanti) {
+    let scelta = stampe.findIndex(({ idSet }) => perSet.has(idSet));
+    if (scelta === -1) {
+      if (perSet.size >= maxSet) continue;   // non si aprono altri file
+      scelta = 0;
+    }
+    // …prendi, conta, segna preso = true
+  }
+}
+```
+
+Due dettagli meritano attenzione.
+
+Il primo: dentro un giro si preferisce una stampa che sta in un set **già
+aperto**. Il file è già stato scaricato, quindi quella carta è gratis — mentre
+una stampa in un set nuovo costa una richiesta. È il tetto vero (i file) a
+dettare la preferenza, non l'ordine dell'indice.
+
+Il secondo: la condizione d'uscita non è "i tetti sono pieni" ma **"un giro
+intero non ha preso niente"**. Sembra la stessa cosa e non lo è: se restano solo
+stampe in set che non si possono più aprire, i tetti non sono pieni ma non c'è
+più niente da prendere. Con la condizione ingenua il ciclo non finirebbe mai. È
+il test *«senza spazio per set nuovi non si gira a vuoto»*.
+
+Il risultato, a **parità di costo** (sempre 12 file):
+
+```
+"Qua"  → 35 carte, 30 nomi diversi, Quaxwell compreso
+"pika" → 60 carte, 21 varianti di Pikachu invece delle prime due
+```
+
+> **La lezione generalizzabile**: un tetto non dice solo *quanto* si prende, ma
+> implicitamente anche *a chi tocca*. Se lo spendi in profondità, i primi
+> risultati si mangiano tutto e gli ultimi non esistono. Ogni volta che tronchi
+> un insieme composto da gruppi — nomi, categorie, utenti — chiediti se il taglio
+> è **equo fra i gruppi** o soltanto veloce.
+
 ## Dire la verità sul troncamento
 
 Un risultato troncato in silenzio è peggio di un errore: chi cerca vede quindici

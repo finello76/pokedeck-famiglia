@@ -469,6 +469,74 @@ const MAX_SET = 12;
 const MAX_CANDIDATE = 60;
 
 /**
+ * Sceglie quali stampe cercare davvero, dividendo i tetti **fra i nomi** invece
+ * di spenderli sul primo che capita.
+ *
+ * Il difetto che questa funzione esiste per riparare: cercando "Qua" i nomi
+ * corrispondenti sono 54, e prendendo le stampe nome per nome — tutte quelle di
+ * *Quaxly*, poi tutte quelle di *Quagsire* — il tetto dei set finiva già lì.
+ * *Quaxwell* non veniva nemmeno guardato, e scrivendo **meno** lettere si
+ * trovava **meno** roba: l'esatto contrario di quello che ci si aspetta da una
+ * ricerca.
+ *
+ * Il rimedio è distribuire a giri: a ogni giro ogni nome prende **una** stampa,
+ * finché i tetti reggono. Così i primi risultati coprono nomi diversi, e le
+ * stampe in più di uno stesso nome arrivano dopo, quando c'è spazio.
+ *
+ * Dentro un giro si preferisce una stampa che sta in un set **già aperto**: i
+ * set sono file da scaricare, ed è quello il costo vero. Una stampa in un set
+ * già aperto è gratis; una in un set nuovo si prende solo se il tetto dei set
+ * lo consente ancora.
+ *
+ * I tetti restano quelli di prima — `MAX_SET` file e `MAX_CANDIDATE` carte —
+ * quindi la ricerca non diventa più cara: cambia solo *come* si spendono.
+ *
+ * @param {Array<Array<{idSet: string, num: string}>>} gruppi le stampe di ogni
+ *   nome, un gruppo per nome, nell'ordine di priorità dei nomi
+ * @param {object} [tetti]
+ * @param {number} [tetti.maxSet=MAX_SET] quanti file di set si possono aprire
+ * @param {number} [tetti.maxCandidate=MAX_CANDIDATE] quante carte si possono proporre
+ * @returns {{perSet: Map<string, string[]>, troncato: boolean}} `troncato` dice
+ *   che è rimasto fuori qualcosa, e chi mostra i risultati **deve** dirlo
+ * @example
+ * distribuisci([[{idSet:'a',num:'1'},{idSet:'b',num:'2'}], [{idSet:'c',num:'3'}]],
+ *              { maxSet: 2, maxCandidate: 9 });
+ * // → un risultato per ciascuno dei due nomi: 'a' e 'c', non 'a' e 'b'
+ */
+export function distribuisci(gruppi, { maxSet = MAX_SET, maxCandidate = MAX_CANDIDATE } = {}) {
+  /** @type {Map<string, string[]>} idSet → numeri da cercarci dentro */
+  const perSet = new Map();
+  // Copie da consumare: la funzione non deve svuotare gli array di chi chiama.
+  const restanti = gruppi.map((stampe) => [...stampe]);
+  let candidate = 0;
+
+  // Un giro che non prende niente è un giro che non ne prenderà mai più: o i
+  // tetti sono pieni, o le stampe rimaste stanno tutte in set che non si
+  // possono più aprire. In entrambi i casi si esce, e `troncato` lo dirà.
+  for (let preso = true; preso && candidate < maxCandidate; ) {
+    preso = false;
+    for (const stampe of restanti) {
+      if (candidate >= maxCandidate) break;
+      if (!stampe.length) continue;
+
+      let scelta = stampe.findIndex(({ idSet }) => perSet.has(idSet));
+      if (scelta === -1) {
+        if (perSet.size >= maxSet) continue;
+        scelta = 0;
+      }
+
+      const [{ idSet, num }] = stampe.splice(scelta, 1);
+      if (!perSet.has(idSet)) perSet.set(idSet, []);
+      perSet.get(idSet).push(num);
+      candidate += 1;
+      preso = true;
+    }
+  }
+
+  return { perSet, troncato: restanti.some((stampe) => stampe.length > 0) };
+}
+
+/**
  * Cerca una carta per **nome**, in tutti i set, non solo in quelli caricati.
  *
  * È la strada per identificare una carta fisica quando il numero stampato non
@@ -509,50 +577,30 @@ export async function cercaPerNomeGlobale(testo, numero = null, { precedenzaEsat
           // quando i tetti tagliano è il nome pulito che serve di più.
           .sort((a, b) => a.length - b.length);
 
-  let troppi = chiavi.length > MAX_NOMI;
+  const troppiNomi = chiavi.length > MAX_NOMI;
   const scelte = chiavi.slice(0, MAX_NOMI);
-
-  /** @type {Map<string, string[]>} idSet → numeri da cercarci dentro */
-  const perSet = new Map();
   const cercato = numero == null || numero === '' ? null : String(numero).trim();
-  let candidate = 0;
 
-  /**
-   * Se si è raccolto abbastanza e conviene fermarsi.
-   *
-   * Il tetto sui *nomi* da solo non basta, e la differenza si vede solo
-   * provando: cercare "ar" corrisponde a 40 nomi, ma quei 40 nomi sono
-   * ristampati in **147 set diversi** — cioè praticamente l'intero catalogo,
-   * 8 MB, scaricati per una ricerca a due lettere. È esattamente ciò che
-   * questa funzione esisteva per evitare.
-   *
-   * Quindi si contano anche i **set** (ogni set è un file da scaricare, il
-   * costo vero) e le **carte** (ogni carta è una riga da disegnare). Chi ha
-   * digitato troppo poco riceve i primi risultati e l'invito a scrivere di
-   * più, invece di un'attesa di dieci secondi.
-   */
-  const troncare = () => {
-    if (perSet.size < MAX_SET && candidate < MAX_CANDIDATE) return false;
-    troppi = true;
-    return true;
-  };
+  // Le stampe di ogni nome, un gruppo per nome. Si separano **prima** di
+  // applicare i tetti perché il taglio deve sapere a quale nome appartiene
+  // ogni stampa: vedi `distribuisci()`.
+  const gruppi = scelte
+    .map((chiave) =>
+      cacheNomi[chiave]
+        .split(' ')
+        .map((posizione) => {
+          // Si taglia sul **primo** `:` e tutto il resto è il numero: gli id dei
+          // set non lo contengono mai, i numeri di collezione sì (le promo hanno
+          // sigle come `SWSH033`, e non si può escludere niente a priori).
+          const taglio = posizione.indexOf(':');
+          return { idSet: posizione.slice(0, taglio), num: posizione.slice(taglio + 1) };
+        })
+        .filter(({ num }) => cercato === null || stessoNumero(num, cercato)),
+    )
+    .filter((stampe) => stampe.length);
 
-  for (const chiave of scelte) {
-    if (troncare()) break;
-    for (const posizione of cacheNomi[chiave].split(' ')) {
-      if (troncare()) break;
-      // Si taglia sul **primo** `:` e tutto il resto è il numero: gli id dei
-      // set non lo contengono mai, i numeri di collezione sì (le promo hanno
-      // sigle come `SWSH033`, e non si può escludere niente a priori).
-      const taglio = posizione.indexOf(':');
-      const idSet = posizione.slice(0, taglio);
-      const num = posizione.slice(taglio + 1);
-      if (cercato !== null && !stessoNumero(num, cercato)) continue;
-      if (!perSet.has(idSet)) perSet.set(idSet, []);
-      perSet.get(idSet).push(num);
-      candidate += 1;
-    }
-  }
+  const { perSet, troncato } = distribuisci(gruppi);
+  const troppi = troppiNomi || troncato;
 
   const info = new Map((await elencoSet()).map((s) => [s.id, s]));
   const trovate = [];
