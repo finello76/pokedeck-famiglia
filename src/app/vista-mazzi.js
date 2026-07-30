@@ -582,13 +582,20 @@ function disegnaPiano(piano, opzioni) {
     if (nome === null) return;
 
     try {
-      await rinominaPiano(rottaDisegnata, nome);
-      piano.nome = nome;
-      const titolo = intestazione.querySelector('h2, .titolo-piano');
-      if (titolo) titolo.textContent = nome;
-      stato.textContent = `Adesso si chiama «${nome}».`;
-      stato.hidden = false;
+      const id = rottaDisegnata;
+      await rinominaPiano(id, nome);
+      // Si ridisegna rileggendo da disco invece di correggere il titolo a mano:
+      // il nome compare in **due** punti — l'intestazione e il titolo sopra
+      // l'elenco delle carte — e toccandone uno solo quello vecchio restava lì
+      // sotto. Ridisegnare è anche l'unico modo di essere sicuri che a schermo
+      // ci sia ciò che è stato scritto davvero.
+      //
+      // Niente riga di stato "adesso si chiama…": il nome nuovo si legge già
+      // grande in cima, e un messaggio che ripete ciò che si vede è rumore.
+      rottaDisegnata = null;
       await mostraSalvati();
+      rottaDisegnata = id;
+      await apriSalvato(id);
     } catch (errore) {
       stato.textContent = `Non è stato possibile rinominarlo: ${errore.message}`;
       stato.hidden = false;

@@ -305,7 +305,19 @@ export async function rinominaPiano(id, nome) {
   const record = await leggi(STORE_MAZZI, id);
   if (!record) throw new Error('Questo salvataggio non esiste più.');
 
-  const aggiornato = { ...record, nome: etichetta };
+  // Un mazzo costruito a mano porta il nome **due volte**: nel record, che è
+  // l'etichetta del salvataggio, e dentro `mazzi[0].nome`, che è il titolo
+  // stampato sopra l'elenco delle carte. Rinominando solo il primo, il nome
+  // vecchio restava a schermo poche righe più sotto.
+  //
+  // Si tocca solo il mazzo che si chiamava **come il salvataggio**: in un piano
+  // del wizard i mazzi si chiamano "Mazzo 1", "Mazzo 2", e rinominare la
+  // raccolta non deve ribattezzare quelli.
+  const mazzi = (record.mazzi ?? []).map((m) =>
+    m.nome === record.nome ? { ...m, nome: etichetta } : m,
+  );
+
+  const aggiornato = { ...record, nome: etichetta, mazzi };
   await scrivi(STORE_MAZZI, aggiornato);
   return aggiornato;
 }

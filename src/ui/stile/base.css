@@ -1135,9 +1135,15 @@ button.secondario {
   border-color: var(--colore-primario);
 }
 
+/* Sull'hover cambia SOLO lo sfondo. Prima cambiava anche il testo, in
+   `--colore-primario-scuro` — che nonostante il nome è un azzurro **pallido**
+   (#c3cee9), usato altrove per bordi e sfondi. Il risultato era una scritta
+   quasi invisibile: il pulsante sembrava disattivato pur essendo cliccabile.
+   Su telefono è peggio che su PC, perché dopo un tocco lo stato hover resta
+   appiccicato finché non si tocca altrove. */
 button.secondario:hover {
   background: var(--tipo-tenue, rgb(42 95 214 / 10%));
-  color: var(--colore-primario-scuro);
+  color: var(--colore-primario);
 }
 
 /* Ogni candidato della ricerca in un riquadro proprio: quando due carte
