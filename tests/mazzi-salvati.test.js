@@ -13,7 +13,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { istantanea, idrataPiano } from '../src/data/mazzi-salvati.js';
+import { istantanea, idrataPiano, rinominaMazzi } from '../src/data/mazzi-salvati.js';
 import { disponibilitaResidua, alternativePer } from '../src/engine/alternative.js';
 
 const carta = (nome, extra = {}) => ({
@@ -220,4 +220,55 @@ test('modificare un piano riletto non lo fa crescere di giro in giro', () => {
 
   assert.deepEqual(terzo, secondo, 'dal secondo giro in poi il record è identico');
   assert.equal(terzo.id, primo.id);
+});
+
+// --- Il nome scritto in due posti ---------------------------------------
+//
+// Un mazzo porta il nome nel record (l'etichetta del salvataggio, in cima alla
+// schermata) e dentro `mazzi[i].nome` (il titolo sopra l'elenco delle carte,
+// più in basso). Rinominando solo il primo, sotto restava quello vecchio.
+
+test('un salvataggio con un mazzo solo: il nome dentro insegue quello fuori', () => {
+  const record = { nome: 'Mazzo test', mazzi: [{ nome: 'Mazzo test', carte: [] }] };
+  assert.deepEqual(rinominaMazzi(record, 'Andrea 1'), [{ nome: 'Andrea 1', carte: [] }]);
+});
+
+test('un mazzo solo si allinea anche se i nomi erano GIÀ diversi', () => {
+  // È il caso vero: il record era stato rinominato da una versione che toccava
+  // solo l'etichetta, quindi i due nomi non coincidono più — e con la regola
+  // "rinomina solo se coincidono" non sarebbero mai tornati a coincidere.
+  const record = { nome: 'Andrea 1', mazzi: [{ nome: 'Mazzo test', carte: [] }] };
+  assert.deepEqual(rinominaMazzi(record, 'Andrea 2'), [{ nome: 'Andrea 2', carte: [] }]);
+});
+
+test('con più mazzi si tocca solo quello che portava il nome della raccolta', () => {
+  const record = {
+    nome: 'Torneo di Natale',
+    mazzi: [{ nome: 'Torneo di Natale' }, { nome: 'Mazzo 2' }, { nome: 'Mazzo 3' }],
+  };
+
+  assert.deepEqual(rinominaMazzi(record, 'Torneo 2027'), [
+    { nome: 'Torneo 2027' },
+    { nome: 'Mazzo 2' },
+    { nome: 'Mazzo 3' },
+  ]);
+});
+
+test('rinominare una raccolta non ribattezza "Mazzo 1", "Mazzo 2"…', () => {
+  const record = { nome: 'Serata di giovedì', mazzi: [{ nome: 'Mazzo 1' }, { nome: 'Mazzo 2' }] };
+  assert.deepEqual(rinominaMazzi(record, 'Serata di venerdì'), record.mazzi);
+});
+
+test('un record senza mazzi non fa esplodere la rinomina', () => {
+  assert.deepEqual(rinominaMazzi({ nome: 'Vuoto' }, 'Pieno'), []);
+  assert.deepEqual(rinominaMazzi(null, 'Pieno'), []);
+});
+
+test('rinominare non tocca le carte del mazzo', () => {
+  const carte = [{ nome: 'Pikachu', idSet: 'sv01', numero: '4', quantita: 2 }];
+  const record = { nome: 'Prima', mazzi: [{ nome: 'Prima', carte, totale: 2 }] };
+  const [mazzo] = rinominaMazzi(record, 'Dopo');
+
+  assert.equal(mazzo.carte, carte, 'le carte sono lo stesso array: niente copie inutili');
+  assert.equal(mazzo.totale, 2);
 });

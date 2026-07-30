@@ -199,6 +199,36 @@ export async function salvaPiano(piano, opzioni, nome) {
 }
 
 /**
+ * I mazzi di un record, col nome allineato all'etichetta nuova.
+ *
+ * Un mazzo porta il nome **due volte**: nel record, che è l'etichetta del
+ * salvataggio, e dentro `mazzi[i].nome`, che è il titolo stampato sopra
+ * l'elenco delle carte. Rinominando solo il primo, il nome vecchio resta a
+ * schermo poche righe più sotto — ed è successo davvero.
+ *
+ * Un salvataggio con **un mazzo solo** *è* quel mazzo: i due nomi sono la
+ * stessa cosa e il secondo insegue il primo senza condizioni. La regola più
+ * prudente — rinominare solo il mazzo che si chiamava come il salvataggio —
+ * sembrava più rispettosa e invece lasciava a metà proprio i record già
+ * rinominati da una versione precedente, dove i due nomi sono diversi e non
+ * torneranno mai a coincidere da soli.
+ *
+ * Con **più mazzi** è un'altra cosa: là si chiamano "Mazzo 1", "Mazzo 2", e
+ * rinominare la raccolta non deve ribattezzarli. Si tocca solo quello che
+ * portava lo stesso nome della raccolta.
+ *
+ * @param {{nome?: string, mazzi?: object[]}} record
+ * @param {string} etichetta il nome nuovo
+ * @returns {object[]} nuovo array, i mazzi non toccati restano gli stessi oggetti
+ */
+export function rinominaMazzi(record, etichetta) {
+  const mazzi = record?.mazzi ?? [];
+  return mazzi.map((m) =>
+    mazzi.length === 1 || m.nome === record.nome ? { ...m, nome: etichetta } : m,
+  );
+}
+
+/**
  * Riscrive un salvataggio che esiste già, tenendone l'identità.
  *
  * È la differenza fra *modificare* e *salvare di nuovo*: `salvaPiano()`
@@ -305,19 +335,7 @@ export async function rinominaPiano(id, nome) {
   const record = await leggi(STORE_MAZZI, id);
   if (!record) throw new Error('Questo salvataggio non esiste più.');
 
-  // Un mazzo costruito a mano porta il nome **due volte**: nel record, che è
-  // l'etichetta del salvataggio, e dentro `mazzi[0].nome`, che è il titolo
-  // stampato sopra l'elenco delle carte. Rinominando solo il primo, il nome
-  // vecchio restava a schermo poche righe più sotto.
-  //
-  // Si tocca solo il mazzo che si chiamava **come il salvataggio**: in un piano
-  // del wizard i mazzi si chiamano "Mazzo 1", "Mazzo 2", e rinominare la
-  // raccolta non deve ribattezzare quelli.
-  const mazzi = (record.mazzi ?? []).map((m) =>
-    m.nome === record.nome ? { ...m, nome: etichetta } : m,
-  );
-
-  const aggiornato = { ...record, nome: etichetta, mazzi };
+  const aggiornato = { ...record, nome: etichetta, mazzi: rinominaMazzi(record, etichetta) };
   await scrivi(STORE_MAZZI, aggiornato);
   return aggiornato;
 }
