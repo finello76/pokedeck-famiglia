@@ -27,7 +27,13 @@ import {
 } from './schede-piano.js';
 import { rivaluta, carteConDeroga } from '../engine/pianifica.js';
 import { cercaPiano, bersaglioPer } from '../engine/bersaglio.js';
-import { salvaPiano, elencoPiani, leggiPiano, eliminaPiano } from '../data/mazzi-salvati.js';
+import {
+  salvaPiano,
+  elencoPiani,
+  leggiPiano,
+  eliminaPiano,
+  rinominaPiano,
+} from '../data/mazzi-salvati.js';
 import { disponibilitaResidua } from '../engine/alternative.js';
 import { avvicinaAForza } from '../engine/obiettivo-forza.js';
 import { leggiRiferimento } from '../data/riferimento.js';
@@ -438,7 +444,17 @@ function disegnaPiano(piano, opzioni) {
     }
     <div class="azioni">
       <button type="button" id="bottone-stampa">Stampa mazzi e regole</button>
-      <button type="button" id="bottone-salva" class="secondario">Salva questi mazzi</button>
+      <button type="button" id="bottone-salva" class="secondario">${
+        rottaDisegnata ? 'Salva come copia' : 'Salva questi mazzi'
+      }</button>
+      ${
+        // Rinominare si può solo su un mazzo che un nome ce l'ha già, cioè uno
+        // salvato. Sul piano appena generato il pulsante "Salva" chiede il nome
+        // e fa la stessa cosa.
+        rottaDisegnata
+          ? '<button type="button" id="bottone-rinomina" class="secondario">Rinomina</button>'
+          : ''
+      }
       ${ultimeRisposte ? '<button type="button" id="bottone-rigenera" class="secondario">Rigenera diversi</button>' : ''}
       ${
         squilibrati(piano)
@@ -552,6 +568,33 @@ function disegnaPiano(piano, opzioni) {
   // Rigenera con le stesse risposte ma un seme nuovo: stessa collezione, mazzi
   // diversi. Senza questo pulsante la varietà del motore non si vedrebbe,
   // perché rifare il wizard per intero scoraggia dal riprovare.
+  // Rinominare NON è salvare di nuovo: `salvaPiano()` creerebbe un secondo
+  // record con la data di adesso, e chi voleva correggere un nome si
+  // ritroverebbe due mazzi uguali nell'elenco.
+  intestazione.querySelector('#bottone-rinomina')?.addEventListener('click', async () => {
+    const stato = intestazione.querySelector('#stato-mazzi');
+    const nome = await chiediNome({
+      titolo: 'Come si chiama questo mazzo?',
+      aiuto: 'Il nome con cui lo ritrovi fra "I miei mazzi".',
+      valore: piano.nome ?? '',
+      conferma: 'Rinomina',
+    });
+    if (nome === null) return;
+
+    try {
+      await rinominaPiano(rottaDisegnata, nome);
+      piano.nome = nome;
+      const titolo = intestazione.querySelector('h2, .titolo-piano');
+      if (titolo) titolo.textContent = nome;
+      stato.textContent = `Adesso si chiama «${nome}».`;
+      stato.hidden = false;
+      await mostraSalvati();
+    } catch (errore) {
+      stato.textContent = `Non è stato possibile rinominarlo: ${errore.message}`;
+      stato.hidden = false;
+    }
+  });
+
   intestazione.querySelector('#bottone-rigenera')?.addEventListener('click', () => {
     genera(ultimeRisposte).catch((errore) => {
       const stato = intestazione.querySelector('#stato-mazzi');

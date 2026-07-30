@@ -27,6 +27,7 @@ import { elencoPrefatti } from '../data/mazzi-prefatti.js';
 import { leggiRiferimento } from '../data/riferimento.js';
 import { salvaPiano, leggiPiano } from '../data/mazzi-salvati.js';
 import { chiediNome } from './chiedi-nome.js';
+import { stessoNome } from '../engine/nomi.js';
 import '../ui/costruttore-mazzo/costruttore-mazzo.js';
 
 const sezione = document.querySelector('#mazzo-personalizzato');
@@ -249,6 +250,8 @@ async function riapri(costruttore, id) {
 
   const scelte = new Map();
   let fuori = 0;
+  let perNomeRitrovate = 0;
+  let perse = 0;
   for (const voce of piano.mazzi[0].carte ?? []) {
     // Le carte da stampare non stanno in collezione: non hanno una copia
     // fisica da rimettere nel costruttore, che conta proprio quelle.
@@ -256,7 +259,32 @@ async function riapri(costruttore, id) {
       fuori += voce.quantita;
       continue;
     }
-    const k = `${voce.carta?.idSet}/${voce.carta?.numero}`;
+    const carta = voce.carta ?? voce;
+    let k = carta.idSet && carta.numero != null ? `${carta.idSet}/${carta.numero}` : null;
+
+    // Salvataggi vecchi: c'è stata una versione in cui il costruttore lasciava
+    // le carte **anonime**, senza `idSet` né `numero` (il dataset non li mette
+    // dentro la carta, stanno nella riga di collezione). Quei mazzi si
+    // riaprivano vuoti — il difetto è stato corretto dove nasceva, ma i record
+    // scritti allora sono ancora su disco e non si riscrivono da soli.
+    // Il nome basta a ritrovarle: nel costruttore ci sono solo carte tue.
+    if (!k && carta.nome) {
+      const uguali = disponibili.filter((v) => stessoNome(v.carta?.nome, carta.nome));
+      if (uguali.length) {
+        // A parità di nome si prende la stampa di cui hai più copie: è quella
+        // che più probabilmente era nel mazzo, e comunque è una tua carta.
+        const scelta = uguali.reduce((a, b) => ((b.quantita ?? 0) > (a.quantita ?? 0) ? b : a));
+        // `idSet` e `numero` stanno **dentro** la carta, qui: `disponibili` è
+        // già la forma che vuole il motore, dove la riga di collezione è stata
+        // fusa nella carta poche righe più su.
+        k = `${scelta.carta.idSet}/${scelta.carta.numero}`;
+        perNomeRitrovate += voce.quantita;
+      }
+    }
+    if (!k) {
+      perse += voce.quantita;
+      continue;
+    }
     scelte.set(k, (scelte.get(k) ?? 0) + voce.quantita);
   }
 
@@ -273,7 +301,12 @@ async function riapri(costruttore, id) {
   disegnaEsito(costruttore);
   messaggio(
     `Riaperto «${piano.nome}».` +
-      (fuori ? ` ${fuori} carte da stampare non sono state ricaricate: non sono tue.` : ''),
+      (fuori ? ` ${fuori} carte da stampare non sono state ricaricate: non sono tue.` : '') +
+      (perNomeRitrovate
+        ? ` ${perNomeRitrovate} carte di questo salvataggio erano senza set: ritrovate per nome, ` +
+          'controlla che siano le stampe giuste e risalvalo.'
+        : '') +
+      (perse ? ` ${perse} carte non si sono ritrovate in collezione.` : ''),
   );
 }
 

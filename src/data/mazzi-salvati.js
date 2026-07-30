@@ -252,6 +252,34 @@ export async function leggiPiano(id) {
 }
 
 /**
+ * Cambia il nome di un salvataggio, lasciando intatto tutto il resto.
+ *
+ * Serve perché salvare di nuovo **non** è rinominare: `salvaPiano()` costruisce
+ * un record con un id nuovo (la data di adesso), quindi chi voleva correggere
+ * un nome si ritrovava due copie dello stesso mazzo. Qui si riscrive la riga
+ * che c'è già.
+ *
+ * L'id non cambia mai: è la data di creazione, ed è anche la rotta
+ * (`#mazzi/<id>`) da cui si sta guardando il mazzo mentre lo si rinomina.
+ *
+ * @param {string} id
+ * @param {string} nome
+ * @returns {Promise<object>} il record aggiornato
+ * @throws {Error} se il nome è vuoto o il salvataggio non esiste
+ */
+export async function rinominaPiano(id, nome) {
+  const etichetta = String(nome ?? '').trim();
+  if (!etichetta) throw new Error('Serve un nome per ritrovare questi mazzi.');
+
+  const record = await leggi(STORE_MAZZI, id);
+  if (!record) throw new Error('Questo salvataggio non esiste più.');
+
+  const aggiornato = { ...record, nome: etichetta };
+  await scrivi(STORE_MAZZI, aggiornato);
+  return aggiornato;
+}
+
+/**
  * @param {string} id
  * @returns {Promise<void>}
  */
