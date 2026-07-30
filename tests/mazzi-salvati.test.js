@@ -144,3 +144,80 @@ test('la composizione già salvata non viene ricalcolata', () => {
   assert.deepEqual(record.mazzi[0].composizione, { pokemon: 9, energie: 9, allenatori: 9 });
   assert.equal(record.mazzi[0].totale, 27);
 });
+
+// --- Modificare un salvataggio, non duplicarlo ---------------------------
+//
+// Il difetto: riaprire un mazzo, cambiargli tre carte e premere Salva
+// produceva **due** mazzi nell'elenco — l'originale intatto e una copia, per
+// giunta con un nome da inventare di nuovo. La causa sta tutta nel quarto
+// parametro di `istantanea()`: l'id di un salvataggio *è* la sua data di
+// creazione, quindi riusare quella data significa riscrivere la stessa riga.
+// `aggiornaPiano()` non fa altro, e qui si prova la regola senza IndexedDB.
+
+test('riusare creatoIl vuol dire riscrivere la stessa riga, non aggiungerne una', () => {
+  const primo = istantanea(pianoDiProva(), { taglia: 20 }, 'Mazzo di Marco');
+  const modificato = pianoDiProva();
+  modificato.mazzi[0].carte.pop();
+
+  const secondo = istantanea(modificato, { taglia: 20 }, 'Mazzo di Marco', primo.creatoIl);
+
+  assert.equal(secondo.id, primo.id, 'stesso id: nell’elenco resta un mazzo solo');
+  assert.equal(secondo.creatoIl, primo.creatoIl, 'la data resta quella della nascita');
+  assert.notDeepEqual(secondo.mazzi[0].carte, primo.mazzi[0].carte, 'il contenuto sì, è cambiato');
+});
+
+test('senza creatoIl nasce un salvataggio nuovo: è "salva come copia"', () => {
+  const primo = istantanea(pianoDiProva(), { taglia: 20 }, 'Originale');
+  const copia = istantanea(pianoDiProva(), { taglia: 20 }, 'Originale');
+
+  // Gli id sono due date: possono coincidere solo se il tempo non è passato,
+  // e allora si guarda che almeno la funzione non li abbia legati fra loro.
+  assert.equal(copia.id, copia.creatoIl);
+  assert.equal(primo.id, primo.creatoIl);
+});
+
+test('rinominare non tocca il contenuto', () => {
+  const primo = istantanea(pianoDiProva(), { taglia: 20 }, 'Nome sbagliato');
+  const dopo = istantanea(pianoDiProva(), { taglia: 20 }, 'Nome giusto', primo.creatoIl);
+
+  assert.equal(dopo.nome, 'Nome giusto');
+  assert.equal(dopo.id, primo.id);
+  assert.deepEqual(dopo.mazzi[0].carte, primo.mazzi[0].carte);
+});
+
+test('il nome vuoto viene rifiutato anche quando si sta modificando', () => {
+  const primo = istantanea(pianoDiProva(), { taglia: 20 }, 'Buono');
+  assert.throws(() => istantanea(pianoDiProva(), { taglia: 20 }, '   ', primo.creatoIl));
+});
+
+test('un mazzo modificato conserva le carte con la loro identità', () => {
+  // È la garanzia che rende riapribile un salvataggio: senza idSet e numero le
+  // carte tornano anonime, ed è il difetto che ha svuotato i mazzi vecchi.
+  const record = istantanea(pianoDiProva(), { taglia: 20 }, 'Con identità');
+  const [voce] = record.mazzi[0].carte;
+
+  assert.equal(voce.idSet, 'prova');
+  assert.ok(voce.numero, 'il numero di collezione non si perde per strada');
+  assert.equal(voce.nome, 'Charmander');
+});
+
+test('le carte da stampare restano riconoscibili dopo la modifica', () => {
+  const primo = istantanea(pianoDiProva(), { taglia: 20 }, 'Con proxy');
+  const dopo = istantanea(pianoDiProva(), { taglia: 20 }, 'Con proxy', primo.creatoIl);
+  const proxy = dopo.mazzi[0].carte.filter((c) => c.proxy);
+
+  assert.equal(proxy.length, 1);
+  assert.equal(proxy[0].motivo, 'Energie insufficienti', 'il perché di un proxy sopravvive');
+});
+
+test('modificare un piano riletto non lo fa crescere di giro in giro', () => {
+  // Riapri → salvi → riapri → salvi. Se `istantanea()` e `idrataPiano()` non
+  // fossero l'una l'inversa dell'altra, ogni giro aggiungerebbe o perderebbe
+  // qualcosa, e dopo tre modifiche il mazzo non sarebbe più quello.
+  const primo = istantanea(pianoDiProva(), { taglia: 20 }, 'Ciclico');
+  const secondo = istantanea(idrataPiano(primo), { taglia: 20 }, 'Ciclico', primo.creatoIl);
+  const terzo = istantanea(idrataPiano(secondo), { taglia: 20 }, 'Ciclico', primo.creatoIl);
+
+  assert.deepEqual(terzo, secondo, 'dal secondo giro in poi il record è identico');
+  assert.equal(terzo.id, primo.id);
+});

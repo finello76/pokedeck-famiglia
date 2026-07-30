@@ -25,9 +25,9 @@ import { contaComposizione } from '../engine/mazzo.js';
 import { TAGLIE } from '../engine/proporzioni.js';
 import { elencoPrefatti } from '../data/mazzi-prefatti.js';
 import { leggiRiferimento } from '../data/riferimento.js';
-import { salvaPiano, leggiPiano } from '../data/mazzi-salvati.js';
+import { salvaPiano, leggiPiano, aggiornaPiano } from '../data/mazzi-salvati.js';
 import { chiediNome } from './chiedi-nome.js';
-import { stessoNome } from '../engine/nomi.js';
+import { scelteDaSalvataggio, raccontaRiapertura } from '../engine/riapertura.js';
 import '../ui/costruttore-mazzo/costruttore-mazzo.js';
 
 const sezione = document.querySelector('#mazzo-personalizzato');
@@ -56,6 +56,13 @@ let riferimento = null;
 
 /** @type {Array<{carta: object, quantita: number}>} la collezione, per completare */
 let disponibili = [];
+
+/**
+ * Il salvataggio che si sta modificando, se si è arrivati qui da "Modifica a
+ * mano". Finché c'è, "Salva" **riscrive quello** invece di crearne un altro.
+ * @type {{id: string, nome: string}|null}
+ */
+let apertoDa = null;
 
 /** @type {number|null} la forza migliore raggiungibile con questa collezione */
 let tetto = null;
@@ -171,6 +178,13 @@ export async function preparaPersonalizzato() {
 
   // `#personalizzato/<id>` significa "riprendi a modificare questo salvataggio":
   // ci si arriva dal pulsante "Modifica a mano" nel dettaglio del mazzo.
+  // Entrare in "Mazzo personalizzato" senza id vuol dire mazzo nuovo: se si
+  // restasse legati al salvataggio di prima, il mazzo dopo lo sovrascriverebbe.
+  if (!daRiaprire) {
+    apertoDa = null;
+    etichettaSalva();
+  }
+
   if (daRiaprire) {
     const id = daRiaprire;
     daRiaprire = null;
@@ -248,45 +262,11 @@ async function riapri(costruttore, id) {
     return;
   }
 
-  const scelte = new Map();
-  let fuori = 0;
-  let perNomeRitrovate = 0;
-  let perse = 0;
-  for (const voce of piano.mazzi[0].carte ?? []) {
-    // Le carte da stampare non stanno in collezione: non hanno una copia
-    // fisica da rimettere nel costruttore, che conta proprio quelle.
-    if (voce.proxy) {
-      fuori += voce.quantita;
-      continue;
-    }
-    const carta = voce.carta ?? voce;
-    let k = carta.idSet && carta.numero != null ? `${carta.idSet}/${carta.numero}` : null;
-
-    // Salvataggi vecchi: c'è stata una versione in cui il costruttore lasciava
-    // le carte **anonime**, senza `idSet` né `numero` (il dataset non li mette
-    // dentro la carta, stanno nella riga di collezione). Quei mazzi si
-    // riaprivano vuoti — il difetto è stato corretto dove nasceva, ma i record
-    // scritti allora sono ancora su disco e non si riscrivono da soli.
-    // Il nome basta a ritrovarle: nel costruttore ci sono solo carte tue.
-    if (!k && carta.nome) {
-      const uguali = disponibili.filter((v) => stessoNome(v.carta?.nome, carta.nome));
-      if (uguali.length) {
-        // A parità di nome si prende la stampa di cui hai più copie: è quella
-        // che più probabilmente era nel mazzo, e comunque è una tua carta.
-        const scelta = uguali.reduce((a, b) => ((b.quantita ?? 0) > (a.quantita ?? 0) ? b : a));
-        // `idSet` e `numero` stanno **dentro** la carta, qui: `disponibili` è
-        // già la forma che vuole il motore, dove la riga di collezione è stata
-        // fusa nella carta poche righe più su.
-        k = `${scelta.carta.idSet}/${scelta.carta.numero}`;
-        perNomeRitrovate += voce.quantita;
-      }
-    }
-    if (!k) {
-      perse += voce.quantita;
-      continue;
-    }
-    scelte.set(k, (scelte.get(k) ?? 0) + voce.quantita);
-  }
+  // Il calcolo sta in `engine/riapertura.js`: è una regola di dominio — quali
+  // carte tue corrispondono a questo salvataggio — ed è il punto in cui un
+  // mazzo può riaprirsi vuoto, quindi si prova senza browser.
+  const esito = scelteDaSalvataggio(piano.mazzi[0].carte ?? [], disponibili);
+  const scelte = esito.scelte;
 
   const salvata = piano.opzioni?.taglia;
   if (salvata && salvata !== taglia) {
@@ -298,16 +278,21 @@ async function riapri(costruttore, id) {
   }
 
   costruttore.scelte = scelte;
+  // Da adesso "Salva" vuol dire "salva le modifiche a questo".
+  apertoDa = { id, nome: piano.nome };
+  etichettaSalva();
   disegnaEsito(costruttore);
-  messaggio(
-    `Riaperto «${piano.nome}».` +
-      (fuori ? ` ${fuori} carte da stampare non sono state ricaricate: non sono tue.` : '') +
-      (perNomeRitrovate
-        ? ` ${perNomeRitrovate} carte di questo salvataggio erano senza set: ritrovate per nome, ` +
-          'controlla che siano le stampe giuste e risalvalo.'
-        : '') +
-      (perse ? ` ${perse} carte non si sono ritrovate in collezione.` : ''),
-  );
+  messaggio(raccontaRiapertura(piano.nome, esito));
+}
+
+/**
+ * Il pulsante dice cosa fa: creare un mazzo nuovo o modificarne uno che c'è.
+ * @returns {void}
+ */
+function etichettaSalva() {
+  const bottone = sezione?.querySelector('#salva-personalizzato');
+  if (!bottone) return;
+  bottone.textContent = apertoDa ? `Salva le modifiche a «${apertoDa.nome}»` : 'Salva questo mazzo';
 }
 
 /**
@@ -722,6 +707,24 @@ async function salva(costruttore) {
 
   if (!mazzo.totale) {
     messaggio('Il mazzo è vuoto: non c\'è niente da salvare.');
+    return;
+  }
+
+  // Mazzo riaperto da "Modifica a mano": si riscrive **quello**, senza chiedere
+  // niente. Chiedere di nuovo il nome era il difetto: chi cambia tre carte a un
+  // mazzo che ha già un nome non lo sta ribattezzando, e accettando la proposta
+  // si ritrovava due mazzi quasi uguali nell'elenco.
+  if (apertoDa) {
+    try {
+      await aggiornaPiano(
+        apertoDa.id,
+        { mazzi: [{ ...mazzo, nome: apertoDa.nome }], regole: [], carenze: [], permessi: {} },
+        { taglia, numeroMazzi: 1, personalizzato: true },
+      );
+      location.hash = `mazzi/${apertoDa.id}`;
+    } catch (errore) {
+      messaggio(`Non è stato possibile salvare le modifiche: ${errore.message}`);
+    }
     return;
   }
 

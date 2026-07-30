@@ -55,11 +55,22 @@ export function segnaposto(carta, classe = 'segnaposto') {
 }
 
 /**
- * Sostituisce l'immagine col segnaposto se non si riesce a caricarla.
+ * Sostituisce l'immagine col segnaposto se non si riesce a caricarla — ma
+ * prima riprova in **alta qualità**.
  *
- * Senza, un URL che risponde 404 lascia a schermo l'icona di immagine rotta e
- * il testo alternativo: le due cose più brutte che una griglia di carte possa
- * mostrare. Capita davvero — offline, o quando TCGdex sposta una scansione.
+ * Il motivo del secondo tentativo, misurato sul Trainer Kit di Alola: la carta
+ * 17 (Raichu di Alola) ha `low.webp` che risponde **404** e `high.webp` che
+ * risponde **200**. TCGdex pubblica l'URL della carta senza estensione e lascia
+ * scegliere la qualità a chi la mostra, ma non tutte le qualità esistono
+ * davvero per tutte le carte: l'URL è costruito, non verificato. Il risultato
+ * era mezzo Trainer Kit fatto di segnaposti, con la scansione lì disponibile.
+ *
+ * Si riprova con `high.webp` e non con `high.png`: stessa immagine, un decimo
+ * del peso (la png sfiora gli 830 KB, e questa è la griglia).
+ *
+ * Il ripiego costa una richiesta fallita per carta, e solo per le carte che
+ * quel problema ce l'hanno davvero: chi ha la sua `low.webp` non se ne accorge.
+ * Se anche l'alta qualità non c'è — o si è offline — allora sì, segnaposto.
  *
  * @param {HTMLImageElement|null} img
  * @param {object|null} carta
@@ -68,11 +79,29 @@ export function segnaposto(carta, classe = 'segnaposto') {
  */
 export function seImmagineRotta(img, carta, classe = 'segnaposto') {
   if (!img) return;
-  img.addEventListener(
-    'error',
-    () => {
-      img.outerHTML = segnaposto(carta, classe);
-    },
-    { once: true },
-  );
+  img.addEventListener('error', function suErrore() {
+    const alta = inAltaQualita(img.currentSrc || img.src);
+    if (alta) {
+      // Un solo ripiego: `inAltaQualita()` torna null su un URL già alto,
+      // quindi al secondo errore si finisce nel segnaposto e non in un ciclo.
+      img.src = alta;
+      return;
+    }
+    img.removeEventListener('error', suErrore);
+    img.outerHTML = segnaposto(carta, classe);
+  });
+}
+
+/**
+ * Lo stesso URL in alta qualità, o `null` se non c'è niente da ritentare.
+ *
+ * @param {string} src
+ * @returns {string|null}
+ * @example
+ * inAltaQualita('https://…/tk-sm-r/17/low.webp'); // '…/17/high.webp'
+ * inAltaQualita('https://…/tk-sm-r/17/high.webp'); // null
+ */
+export function inAltaQualita(src) {
+  if (!src || !/\/low\.(webp|png)$/.test(src)) return null;
+  return src.replace(/\/low\.(webp|png)$/, '/high.webp');
 }

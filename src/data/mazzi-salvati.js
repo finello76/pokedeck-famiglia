@@ -199,6 +199,37 @@ export async function salvaPiano(piano, opzioni, nome) {
 }
 
 /**
+ * Riscrive un salvataggio che esiste già, tenendone l'identità.
+ *
+ * È la differenza fra *modificare* e *salvare di nuovo*: `salvaPiano()`
+ * costruisce un record con l'id della data di adesso, quindi chi riapriva un
+ * mazzo, cambiava tre carte e premeva Salva si ritrovava **due mazzi** —
+ * l'originale intatto e una copia, per giunta con un nome da inventare.
+ *
+ * Restano quelli di prima: `id`, `creatoIl` e, se non se ne passa uno nuovo, il
+ * `nome`. Cambia tutto il resto, perché è esattamente ciò che si è modificato.
+ *
+ * @param {string} id il salvataggio da riscrivere
+ * @param {object} piano
+ * @param {object} opzioni
+ * @param {string} [nome] se assente si tiene quello che aveva
+ * @returns {Promise<object>} il record riscritto
+ * @throws {Error} se il salvataggio non esiste più
+ */
+export async function aggiornaPiano(id, piano, opzioni, nome) {
+  const vecchio = await leggi(STORE_MAZZI, id);
+  if (!vecchio) throw new Error('Questo salvataggio non esiste più.');
+
+  // `creatoIl` fa da id: passandolo si riscrive la stessa riga invece di
+  // aggiungerne una. La data resta quella della **creazione**, non di adesso:
+  // è l'ordine con cui l'elenco mostra i mazzi, e un mazzo non nasce di nuovo
+  // ogni volta che gli si cambia una carta.
+  const record = istantanea(piano, opzioni, nome ?? vecchio.nome, vecchio.creatoIl);
+  await scrivi(STORE_MAZZI, record);
+  return record;
+}
+
+/**
  * Tutti i piani salvati, dal più recente.
  * @returns {Promise<object[]>}
  */
