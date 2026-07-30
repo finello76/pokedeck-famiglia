@@ -349,6 +349,20 @@ griglia-collezione .attesa-mancanti {
   color: var(--colore-testo-tenue);
 }
 
+/* Le carte trovate col nome fuori dalla collezione: staccate dalle serie, che
+   sono la collezione vera. */
+griglia-collezione .trovate-mancanti:not(:empty) {
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--colore-bordo);
+}
+
+griglia-collezione .nota-ricerca {
+  margin: 0.5rem 0.15rem;
+  font-size: 0.72rem;
+  color: var(--colore-testo-tenue);
+}
+
 /* Carte che NON possiedi (col toggle "Mancanti"): visibili ma sbiadite. */
 .carta-griglia.mancante {
   opacity: 0.55;

@@ -14,7 +14,7 @@
  * @module data/completamento
  */
 
-import { elencoSet, caricaSet } from './dataset.js';
+import { elencoSet, caricaSet, cercaPerNomeGlobale } from './dataset.js';
 
 /** Set fittizio delle energie base: non appartiene a nessuna serie reale. */
 const SENZA_SERIE = { id: 'altre', nome: 'Altre serie' };
@@ -148,6 +148,46 @@ export async function completamentoPerSerie(voci) {
  * const mancanti = await carteMancanti('sv08', voci);
  * // → le 179 carte di Scintille Folgoranti che non hai
  */
+/**
+ * Le carte che **non hai** il cui nome corrisponde, cercate in tutto il
+ * catalogo.
+ *
+ * `carteMancanti()` risponde alla domanda «cosa mi manca di *questo* set», e
+ * per farlo il set devi già averlo aperto. Ma «quali Pikachu mi mancano» è una
+ * domanda diversa: la risposta sta in gran parte in set di cui non possiedi
+ * nemmeno una carta, che quindi non compaiono da nessuna parte. Ci si arriva
+ * dall'indice dei nomi (`data/nomi.json`), che è fatto per questo e scarica
+ * solo i file dei set dove quel nome esiste davvero.
+ *
+ * I tetti sono quelli di `cercaPerNomeGlobale()`: chi scrive due lettere
+ * riceve i primi risultati e `troppi: true`, non otto megabyte.
+ *
+ * A differenza del completamento di un set, qui **non** si guarda la
+ * numerazione ufficiale: se cerchi un nome vuoi vedere anche le segrete e le
+ * promo con quel nome, che a completare il set non servono ma esistono.
+ *
+ * @param {string} testo nome anche parziale
+ * @param {Array<{idSet: string, numero: string}>} voci la collezione, per
+ *   togliere ciò che hai già (e ciò che hai già messo nei desideri, altrimenti
+ *   la stessa carta comparirebbe due volte a schermo)
+ * @returns {Promise<{trovate: Array<{set: object, carta: object}>, nonLetti: string[], troppi: boolean}>}
+ * @example
+ * const { trovate, troppi } = await mancantiPerNome('pikachu', voci);
+ */
+export async function mancantiPerNome(testo, voci) {
+  // `precedenzaEsatta: false` è la differenza fra identificare e cercare: chi
+  // scrive "pikachu" nella casella della collezione vuole vedere anche i
+  // Pikachu ex, mentre chi ha la carta in mano e ne scrive il nome intero no.
+  const esito = await cercaPerNomeGlobale(testo, null, { precedenzaEsatta: false });
+  const chiave = (idSet, numero) => `${idSet}:${String(Number(numero) || numero)}`;
+  const gia = new Set((voci ?? []).map((v) => chiave(v.idSet, v.numero)));
+
+  return {
+    ...esito,
+    trovate: esito.trovate.filter(({ set, carta }) => !gia.has(chiave(set.id, carta.numero))),
+  };
+}
+
 export async function carteMancanti(idSet, voci) {
   const [set, info] = await Promise.all([
     caricaSet(idSet),

@@ -105,6 +105,16 @@ export class GrigliaCollezione extends HTMLElement {
    * @type {Promise<void>}
    */
   #coda = Promise.resolve();
+  /** @type {number|undefined} attesa fra l'ultimo tasto battuto e la ricerca */
+  #attesaRicerca;
+  /**
+   * Numero del giro di ricerca. Serve a buttare i risultati **sorpassati**:
+   * fra la partenza di una ricerca e il suo arrivo l'utente ha battuto altre
+   * lettere, e una risposta lenta arrivata dopo una veloce mostrerebbe carte
+   * che non corrispondono più a quello che c'è scritto nella casella.
+   * @type {number}
+   */
+  #giroRicerca = 0;
 
   /**
    * Come procurarsi le carte mancanti di un set. La inietta chi usa il
@@ -112,6 +122,13 @@ export class GrigliaCollezione extends HTMLElement {
    * @type {(idSet: string) => Promise<object[]>}
    */
   caricaMancanti = async () => [];
+
+  /**
+   * Come cercare per nome fra **tutte** le carte del catalogo quelle che non
+   * hai. La inietta chi usa il componente, come `caricaMancanti`.
+   * @type {(testo: string) => Promise<{trovate: Array<{set: object, carta: object}>, nonLetti: string[], troppi: boolean}>}
+   */
+  cercaMancantiPerNome = async () => ({ trovate: [], nonLetti: [], troppi: false });
 
   /** @param {Array<object>} valore risultato di `elencoCompleto()` */
   set voci(valore) {
@@ -397,7 +414,7 @@ export class GrigliaCollezione extends HTMLElement {
           <input type="checkbox" data-mancanti ${this.#mostraMancanti ? 'checked' : ''} />
           <span>
             <strong>Mostra anche le carte che mi mancano</strong>
-            <small>Le carte dei set che possiedi solo in parte compaiono in grigio: così vedi cosa manca per completarli. Arrivano un set per volta, mentre scorri.</small>
+            <small>Le carte che non hai compaiono in grigio: dei set che possiedi in parte arrivano un set per volta, mentre scorri. Se cerchi un nome, si cerca in <strong>tutti</strong> i set, anche in quelli di cui non hai niente.</small>
           </span>
         </label>
 
@@ -411,6 +428,9 @@ export class GrigliaCollezione extends HTMLElement {
 
       <p class="riepilogo"></p>
       <div class="serie-collezione"></div>
+      <!-- Le carte trovate col nome in set di cui non possiedi niente stanno
+           qui, fuori dalle serie: dentro falserebbero i conteggi "12/62". -->
+      <div class="trovate-mancanti"></div>
     `;
     this.#disegnaRisultati();
   }
@@ -443,6 +463,158 @@ export class GrigliaCollezione extends HTMLElement {
             : '');
 
     contenitore.replaceChildren(...gruppi.map((gruppo) => this.#disegnaSerie(gruppo)));
+    this.#aggiornaTrovate();
+  }
+
+  /**
+   * Se le carte che ti mancano vanno cercate in tutto il catalogo invece che
+   * set per set.
+   *
+   * Le due strade non convivono: cercando "pikachu", la ricerca globale trova
+   * anche i Pikachu dei set che possiedi in parte, e la strada per set li
+   * troverebbe una seconda volta.
+   *
+   * Il testo si conta in caratteri perché con una lettera sola i tetti di
+   * `cercaPerNomeGlobale()` troncherebbero comunque su corrispondenze casuali.
+   * E con un filtro sui desideri attivo le mancanti non c'entrano: "solo i
+   * desideri" e "solo ciò che ho" sono due domande su carte *tue*.
+   * @returns {boolean}
+   */
+  #mancantiPerSet() {
+    return this.#mostraMancanti && !this.#filtri.desiderio && !this.#filtri.testo.trim();
+  }
+
+  /** @see #mancantiPerSet */
+  #ricercaGlobale() {
+    return (
+      this.#mostraMancanti && !this.#filtri.desiderio && this.#filtri.testo.trim().length >= 2
+    );
+  }
+
+  /**
+   * Fa ripartire la ricerca per nome fra tutte le carte, o pulisce l'area se
+   * non serve.
+   */
+  #aggiornaTrovate() {
+    const area = this.querySelector('.trovate-mancanti');
+    if (!area) return;
+
+    // Qualunque cosa accada, i risultati di prima non valgono più.
+    clearTimeout(this.#attesaRicerca);
+    const giro = ++this.#giroRicerca;
+
+    if (!this.#ricercaGlobale()) {
+      area.replaceChildren();
+      return;
+    }
+
+    const testo = this.#filtri.testo.trim();
+    area.replaceChildren(nota('attesa-mancanti', `cerco «${testo}» fra tutte le carte…`));
+    // Si aspetta che l'utente smetta di scrivere: ogni ricerca può scaricare
+    // fino a dodici file di set, e otto lettere battute non devono costare otto
+    // ricerche.
+    this.#attesaRicerca = setTimeout(() => this.#disegnaTrovate(testo, giro), 300);
+  }
+
+  /**
+   * Disegna le carte che non hai trovate per nome in tutto il catalogo,
+   * raggruppate per set.
+   * @param {string} testo
+   * @param {number} giro il giro di ricerca a cui appartiene questa richiesta
+   */
+  async #disegnaTrovate(testo, giro) {
+    let esito = null;
+    try {
+      esito = await this.cercaMancantiPerNome(testo);
+    } catch {
+      /* Indice dei nomi o set non raggiungibili: si mostra solo ciò che si ha. */
+    }
+
+    const area = this.querySelector('.trovate-mancanti');
+    // Ricerca sorpassata (altre lettere battute) o filtri cambiati sotto i
+    // piedi: questi risultati non rispondono più alla domanda di adesso.
+    if (!area || giro !== this.#giroRicerca) return;
+    if (!esito) {
+      area.replaceChildren();
+      return;
+    }
+
+    // Gli **altri** filtri valgono anche qui; il testo no, l'ha già applicato
+    // la ricerca — e con una normalizzazione più larga (accenti, punteggiatura)
+    // che rifiltrare a mano butterebbe via risultati giusti.
+    const voci = filtra(
+      esito.trovate.map(({ set, carta }) => ({
+        idSet: set.id,
+        numero: String(carta.numero),
+        quantita: 0,
+        carta,
+        nomeSet: set.nome,
+        serie: set.serie ?? null,
+        linguaSet: set.lingua ?? null,
+      })),
+      { ...this.#filtri, testo: '' },
+    );
+
+    /** @type {Map<string, {nomeSet: string, voci: object[]}>} */
+    const perSet = new Map();
+    for (const voce of voci) {
+      if (!perSet.has(voce.idSet)) perSet.set(voce.idSet, { nomeSet: voce.nomeSet, voci: [] });
+      perSet.get(voce.idSet).voci.push(voce);
+    }
+
+    const pezzi = [];
+    if (perSet.size) {
+      pezzi.push(nota('etichetta-serie', `Che non hai — «${testo}»`));
+      for (const gruppo of perSet.values()) {
+        pezzi.push(this.#sezioneTrovate(gruppo));
+      }
+    }
+    // I limiti si dicono sempre: una ricerca troncata che tace si legge come
+    // "non esiste altro", ed è la bugia peggiore che possa raccontare un elenco.
+    if (esito.troppi) {
+      pezzi.push(
+        nota(
+          'nota-ricerca',
+          `Ci sono troppe carte con questo nome: ${perSet.size ? 'queste sono le prime' : 'nessuna mostrata'}. Scrivi qualche lettera in più.`,
+        ),
+      );
+    }
+    if (esito.nonLetti?.length) {
+      pezzi.push(
+        nota('nota-ricerca', `Set non disponibili adesso: ${esito.nonLetti.join(', ')}.`),
+      );
+    }
+    if (!pezzi.length && this.#voci.length) {
+      pezzi.push(nota('nota-ricerca', `Nessun'altra carta con questo nome fuori dalla collezione.`));
+    }
+    area.replaceChildren(...pezzi);
+  }
+
+  /**
+   * Un set di carte trovate col nome: intestazione e griglia, senza barra di
+   * completamento — qui non si sta completando niente, si sta cercando.
+   * @param {{nomeSet: string, voci: object[]}} gruppo
+   * @returns {HTMLElement}
+   */
+  #sezioneTrovate(gruppo) {
+    const sezione = document.createElement('section');
+    sezione.className = 'set-collezione';
+    sezione.innerHTML = `
+      <div class="testa-set">
+        <span class="nome-set"></span>
+        <span class="prog"></span>
+      </div>
+      <div class="griglia-carte"></div>
+    `;
+    // textContent e non innerHTML: il nome del set arriva dai dati, e qui non
+    // c'è nessun escape da ricordarsi.
+    sezione.querySelector('.nome-set').textContent = gruppo.nomeSet;
+    sezione.querySelector('.prog').textContent =
+      gruppo.voci.length === 1 ? '1 da trovare' : `${gruppo.voci.length} da trovare`;
+    sezione
+      .querySelector('.griglia-carte')
+      .replaceChildren(...gruppo.voci.map((voce) => this.#card(voce, true)));
+    return sezione;
   }
 
   /**
@@ -474,7 +646,7 @@ export class GrigliaCollezione extends HTMLElement {
     const griglia = sezione.querySelector('.griglia-carte');
     griglia.replaceChildren(...set.voci.map((voce) => this.#card(voce)));
 
-    if (this.#mostraMancanti && confrontabile(set)) {
+    if (this.#mancantiPerSet() && confrontabile(set)) {
       // Il set viaggia sull'elemento, come `_voce` sulle card: quando
       // l'osservatore chiamerà, l'unica cosa che ha in mano è la sezione.
       sezione._set = set;
@@ -538,6 +710,16 @@ export class GrigliaCollezione extends HTMLElement {
     if (!griglia.isConnected) return;
     attesa.remove();
 
+    // Le mancanti passano dagli **stessi filtri** delle tue carte. Prima non lo
+    // facevano, ed era un guasto silenzioso: filtrando per tipo Fuoco, o per
+    // rarità, in fondo alla sezione arrivavano comunque tutte le carte del set.
+    // Il testo qui è sempre vuoto — con una ricerca in corso le mancanti le
+    // trova `#disegnaTrovate()`, che cerca in tutto il catalogo e non solo qui.
+    mancanti = filtra(
+      mancanti.map((carta) => this.#voceMancante(carta, set)),
+      this.#filtri,
+    );
+
     // Inserimento a blocchi: costruire 250 card in un colpo tiene occupato il
     // thread abbastanza da far scattare lo scorrimento proprio mentre l'utente
     // sta scorrendo.
@@ -545,17 +727,33 @@ export class GrigliaCollezione extends HTMLElement {
       if (i > 0) await cediIlPasso();
       // Fra un blocco e l'altro l'utente può aver cambiato filtro.
       if (!griglia.isConnected) return;
-      griglia.append(
-        ...mancanti
-          .slice(i, i + BLOCCO_MANCANTI)
-          .map((carta) =>
-            this.#card(
-              { idSet: set.idSet, numero: carta.numero, quantita: 0, carta, nomeSet: set.nomeSet },
-              true,
-            ),
-          ),
-      );
+      griglia.append(...mancanti.slice(i, i + BLOCCO_MANCANTI).map((voce) => this.#card(voce, true)));
     }
+  }
+
+  /**
+   * Una carta del dataset vestita da voce di collezione, per poter passare dai
+   * filtri (che ragionano su voci) e da `#card()`. `quantita: 0` è il punto:
+   * questa carta non ce l'hai.
+   *
+   * `serie` e `linguaSet` si prendono da una tua carta dello stesso set: sono
+   * dati del set, non della carta, e `GruppoSet` non li porta.
+   *
+   * @param {object} carta
+   * @param {import('./raggruppa.js').GruppoSet} set
+   * @returns {object}
+   */
+  #voceMancante(carta, set) {
+    const compagna = set.voci?.[0];
+    return {
+      idSet: set.idSet,
+      numero: String(carta.numero),
+      quantita: 0,
+      carta,
+      nomeSet: set.nomeSet,
+      serie: compagna?.serie ?? null,
+      linguaSet: compagna?.linguaSet ?? null,
+    };
   }
 
   /**
@@ -763,6 +961,24 @@ function testaSet(set) {
         ? `<span class="dati-parziali" title="Il set è numerato fino a ${set.totale}, ma le carte diverse note nei dati italiani di TCGdex sono ${set.ufficiali}: il conteggio è su quelle.">parziali</span>`
         : ''
     }`;
+}
+
+/**
+ * Un elemento con del testo dentro, e nient'altro.
+ *
+ * Serve dove il testo contiene roba scritta dall'utente (il nome cercato) o
+ * dai dati (i nomi dei set): con `textContent` non c'è nessun escape da
+ * ricordarsi, perché non si sta costruendo HTML.
+ *
+ * @param {string} classe
+ * @param {string} testo
+ * @returns {HTMLElement}
+ */
+function nota(classe, testo) {
+  const p = document.createElement('p');
+  p.className = classe;
+  p.textContent = testo;
+  return p;
 }
 
 /**

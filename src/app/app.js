@@ -31,7 +31,7 @@ import './vista-impostazioni.js';
 import './vista-personalizzato.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
-import { carteMancanti } from '../data/completamento.js';
+import { carteMancanti, mancantiPerNome } from '../data/completamento.js';
 import '../ui/contatore-energie/contatore-energie.js';
 import '../ui/visore-carta/visore-carta.js';
 import '../ui/vista-regole/vista-regole.js';
@@ -98,6 +98,11 @@ async function aggiornaCollezione() {
   // Il confronto con la collezione di riferimento lo fa il livello dati: la
   // griglia riceve una funzione e non sa da dove arrivino le carte.
   griglia.caricaMancanti = (idSet) => carteMancanti(idSet, possedute);
+  // La ricerca per nome deve trovare anche ciò che manca nei set di cui non
+  // possiedi niente: là non c'è nessuna sezione da riempire. Qui si passano
+  // **tutte** le voci, desideri compresi, o una carta già nella lista dei
+  // desideri comparirebbe due volte.
+  griglia.cercaMancantiPerNome = (testo) => mancantiPerNome(testo, voci);
   // Le energie base generiche non vanno nella griglia: non hanno scansione né
   // numero di collezione e si contano già nel contatore dedicato qui sotto.
   griglia.voci = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);

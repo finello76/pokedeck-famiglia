@@ -168,6 +168,54 @@ Non è gratis e non va raccontato come se lo fosse. Ci sta perché l'alternativa
 per cercare un nome offline è scaricare 8,6 MB di set, e perché senza di esso
 una categoria intera di carte — le promo — resta fuori dal catalogo.
 
+## Identificare non è cercare
+
+Aggiunta di luglio 2026, e viene da un bug segnalato così: «la ricerca per nome
+funziona solo sulle mie carte». Era vero due volte, e il secondo motivo è quello
+interessante.
+
+Il primo: nella collezione le carte mancanti si appendevano alla sezione di ogni
+set **senza passare da nessun filtro**, quindi il testo digitato non le toccava.
+Un guasto silenzioso — filtrando per tipo Fuoco arrivavano comunque tutte le
+carte del set — che si è visto solo quando qualcuno ha cercato un nome.
+
+Il secondo: la ricerca globale esisteva già, ma con una regola che qui era
+sbagliata. `cercaPerNomeGlobale()` dava la **precedenza al nome esatto**: se
+quello che hai scritto è un nome intero, gli omonimi più lunghi non si guardano
+nemmeno.
+
+```js
+const chiavi = precedenzaEsatta && cacheNomi[ago]
+  ? [ago]                                        // solo "Pikachu"
+  : Object.keys(cacheNomi).filter((k) => k.includes(ago));  // anche "Pikachu ex"
+```
+
+Quella regola è giusta per il mestiere per cui è nata: **identificare** la carta
+che hai in mano. Scrivi "Articuno", e non vuoi vederti annegare fra "Articuno
+ex" e "Articuno V" — la carta è una, ed è quella.
+
+Ma **cercare** è il mestiere opposto. Chi scrive "pikachu" nella casella della
+collezione vuole vedere tutti i Pikachu che gli mancano, ex e V compresi. Stessa
+funzione, stesso indice, intenzione capovolta.
+
+Da qui la morale, che vale molto oltre questo caso: quando due chiamanti vogliono
+comportamenti diversi, la scelta va **al chiamante** — un parametro con un
+default che conserva il comportamento di prima — non a un `if` dentro la funzione
+che indovina chi sta chiamando. Il default che non cambia niente è la parte che
+rende la modifica sicura: nessuno dei chiamanti esistenti si accorge di nulla, e
+il test che sorvegliava la vecchia regola resta verde senza toccarlo.
+
+> In Java sarebbe un overload, o un `enum` di strategia. In JS il parametro
+> oggetto destrutturato con default (`{ precedenzaEsatta = true } = {}`) fa lo
+> stesso lavoro senza firme duplicate: si legge sul posto della chiamata, che è
+> dove serve capirlo.
+
+E i tetti? Restano quelli, con una conseguenza da conoscere: "Pikachu" esiste in
+107 stampe, quindi i limiti scattano sul primo nome e le varianti non fanno in
+tempo a entrare. La ricerca lo dichiara — «Ci sono troppe carte con questo nome:
+queste sono le prime» — che è la stessa disciplina del §*Dire la verità sul
+troncamento*, applicata a una schermata diversa.
+
 ## Verifica
 
 1. Il tetto era su `MAX_NOMI` e il costo stava nei file dei set. Nel resto del
@@ -181,3 +229,10 @@ una categoria intera di carte — le promo — resta fuori dal catalogo.
    vuole evitare, e di' che cosa costa ciascuno.
 4. Il campo `troppi` dice a chi chiama che la risposta è incompleta. Perché non
    basterebbe restituire semplicemente più risultati, o meno?
+5. `precedenzaEsatta` ha `true` come default, cioè il comportamento di prima.
+   Cosa sarebbe andato storto scegliendo `false`, visto che il chiamante nuovo
+   vuole proprio `false`?
+6. Cercando "pikachu" i tetti scattano sul nome più corto e le varianti restano
+   fuori. Progetta un modo di distribuire i posti disponibili **fra** i nomi
+   corrispondenti invece di esaurirli sul primo: cosa ci si guadagna, e cosa si
+   perde per chi sta identificando una carta in mano?

@@ -27,6 +27,10 @@ const FINTI = {
       { numero: 'TG01', nome: 'Codice Alfa', categoria: 'Pokémon' },
       // Evoluzione con evolveDa MANCANTE: il dataset è così nel 41% dei casi.
       { numero: '020', nome: 'Ivyfinta', categoria: 'Pokémon', stadio: 'Livello 1' },
+      // Nome che CONTIENE quello di sopra: serve a provare la precedenza del
+      // nome esatto, che è l'unico modo di non annegare "Articuno" dentro
+      // "Articuno ex" quando si identifica una carta in mano.
+      { numero: '021', nome: 'Ivyfinta ex', categoria: 'Pokémon', stadio: 'Livello 1' },
     ],
   },
   // L'indice delle evoluzioni: il completamento lo legge da qui. `nonPokemon`
@@ -53,6 +57,7 @@ const FINTI = {
     'sette gamma': 'gamma:007',
     'codice alfa': 'alfa:TG01',
     ivyfinta: 'alfa:020',
+    'ivyfinta ex': 'alfa:021',
     'carta perduta': 'rotto:001',
   },
 };
@@ -151,6 +156,29 @@ test('la corrispondenza esatta ha la precedenza sulla parziale', async () => {
   // un nome è prefisso di un altro ("Articuno" dentro "Articuno ex").
   const { trovate } = await dataset.cercaPerNomeGlobale('sette alfa');
   assert.equal(trovate.length, 1);
+});
+
+test('precedenzaEsatta: false trova anche gli omonimi più lunghi', async () => {
+  // È la differenza fra identificare una carta in mano e *cercare*: chi scrive
+  // "Pikachu" nella collezione vuole vedere anche i Pikachu ex. Qui il nome
+  // corto è "ivyfinta", che esiste anche dentro un nome più lungo.
+  const esatto = await dataset.cercaPerNomeGlobale('ivyfinta');
+  assert.deepEqual(
+    esatto.trovate.map((t) => t.carta.nome),
+    ['Ivyfinta'],
+  );
+
+  const largo = await dataset.cercaPerNomeGlobale('ivyfinta', null, { precedenzaEsatta: false });
+  assert.deepEqual(
+    largo.trovate.map((t) => t.carta.nome).sort(),
+    ['Ivyfinta', 'Ivyfinta ex'],
+  );
+
+  // Un testo che NON è un nome intero si comportava già così: le due strade
+  // devono coincidere, o si è cambiato qualcosa che non si voleva cambiare.
+  const parzialeA = await dataset.cercaPerNomeGlobale('sette');
+  const parzialeB = await dataset.cercaPerNomeGlobale('sette', null, { precedenzaEsatta: false });
+  assert.equal(parzialeA.trovate.length, parzialeB.trovate.length);
 });
 
 test('la ricerca per nome ignora accenti e maiuscole', async () => {

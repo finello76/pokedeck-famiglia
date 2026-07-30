@@ -481,12 +481,18 @@ const MAX_CANDIDATE = 60;
  *
  * @param {string} testo nome anche parziale, accenti e maiuscole indifferenti
  * @param {string|number|null} [numero] il numero di collezione, se leggibile
+ * @param {object} [opzioni]
+ * @param {boolean} [opzioni.precedenzaEsatta=true] se un nome che corrisponde
+ *   in pieno esclude i suoi omonimi più lunghi. Va bene per **identificare**
+ *   una carta in mano (chi scrive tutto "Articuno" non vuole annegare fra
+ *   "Articuno ex" e "Articuno V"), va male per **cercare**: chi digita
+ *   "pikachu" nella collezione vuole vedere anche i Pikachu ex.
  * @returns {Promise<{trovate: Array<{set: object, carta: object}>, nonLetti: string[], troppi: boolean}>}
  * @example
  * await cercaPerNomeGlobale('articuno ex', 32);
  * // → { trovate: [{ set: {id:'np', …}, carta: {nome:'Articuno ex', …} }], … }
  */
-export async function cercaPerNomeGlobale(testo, numero = null) {
+export async function cercaPerNomeGlobale(testo, numero = null, { precedenzaEsatta = true } = {}) {
   const ago = normalizza(testo);
   if (!ago) return { trovate: [], nonLetti: [], troppi: false };
 
@@ -494,11 +500,14 @@ export async function cercaPerNomeGlobale(testo, numero = null) {
 
   // La corrispondenza esatta ha la precedenza: chi scrive tutto il nome non
   // deve vedersi annegare "Articuno" dentro "Articuno ex" e "Articuno V".
-  const chiavi = cacheNomi[ago]
-    ? [ago]
-    : Object.keys(cacheNomi)
-        .filter((k) => k.includes(ago))
-        .sort((a, b) => a.length - b.length);
+  const chiavi =
+    precedenzaEsatta && cacheNomi[ago]
+      ? [ago]
+      : Object.keys(cacheNomi)
+          .filter((k) => k.includes(ago))
+          // Dal più corto: "Pikachu" prima di "Pikachu ex Ultra Rara", perché
+          // quando i tetti tagliano è il nome pulito che serve di più.
+          .sort((a, b) => a.length - b.length);
 
   let troppi = chiavi.length > MAX_NOMI;
   const scelte = chiavi.slice(0, MAX_NOMI);
