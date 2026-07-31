@@ -415,3 +415,120 @@ tavolo-partita .volante.stato {
     transition: none;
   }
 }
+
+/* --- La moneta ---------------------------------------------------------- */
+
+/* Gira su sé stessa e si ferma sulla faccia uscita. L'esito lo ha deciso il
+   motore: qui si mostra soltanto, o l'animazione potrebbe fermarsi su una
+   faccia diversa da quella che ha prodotto il danno. */
+tavolo-partita .moneta {
+  position: absolute;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #4a3a06;
+  background: radial-gradient(circle at 35% 30%, #ffe89a, #e0a92b 60%, #b0801a);
+  box-shadow: 0 6px 14px rgb(28 35 51 / 25%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+tavolo-partita .moneta[data-esito='croce'] {
+  background: radial-gradient(circle at 35% 30%, #e8edf7, #b9c3d6 60%, #8894ab);
+  color: #2b3348;
+}
+
+tavolo-partita .moneta.gira {
+  animation: tavolo-moneta 1.1s ease-out;
+}
+
+tavolo-partita .mezzo {
+  position: relative;
+}
+
+@keyframes tavolo-moneta {
+  from {
+    transform: translateX(-50%) rotateY(0) scale(0.6);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(-50%) rotateY(1440deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- La spiegazione della regola ---------------------------------------- */
+
+/* Compare la prima volta che una regola entra in gioco, e una volta sola: alla
+   terza ripetizione un avviso si chiude senza leggerlo. */
+tavolo-partita .bolla {
+  position: sticky;
+  inset-block-end: 0.6rem;
+  margin-top: 0.4rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--raggio);
+  border: 2px solid var(--colore-accento);
+  background: var(--colore-superficie);
+  box-shadow: var(--ombra);
+  z-index: 4;
+  animation: tavolo-bolla 0.35s ease-out;
+}
+
+tavolo-partita .titolo-bolla {
+  display: block;
+  font-size: 0.9rem;
+}
+
+tavolo-partita .testo-bolla {
+  margin: 0.3rem 0 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+tavolo-partita .chiudi-bolla {
+  width: auto;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--colore-primario);
+  color: var(--colore-su-primario);
+}
+
+@keyframes tavolo-bolla {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  tavolo-partita .moneta.gira,
+  tavolo-partita .bolla {
+    animation: none;
+  }
+}
+
+/* Chi sei lo dice il campo, non il nome del mazzo: così i nomi restano nomi e
+   il racconto si legge ("Mazzo prova attacca…" e non "Tu — Mazzo prova attacca"). */
+tavolo-partita .sei-tu {
+  margin-inline-start: 0.35rem;
+  font-size: 0.65rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--colore-primario);
+}

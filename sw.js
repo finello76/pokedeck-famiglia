@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v75';
+const VERSIONE = 'v76';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -110,6 +110,7 @@ const GUSCIO = [
   './src/engine/riapertura.js',
   './src/engine/partita.js',
   './src/engine/allenatori.js',
+  './src/engine/spiegazioni.js',
   './src/engine/stati-speciali.js',
   './src/engine/carenze.js',
   './src/engine/mazzo.js',

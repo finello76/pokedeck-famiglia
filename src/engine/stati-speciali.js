@@ -117,13 +117,15 @@ export function fraIDueTurni(pokemon, testa) {
     // guarire da solo nello stesso momento.
     const guarito = testa();
     if (guarito) stati.splice(stati.indexOf(STATI.BRUCIATURA), 1);
-    eventi.push({ stato: STATI.BRUCIATURA, danno: DANNO_BRUCIATURA, guarito });
+    // `moneta` viaggia insieme all'esito perché chi guarda deve vedere **perché**
+    // è guarito: la bruciatura non passa da sola, passa se esce testa.
+    eventi.push({ stato: STATI.BRUCIATURA, danno: DANNO_BRUCIATURA, guarito, moneta: guarito });
   }
 
   if (stati.includes(STATI.SONNO)) {
     const guarito = testa();
     if (guarito) stati.splice(stati.indexOf(STATI.SONNO), 1);
-    eventi.push({ stato: STATI.SONNO, guarito });
+    eventi.push({ stato: STATI.SONNO, guarito, moneta: guarito });
   }
 
   return { danni, stati, eventi };

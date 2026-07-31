@@ -27,6 +27,7 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
+import { spiegazionePer } from '../../engine/spiegazioni.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 
 /** Quanto resta a schermo un numero di danno che sbuca. */
@@ -39,11 +40,23 @@ export class TavoloPartita extends HTMLElement {
   #mosse = [];
   /** Quante righe di registro sono già state animate: la differenza è il nuovo. */
   #registroMostrato = 0;
+  /**
+   * Le regole già spiegate, per chiave. Alla terza volta un avviso non spiega
+   * più niente: si chiude senza leggerlo.
+   * @type {Set<string>}
+   */
+  #spiegate = new Set();
+  /** @type {number|undefined} quando nascondere la moneta */
+  #timerMoneta;
 
   connectedCallback() {
     if (this.dataset.pronto) return;
     this.dataset.pronto = '1';
     this.addEventListener('click', (evento) => {
+      if (evento.target.closest('[data-chiudi-bolla]')) {
+        this.querySelector('.bolla')?.remove();
+        return;
+      }
       const bottone = evento.target.closest('[data-mossa]');
       if (!bottone || bottone.disabled) return;
       const mossa = this.#mosse[Number(bottone.dataset.mossa)];
@@ -82,6 +95,7 @@ export class TavoloPartita extends HTMLElement {
         ${this.#lato(lui, 'avversario', s)}
         <div class="mezzo">
           <p class="dice-cosa"></p>
+          <div class="moneta" hidden aria-hidden="true"><span class="faccia"></span></div>
         </div>
         ${this.#lato(io, 'mio', s)}
         <div class="mano-mia">${io.mano.map((c) => this.#miniatura(c)).join('')}</div>
@@ -107,7 +121,7 @@ export class TavoloPartita extends HTMLElement {
     return `
       <section class="lato ${lato}${tocca ? ' tocca' : ''}">
         <header class="riga-lato">
-          <span class="nome-giocatore">${escapeHtml(g.nome)}</span>
+          <span class="nome-giocatore">${escapeHtml(g.nome)}${lato === 'mio' ? ' <em class="sei-tu">sei tu</em>' : ''}</span>
           <span class="conti">
             <span class="conto premi" title="Premi da prendere">🏆 ${g.premi.length}</span>
             <span class="conto mazzo" title="Carte nel mazzo">🂠 ${g.mazzo.length}</span>
@@ -212,10 +226,60 @@ export class TavoloPartita extends HTMLElement {
       if (evento.tipo === 'attacco') this.#animaAttacco(evento);
       if (evento.tipo === 'ko') this.#animaKo(evento);
       if (evento.tipo === 'stato') this.#animaStato(evento);
+      if (evento.moneta !== undefined && evento.moneta !== null) this.#animaMoneta(evento.moneta);
+      if (evento.tipo === 'moneta') this.#animaMoneta(evento.esito);
+      this.#spiega(evento);
     }
 
     const riga = this.querySelector('.dice-cosa');
     if (riga) riga.textContent = racconto.filter(Boolean).join(' ');
+  }
+
+  /**
+   * La moneta gira e si ferma sulla faccia uscita.
+   *
+   * Il risultato lo ha già deciso il motore: qui si mostra soltanto. Se
+   * l'animazione decidesse da sé, potrebbe fermarsi su una faccia diversa da
+   * quella che ha prodotto il danno — e chi guarda crederebbe all'animazione.
+   *
+   * @param {boolean} testa
+   */
+  #animaMoneta(testa) {
+    const moneta = this.querySelector('.moneta');
+    if (!moneta) return;
+    moneta.hidden = false;
+    moneta.classList.remove('gira');
+    void moneta.offsetWidth;
+    moneta.dataset.esito = testa ? 'testa' : 'croce';
+    moneta.querySelector('.faccia').textContent = testa ? 'TESTA' : 'CROCE';
+    moneta.classList.add('gira');
+    clearTimeout(this.#timerMoneta);
+    this.#timerMoneta = setTimeout(() => {
+      moneta.hidden = true;
+    }, 2200);
+  }
+
+  /**
+   * Mostra la spiegazione di una regola, la prima volta che entra in gioco.
+   *
+   * Una sola per volta e una sola per regola: se ne arrivassero due insieme, la
+   * seconda coprirebbe la prima e non si leggerebbe nessuna delle due.
+   *
+   * @param {object} evento
+   */
+  #spiega(evento) {
+    const spiegazione = spiegazionePer(evento);
+    if (!spiegazione || this.#spiegate.has(spiegazione.chiave)) return;
+    if (this.querySelector('.bolla')) return;
+    this.#spiegate.add(spiegazione.chiave);
+
+    const bolla = document.createElement('div');
+    bolla.className = 'bolla';
+    bolla.innerHTML = `
+      <strong class="titolo-bolla">${escapeHtml(spiegazione.titolo)}</strong>
+      <p class="testo-bolla">${escapeHtml(spiegazione.testo)}</p>
+      <button type="button" class="chiudi-bolla" data-chiudi-bolla>Ho capito</button>`;
+    this.querySelector('.tavolo')?.append(bolla);
   }
 
   /** L'attaccante scatta, il difensore trema, il danno sbuca. */
@@ -286,10 +350,13 @@ export function raccontaEvento(evento, stato) {
   const chi = stato.giocatori[evento.chi]?.nome ?? '';
   switch (evento.tipo) {
     case 'attacco': {
+      // Il punto si mette **una volta sola**, alla fine: mettendolo dentro i
+      // pezzi si finiva con "Ora è Addormentato.." — un dettaglio che si nota
+      // subito e fa sembrare rotto tutto il resto.
       const pezzi = [`${chi} attacca con ${evento.attacco}: ${evento.danno} danni`];
       if (evento.debolezza) pezzi.push('(debolezza: il doppio!)');
       if (evento.resistenza) pezzi.push('(resistenza: meno danni)');
-      if (evento.stati?.length) pezzi.push(`Ora è ${evento.stati.join(' e ')}.`);
+      if (evento.stati?.length) pezzi.push(`— ora è ${evento.stati.join(' e ')}`);
       return `${pezzi.join(' ')}.`;
     }
     case 'ko':

@@ -597,8 +597,13 @@ export function attacca(stato, indiceAttacco = 0) {
   const confusione = sbagliaPerConfusione(io.attivo, testa);
   if (confusione.sbaglia) {
     io.attivo.danni += confusione.danno;
-    nuovo.registro.push({ tipo: 'confusione', chi: nuovo.diChi, danno: confusione.danno });
+    // `moneta: false` non è un dettaglio da nascondere: è **il motivo** per cui
+    // l'attacco non è partito, e chi guarda deve vedere il lancio.
+    nuovo.registro.push({ tipo: 'confusione', chi: nuovo.diChi, danno: confusione.danno, moneta: false });
     return chiudiTurno(controllaKo(nuovo));
+  }
+  if ((io.attivo.stati ?? []).includes('Confuso')) {
+    nuovo.registro.push({ tipo: 'moneta', chi: nuovo.diChi, esito: true, perche: 'confusione superata' });
   }
 
   const esito = dannoConTipi(attacco.danno, io.attivo.carta, lui.attivo.carta);

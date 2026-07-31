@@ -24,6 +24,15 @@ const scelta = sezione?.querySelector('#scelta-partita');
 
 /** @type {object|null} la partita in corso */
 let stato = null;
+/**
+ * Com'era stata cominciata: i due mazzi e il seme.
+ *
+ * Serve al "rigioca": con lo stesso seme il mescolamento è identico, quindi la
+ * partita riparte esattamente uguale. È l'unica cosa che serve, ed è il motivo
+ * per cui il motore prende un seme invece di chiamare `Math.random()`.
+ * @type {{idMio: string, idSuo: string, seme: number}|null}
+ */
+let ultima = null;
 
 /**
  * Riempie i due menu coi mazzi salvati.
@@ -62,27 +71,34 @@ async function preparaScelta() {
     </div>
     <p class="aiuto">Le regole della casa del primo mazzo valgono per tutta la partita.</p>`;
 
-  scelta.querySelector('#via-partita').addEventListener('click', avvia);
+    // Non `addEventListener('click', avvia)`: l'evento del click finirebbe come
+  // primo argomento, e le opzioni si leggerebbero da un MouseEvent.
+  scelta.querySelector('#via-partita').addEventListener('click', () => avvia());
 }
 
 /**
  * Legge i due mazzi scelti e comincia.
  * @returns {Promise<void>}
  */
-async function avvia() {
-  const idMio = scelta.querySelector('#mazzo-mio').value;
-  const idSuo = scelta.querySelector('#mazzo-suo').value;
+async function avvia({ stessoSeme = false } = {}) {
+  const idMio = stessoSeme ? ultima.idMio : scelta.querySelector('#mazzo-mio').value;
+  const idSuo = stessoSeme ? ultima.idSuo : scelta.querySelector('#mazzo-suo').value;
+  const seme = stessoSeme ? ultima.seme : Date.now() % 100000;
+  ultima = { idMio, idSuo, seme };
   const [mio, suo] = await Promise.all([leggiPiano(idMio), leggiPiano(idSuo)]);
   if (!mio || !suo) return;
 
   stato = iniziaPartita({
+    // I nomi finiscono dentro le frasi del racconto ("Machop attacca con…"),
+    // quindi devono leggersi come nomi: "Tu — Mazzo prova attacca" no. Chi sei
+    // lo dice il campo, non l'etichetta.
     mazzi: [
-      { nome: `Tu — ${mio.nome}`, carte: mio.mazzi[0].carte },
-      { nome: suo.nome, carte: suo.mazzi[0].carte },
+      { nome: mio.nome, carte: mio.mazzi[0].carte },
+      { nome: idSuo === idMio ? `${suo.nome} (avversario)` : suo.nome, carte: suo.mazzi[0].carte },
     ],
     taglia: mio.opzioni?.taglia ?? mio.mazzi[0].totale,
     regole: (mio.regole ?? []).map((r) => r.codice).filter(Boolean),
-    seme: Date.now() % 100000,
+    seme,
   });
 
   // Mano senza Pokémon Base: si rimescola prima ancora di cominciare, come al
@@ -99,6 +115,35 @@ async function avvia() {
 }
 
 /**
+ * I due pulsanti di fine partita.
+ *
+ * "Rigioca questa partita" rimette lo stesso seme: stesse mani, stesse pescate.
+ * Serve a capire cosa sarebbe successo cambiando **una** scelta — che è il modo
+ * in cui si impara un gioco, e che al tavolo vero non si può fare.
+ *
+ * @returns {void}
+ */
+function mostraRipartenza() {
+  const zona = sezione.querySelector('#dopo-partita');
+  if (!zona) return;
+  if (!stato || stato.fase !== 'finita') {
+    zona.innerHTML = '';
+    return;
+  }
+  const vincitore = stato.giocatori[stato.vincitore]?.nome ?? '';
+  zona.innerHTML = `
+    <p class="esito-partita">Ha vinto <strong>${escapeHtml(vincitore)}</strong>.</p>
+    <div class="azioni">
+      <button type="button" id="rigioca">Rigioca questa partita</button>
+      <button type="button" id="nuova" class="secondario">Un'altra partita</button>
+    </div>
+    <p class="aiuto">Rigiocandola le carte escono nello stesso ordine: puoi provare
+    a fare una scelta diversa e vedere come va a finire.</p>`;
+  zona.querySelector('#rigioca').addEventListener('click', () => avvia({ stessoSeme: true }));
+  zona.querySelector('#nuova').addEventListener('click', () => avvia());
+}
+
+/**
  * Passa al tavolo lo stato e le mosse.
  *
  * L'avversario lo muove l'app da sé (`giocaAvversario`): serve un secondo
@@ -111,6 +156,7 @@ async function avvia() {
 function mostra() {
   tavolo.stato = stato;
   tavolo.mosse = stato.diChi === 0 ? mosseDisponibili(stato) : [];
+  mostraRipartenza();
   if (stato.fase !== 'finita' && stato.diChi === 1) setTimeout(giocaAvversario, 900);
 }
 

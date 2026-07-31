@@ -186,6 +186,47 @@ Servono 2 Energie, ne hai 0.
 Un comando che sparisce non insegna niente; uno spento che non spiega insegna
 solo a diffidare. Questa è la differenza fra un gioco e un gioco che insegna.
 
+## Parte 5 — Spiegare al momento giusto, una volta sola
+
+Una partita *esplicativa* non è una partita con un manuale accanto: è una
+partita che spiega **quando serve**. La debolezza si spiega la prima volta che
+un attacco fa il doppio, il sonno la prima volta che qualcuno si addormenta —
+perché è l'unico istante in cui chi guarda ha già in testa la domanda giusta.
+
+Due decisioni dentro `engine/spiegazioni.js`:
+
+- **La regola sta nel motore, il conteggio nella schermata.** *«A questo evento
+  corrisponde questa spiegazione»* è pura e si prova senza browser; *«questa
+  l'ho già mostrata»* è stato della vista. Diviso così, si può provare che ogni
+  stato speciale ha la sua spiegazione — un test che scorre i cinque nomi — senza
+  simulare nessuna interfaccia.
+- **Una volta sola, e una per volta.** Alla terza ripetizione un avviso smette
+  di spiegare e diventa una cosa da chiudere senza leggere. E se ne arrivassero
+  due insieme, la seconda coprirebbe la prima: non se ne leggerebbe nessuna.
+
+C'è anche una piccola gerarchia: se un attacco tocca **debolezza e resistenza
+insieme**, si spiega la debolezza — è quella che cambia di più il numero a
+schermo, ed è quella che si vuole capire per prima.
+
+## Parte 6 — Il seme, di nuovo: rigiocare la stessa partita
+
+Il motore prende un seme invece di chiamare `Math.random()`. Nella Parte 3 la
+ragione era provare i casi limite; a partita finita ne appare una seconda,
+gratis:
+
+```js
+avvia({ stessoSeme: true });   // stesse mani, stesse pescate, stessi lanci
+```
+
+**"Rigioca questa partita"** rimette lo stesso mescolamento. Serve a rispondere
+alla domanda che viene sempre dopo una sconfitta — *e se avessi attaccato invece
+di ritirarmi?* — che al tavolo vero non si può fare, perché le carte non si
+rimettono come stavano.
+
+Vale la pena notare che questa funzione **non è costata niente**: è un parametro
+già presente, esposto in un pulsante. Le decisioni prese per la provabilità
+tendono a restituire funzionalità.
+
 ## Domande di verifica
 
 1. **Il vocabolario chiuso.** Gli stati speciali si riconoscono perché sono
@@ -204,6 +245,10 @@ solo a diffidare. Questa è la differenza fra un gioco e un gioco che insegna.
    `mossa-annullata`) e fai in modo che il tavolo lo racconti. Quante righe hai
    dovuto toccare, e in quanti file?
 
-5. **Il confine.** Elenca tre cose del TCG che questa partita **non** simula.
+5. **La spiegazione che non arriva.** `spiegazionePer()` torna `null` per gli
+   eventi di servizio (pesca, turno, schiera). Cosa succederebbe se ognuno di
+   quelli avesse la sua bolla? Prova a immaginare i primi tre turni.
+
+6. **Il confine.** Elenca tre cose del TCG che questa partita **non** simula.
    Per ciascuna, di' se le manca un *dato* o un *pezzo di motore* — e quale
    delle due mancanze è più facile da colmare.
