@@ -169,6 +169,64 @@ export class GrigliaCollezione extends HTMLElement {
     if (testa) testa.textContent = this.#titolo;
   }
 
+  /**
+   * Accende o spegne il cuore di **una** carta senza ridisegnare la griglia.
+   *
+   * Prima il cuore passava da `voci`, cioè da un giro completo: rilettura della
+   * collezione dal database e `innerHTML` rifatto da capo. Con qualche centinaio
+   * di carte a schermo quel ricambio buttava via tutto ciò che era arrivato
+   * scorrendo — le carte mancanti caricate set per set, le immagini già in
+   * pagina — e la pagina si accorciava di colpo: il browser, non potendo tenere
+   * lo scorrimento oltre il fondo, riportava l'utente in cima. Mettere una
+   * decina di carte nei preferiti voleva dire risalire la collezione dieci
+   * volte. Qui si tocca solo la card interessata, e la pagina non si muove.
+   *
+   * @param {string} idSet
+   * @param {string} numero
+   * @param {boolean} preferita lo stato **vero**, quello scritto nel database
+   * @returns {void}
+   * @example
+   * const stato = await impostaPreferita('sv08', '118');
+   * griglia.aggiornaPreferita('sv08', '118', stato);
+   */
+  aggiornaPreferita(idSet, numero, preferita) {
+    const uguale = (v) => v.idSet === idSet && String(v.numero) === String(numero);
+    // Le voci sono gli stessi oggetti in tutte le griglie: aggiornarle qui vale
+    // anche per le altre, ma ognuna deve poi sistemarsi il DOM per conto suo.
+    const voce = this.#voci.find(uguale);
+    if (voce) voce.preferita = preferita;
+
+    // Una vista che mostra **solo** i preferiti non cambia aspetto, cambia
+    // elenco: la carta ci deve entrare o sparirne. È l'unico caso in cui il
+    // ridisegno serve davvero, ed è anche quello che nessuno sta guardando —
+    // il cuore si tocca nel catalogo, non nella vista che filtra i cuori.
+    if (this.#effettivi().preferito === 'solo') {
+      this.#disegnaRisultati();
+      return;
+    }
+
+    const cuore = [...this.querySelectorAll('[data-preferita]')].find(
+      (c) => c.dataset.set === idSet && c.dataset.numero === String(numero),
+    );
+    if (cuore) this.#accendiCuore(cuore, preferita);
+  }
+
+  /**
+   * Porta un cuore nello stato dato: classe, stato ARIA, etichette e bordo
+   * della card. Un posto solo, perché lo stesso cambio arriva da due parti —
+   * il tocco (che anticipa) e la risposta del database (che conferma o smentisce).
+   * @param {HTMLElement} cuore
+   * @param {boolean} acceso
+   */
+  #accendiCuore(cuore, acceso) {
+    cuore.classList.toggle('acceso', acceso);
+    cuore.setAttribute('aria-pressed', String(acceso));
+    const etichetta = acceso ? 'Togli dai preferiti' : 'Aggiungi ai preferiti';
+    cuore.title = etichetta;
+    cuore.setAttribute('aria-label', etichetta);
+    cuore.closest('.carta-griglia')?.classList.toggle('preferita', acceso);
+  }
+
   /** I filtri scelti dall'utente più quelli imposti dalla vista. */
   #effettivi() {
     return { ...this.#filtri, ...this.#fissi };
@@ -269,15 +327,14 @@ export class GrigliaCollezione extends HTMLElement {
         return;
       }
 
-      // Il cuore: si accende subito, senza aspettare il giro nel database e il
-      // ridisegno. È un tocco che deve rispondere come un interruttore, e la
-      // verità arriva comunque dopo — se la scrittura fallisse, il prossimo
-      // aggiornamento della griglia rimetterebbe le cose a posto.
+      // Il cuore: si accende subito, senza aspettare il giro nel database. È un
+      // tocco che deve rispondere come un interruttore, e la verità arriva
+      // comunque dopo — chi ascolta l'evento richiama `aggiornaPreferita()` con
+      // lo stato che il livello dati ha davvero scritto.
       const cuore = evento.target.closest('[data-preferita]');
       if (cuore) {
         const acceso = cuore.getAttribute('aria-pressed') !== 'true';
-        cuore.classList.toggle('acceso', acceso);
-        cuore.setAttribute('aria-pressed', String(acceso));
+        this.#accendiCuore(cuore, acceso);
         this.dispatchEvent(
           new CustomEvent('preferita-cambiata', {
             bubbles: true,

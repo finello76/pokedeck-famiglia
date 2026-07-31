@@ -429,6 +429,16 @@ griglia-collezione .nota-ricerca {
   background: rgb(255 255 255 / 88%);
 }
 
+/* Il pieno del cuore lo decide la classe, non l'HTML. L'attributo `fill` nel
+   markup dice "vuoto" e basta: una regola CSS, anche di una sola classe, batte
+   sempre un attributo di presentazione, quindi accendere la classe riempie il
+   cuore all'istante. Prima il pieno arrivava col ridisegno della griglia — e da
+   quando il cuore non ridisegna più niente (vedi `aggiornaPreferita()`), senza
+   questa riga il cuore acceso resterebbe un contorno rosso. */
+.carta-griglia .cuore.acceso svg path {
+  fill: currentColor;
+}
+
 /* Il ritorno tattile del tocco: senza, su telefono il cuore sembra non aver
    reagito finché la griglia non si ridisegna. */
 .carta-griglia .cuore:active {

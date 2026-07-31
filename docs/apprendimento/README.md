@@ -28,6 +28,7 @@ progetto solo come esempio concreto sotto mano.
 | 18 | [Un indice al contrario](18-un-indice-al-contrario.md) | Hai una mappa figlio → genitore e ti serve genitore → figli. Cosa cambia fra le due direzioni, cosa fai quando la risposta è trentatré, e come si taglia un elenco senza mentire. Più: aprire una finestra prima di sapere cosa metterci, e due piedi diversi per la stessa card. |
 | 19 | [Simulare un gioco](19-simulare-un-gioco.md) | Quanto di un gioco di carte si puo' simulare, e come si decide il confine. Dati strutturati contro prosa, un vocabolario chiuso dentro il testo libero, una macchina a stati provabile senza browser, e animazioni che non possono mentire. |
 | 19 | [Contare le righe non è conoscere la scala](19-contare-le-righe.md) | La posizione di una riga sembra dire a che livello sei, finché una linea non comincia a metà. Quando un'assunzione implicita etichetta male si vede subito, quando filtra sparisce roba in silenzio. Più: assente non vuol dire "no", un `break` che butta via il motivo per cui si è fermato, e l'ordine alfabetico dei file travestito da scelta di lingua. |
+| 20 | [Lo scorrimento perduto](20-lo-scorrimento-perduto.md) | Chi possiede la posizione della pagina? Perché ridisegnare tutto riportava in cima a ogni cuore acceso, cos'è il *clamping* dello scorrimento e cosa lo scroll anchoring non può fare, e come si concilia un'interfaccia ottimista quando non c'è più un ridisegno a coprire le bugie. Più: perché un attributo `fill` nel markup perde sempre contro una classe. |
 
 ## Per chi è scritto
 

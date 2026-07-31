@@ -165,13 +165,23 @@ for (const g of griglie) g.addEventListener('quantita-cambiata', cambiaQuantita)
 visore.addEventListener('quantita-cambiata', cambiaQuantita);
 
 // Il cuore dei preferiti. La griglia si è già accesa da sola: qui si scrive nel
-// database e si ricarica, così le due viste (catalogo e preferiti) restano
-// d'accordo — togliendo il cuore dai Preferiti, la carta deve sparire di lì.
+// database e si avvisano **tutte** le griglie, così le due viste (catalogo e
+// preferiti) restano d'accordo — togliendo il cuore dai Preferiti, la carta
+// deve sparire di lì.
+//
+// Non si passa da `aggiornaCollezione()`: un cuore non cambia né le statistiche
+// né le energie né i prezzi, e ricaricare tutto significava rifare da capo
+// l'intera griglia. Chi era in fondo alla collezione si ritrovava in cima a ogni
+// carta messa fra i preferiti, che è esattamente il momento in cui non vuoi
+// perdere il segno. Vedi `aggiornaPreferita()` in griglia-collezione.js.
 for (const g of griglie) {
   g.addEventListener('preferita-cambiata', async (evento) => {
     const { idSet, numero, preferita } = evento.detail;
-    await impostaPreferita(idSet, numero, preferita);
-    await aggiornaCollezione();
+    // Lo stato vero lo decide il livello dati, che sa dire di no: su una carta
+    // desiderata il cuore non si mette, e la risposta rimette a posto quello
+    // che il tocco aveva già acceso.
+    const stato = await impostaPreferita(idSet, numero, preferita);
+    for (const altra of griglie) altra.aggiornaPreferita(idSet, numero, stato);
   });
 }
 
