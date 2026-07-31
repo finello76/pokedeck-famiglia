@@ -32,6 +32,7 @@ import {
   indiceEvoluzioni,
   indiceStadi,
   preEvoluzioniNonPokemon,
+  speciEsotiche,
   cercaPerNomeGlobale,
 } from '../data/dataset.js';
 
@@ -102,8 +103,9 @@ export function avviaLineaEvolutiva(griglie, finestra) {
       const mio = ++giro;
       finestra.apri(voce.carta.nome);
       try {
-        const { gradini, daCercare } = await struttura(voce, griglia.voci ?? []);
+        const { gradini, daCercare, origine } = await struttura(voce, griglia.voci ?? []);
         if (mio !== giro) return;
+        finestra.origine = origine;
         finestra.gradini = gradini;
 
         // Una ricerca per volta, non tutte insieme: vedi l'intestazione del
@@ -139,13 +141,16 @@ export function avviaLineaEvolutiva(griglie, finestra) {
  *
  * @param {object} voce la carta da cui si parte
  * @param {Array<object>} collezione le voci della vista, per sapere cosa hai
- * @returns {Promise<{gradini: Array<object>, daCercare: Array<{livello: number, posizione: number, nome: string}>}>}
+ * @returns {Promise<{gradini: Array<object>, daCercare: Array<{livello: number,
+ *   posizione: number, nome: string}>, origine: string|null}>} `origine` è la
+ *   carta Allenatore da cui la linea parte, per le linee che non hanno un Base
  */
 async function struttura(voce, collezione) {
-  const [indice, nonPokemon, stadi] = await Promise.all([
+  const [indice, nonPokemon, stadi, esotici] = await Promise.all([
     indiceEvoluzioni(),
     preEvoluzioniNonPokemon(),
     indiceStadi(),
+    speciEsotiche(),
   ]);
 
   // La collezione indicizzata per nome. Le stampe dello stesso nome si tengono
@@ -164,11 +169,14 @@ async function struttura(voce, collezione) {
   // I nomi che possiedi servono al motore *prima* di tagliare il ventaglio:
   // un'evoluzione che hai in scatola non deve finire fra le "altre 25 non
   // mostrate".
-  const { gradini } = catenaEvolutiva(voce.carta, indice, nonPokemon, {
+  const { gradini, origine } = catenaEvolutiva(voce.carta, indice, nonPokemon, {
     possedute: new Set(mie.keys()),
     // Senza, un Livello 2 che dichiara di evolvere da un Base — succede, vedi
     // Dark Crobat — comparirebbe al gradino sbagliato.
     stadi,
+    // Senza, *Omastar TURBO* saliva nella linea di Omastar come se fosse un
+    // Livello 2: un gradino che nel gioco non esiste.
+    esotici,
   });
 
   const corrente = `${voce.idSet}:${voce.numero}`;
@@ -200,10 +208,10 @@ async function struttura(voce, collezione) {
         voci.push({ nome, carta: null, quantita: 0, corrente: false });
       }
     }
-    return { livello: gradino.livello, oltre: gradino.oltre, voci };
+    return { livello: gradino.livello, stadio: gradino.stadio, oltre: gradino.oltre, voci };
   });
 
-  return { gradini: pronti, daCercare };
+  return { gradini: pronti, daCercare, origine };
 }
 
 /**

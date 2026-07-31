@@ -43,7 +43,14 @@ import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 import { bloccaScorrimento, sbloccaScorrimento } from '../../app/blocca-scroll.js';
 import { pastigliaLingua } from '../lingua-set.js';
 
-/** Come si chiama un gradino, per numero di livello. */
+/**
+ * Come si chiama un gradino, per **stadio di gioco**.
+ *
+ * Si indicizza con `gradino.stadio`, non con la posizione della riga: la linea
+ * di Omanyte comincia da un Livello 1 — sotto c'è un fossile, che è una carta
+ * Allenatore — e quella di Pichu ha due Base di fila. Contare le righe scriveva
+ * "Base" sopra un Livello 1.
+ */
 const ETICHETTE = ['Base', 'Livello 1', 'Livello 2'];
 
 /**
@@ -67,6 +74,12 @@ export class LineaEvolutiva extends HTMLElement {
    * @type {Map<string, object>}
    */
   #registro = new Map();
+  /**
+   * La carta Allenatore da cui la linea parte, quando ce n'è una: il fossile.
+   * Vedi il setter `origine`.
+   * @type {string|null}
+   */
+  #origine = null;
 
   connectedCallback() {
     if (this.#dialogo) return;
@@ -145,6 +158,8 @@ export class LineaEvolutiva extends HTMLElement {
    */
   apri(nome) {
     if (!this.#dialogo) return;
+    // La linea precedente era di un'altra carta: il suo fossile non c'entra più.
+    this.#origine = null;
     this.querySelector('.titolo-linea').textContent = `Linea di ${nome}`;
     this.querySelector('.corpo-linea').innerHTML =
       '<p class="attesa-linea">ricostruisco la linea evolutiva…</p>';
@@ -168,8 +183,9 @@ export class LineaEvolutiva extends HTMLElement {
    * pronte tutte voleva dire dieci secondi di finestra vuota e la pagina che
    * non rispondeva ai tocchi.
    *
-   * @param {Array<{livello: number, oltre: number, voci: Array<object>}>} valore
-   *   ogni voce: `{nome, carta, quantita, nomeSet, linguaSet, corrente, inCorso}`
+   * @param {Array<{livello: number, stadio: number, oltre: number, voci: Array<object>}>} valore
+   *   ogni voce: `{nome, carta, quantita, nomeSet, linguaSet, corrente, inCorso}`.
+   *   `livello` è la riga, `stadio` è come si chiama nel gioco: non coincidono
    */
   set gradini(valore) {
     const corpo = this.querySelector('.corpo-linea');
@@ -195,8 +211,39 @@ export class LineaEvolutiva extends HTMLElement {
       return;
     }
 
-    corpo.innerHTML = gradini.map((g) => this.#rigaGradino(g)).join('');
+    // Il posto della nota c'è sempre, anche vuoto: `origine` può arrivare prima
+    // o dopo i gradini, e in tutti e due i casi deve trovare dove scriversi.
+    corpo.innerHTML = `<p class="origine-linea" hidden></p>${gradini
+      .map((g) => this.#rigaGradino(g))
+      .join('')}`;
+    this.#disegnaOrigine();
     this.#sorvegliaImmagini(corpo);
+  }
+
+  /**
+   * La carta Allenatore su cui la linea poggia, quando la linea non ha un Base.
+   *
+   * Omanyte è un Livello 1 e si mette in gioco da *Vecchio Helixfossile*. Senza
+   * dirlo, la finestra mostra una linea che comincia a metà e sembra rotta: la
+   * domanda che nasce guardandola è "e il Base dov'è?", e la risposta è che il
+   * Base non è un Pokémon.
+   *
+   * @param {string|null} valore nome della carta Allenatore
+   */
+  set origine(valore) {
+    this.#origine = valore || null;
+    this.#disegnaOrigine();
+  }
+
+  /** @returns {void} */
+  #disegnaOrigine() {
+    const nota = this.querySelector('.origine-linea');
+    if (!nota) return;
+    nota.hidden = !this.#origine;
+    nota.innerHTML = this.#origine
+      ? `Questa linea non ha un Pokémon Base: si mette in gioco da
+         <strong>${escapeHtml(this.#origine)}</strong>, che è una carta Allenatore.`
+      : '';
   }
 
   /**
@@ -249,7 +296,8 @@ export class LineaEvolutiva extends HTMLElement {
    * @returns {string} HTML
    */
   #rigaGradino(gradino) {
-    const etichetta = ETICHETTE[gradino.livello] ?? `Livello ${gradino.livello}`;
+    const stadio = gradino.stadio ?? gradino.livello;
+    const etichetta = ETICHETTE[stadio] ?? `Livello ${stadio}`;
     const oltre =
       gradino.oltre > 0
         ? `<p class="oltre-linea">e altre ${gradino.oltre} evoluzioni non mostrate</p>`

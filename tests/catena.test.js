@@ -167,3 +167,95 @@ test('la catena si ferma prima dei fossili, che sono carte Allenatore', () => {
 
   assert.deepEqual(nomiDi(gradini), [['Omanyte']], 'niente fossili fra i Pokémon');
 });
+
+/*
+ * La linea di Omastar, che sbagliava in tre modi insieme: il fossile buttato
+ * via faceva sembrare che mancasse il Base, le righe si etichettavano contando
+ * invece di guardare lo stadio, e *Omastar TURBO* saliva come se fosse un
+ * Livello 2.
+ */
+
+/** Gli stadi come li scrive `tools/genera-indice-evoluzioni.mjs`. */
+const STADI_FOSSILI = { omanyte: 1, omastar: 2 };
+
+test('il fossile non è un gradino ma si dice da dove la linea parte', () => {
+  const indice = { omanyte: 'Vecchio Helixfossile', omastar: 'Omanyte' };
+  const { gradini, origine } = catenaEvolutiva(
+    pk('Omastar', 'Omanyte'),
+    indice,
+    new Set(['vecchio helixfossile']),
+    { stadi: STADI_FOSSILI },
+  );
+
+  assert.deepEqual(nomiDi(gradini), [['Omanyte'], ['Omastar']]);
+  assert.equal(origine, 'Vecchio Helixfossile', 'il Base non manca: è un Allenatore');
+});
+
+test('le righe portano lo stadio della specie, non il loro numero', () => {
+  const indice = { omanyte: 'Vecchio Helixfossile', omastar: 'Omanyte' };
+  const { gradini } = catenaEvolutiva(
+    pk('Omastar', 'Omanyte'),
+    indice,
+    new Set(['vecchio helixfossile']),
+    { stadi: STADI_FOSSILI },
+  );
+
+  assert.deepEqual(
+    gradini.map((g) => g.stadio),
+    [1, 2],
+    'Omanyte è un Livello 1: chiamarlo Base è falso',
+  );
+});
+
+test('due Base di fila non diventano un Base e un Livello 1', () => {
+  // Pichu → Pikachu → Raichu: le prime due sono **tutte e due** carte Base.
+  const indice = { pikachu: 'Pichu', raichu: 'Pikachu' };
+  const { gradini } = catenaEvolutiva(pk('Pikachu', 'Pichu'), indice, new Set(), {
+    stadi: { pichu: 0, pikachu: 0, raichu: 1 },
+  });
+
+  assert.deepEqual(nomiDi(gradini), [['Pichu'], ['Pikachu'], ['raichu']]);
+  assert.deepEqual(
+    gradini.map((g) => g.stadio),
+    [0, 0, 1],
+    'contando le righe Raichu risultava un Livello 2 e spariva dalla linea',
+  );
+});
+
+test('TURBO, VMAX e MEGA non salgono nella piramide', () => {
+  const indice = { omastar: 'Omanyte', 'omastar turbo': 'Omastar' };
+  const { gradini } = catenaEvolutiva(pk('Omanyte'), indice, new Set(), {
+    stadi: STADI_FOSSILI,
+    esotici: new Set(['omastar turbo']),
+  });
+
+  assert.deepEqual(nomiDi(gradini), [['Omanyte'], ['omastar']], 'niente terzo gradino inventato');
+});
+
+test('aprendo la linea su un TURBO, la carta è una variante e non un gradino', () => {
+  const indice = { omanyte: 'Vecchio Helixfossile', omastar: 'Omanyte' };
+  const { gradini, livelloCarta, origine } = catenaEvolutiva(
+    pk('Omastar TURBO', 'Omastar'),
+    indice,
+    new Set(['vecchio helixfossile']),
+    { stadi: STADI_FOSSILI, esotici: new Set(['omastar turbo']) },
+  );
+
+  assert.deepEqual(nomiDi(gradini), [['Omanyte'], ['Omastar']]);
+  assert.equal(livelloCarta, 1, 'la carta aperta sta nella riga di Omastar');
+  assert.deepEqual(
+    gradini[1].specie[0].varianti,
+    ['Omastar TURBO'],
+    'la carta che hai in mano non sparisce: è una variante di Omastar',
+  );
+  assert.equal(origine, 'Vecchio Helixfossile', 'il fondo della catena si vede lo stesso');
+});
+
+test('oltre il Livello 2 non si costruiscono righe', () => {
+  const indice = { omastar: 'Omanyte', qualcosa: 'Omastar' };
+  const { gradini } = catenaEvolutiva(pk('Omanyte'), indice, new Set(), {
+    stadi: STADI_FOSSILI,
+  });
+
+  assert.equal(gradini.length, 2, 'una linea che parte da un Livello 1 ha due gradini');
+});

@@ -84,6 +84,24 @@ linea-evolutiva .attesa-linea {
   color: var(--colore-testo-tenue);
 }
 
+/* La nota sul fossile: la linea di Omanyte comincia da un Livello 1 e senza
+   spiegazione sembra rotta. Sta sopra i gradini perché è il gradino che manca. */
+linea-evolutiva .origine-linea {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  border-left: 3px solid var(--colore-bordo);
+  background: var(--colore-superficie-2);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--colore-testo-tenue);
+}
+
+/* Il `hidden` da solo non basta: è figlia di un contenitore flex. */
+linea-evolutiva .origine-linea[hidden] {
+  display: none;
+}
+
 linea-evolutiva .etichetta-gradino {
   margin: 0 0 0.45rem;
   font-size: 0.78rem;

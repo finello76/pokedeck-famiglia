@@ -70,12 +70,21 @@ const stadiVisti = new Map();
 const speciePokemon = new Set();
 /** Nome normalizzato → nome come sta scritto sulla carta, per riscriverlo bene. */
 const comeScritto = new Map();
+/** Ogni nome mai dichiarato come `evolveDa`, anche se poi ha perso un conflitto. */
+const preEvoluzioniViste = new Set();
+/** Nomi normalizzati delle carte che non sono Pokémon: distingue i fossili dai refusi. */
+const carteAllenatore = new Set();
+/** Se il nome tenuto per una specie viene da un set inglese: l'italiano lo scalza. */
+const daSetInglese = new Map();
 /** Conflitti: la stessa specie con due pre-evoluzioni diverse. */
 const conflitti = [];
 let carteLette = 0;
 
 for (const nomeFile of file) {
   const set = JSON.parse(readFileSync(join(CARTELLA_SET, nomeFile), 'utf8'));
+  // 79 set hanno i dati in inglese perché TCGdex non ha nemmeno una carta
+  // italiana: i loro nomi valgono come ripiego, non come prima scelta.
+  const inglese = set.lingua === 'en';
   for (const carta of set.carte ?? []) {
     if (carta.categoria === 'Pokémon') {
       speciePokemon.add(normalizza(carta.nome));
@@ -87,8 +96,10 @@ for (const nomeFile of file) {
         conta.set(carta.stadio, (conta.get(carta.stadio) ?? 0) + 1);
       }
     }
+    if (carta.categoria !== 'Pokémon') carteAllenatore.add(normalizza(carta.nome));
     if (carta.categoria !== 'Pokémon' || !carta.evolveDa) continue;
     carteLette++;
+    preEvoluzioniViste.add(carta.evolveDa);
 
     const chiave = normalizza(carta.nome);
     const gia = evoluzioni.get(chiave);
@@ -96,9 +107,21 @@ for (const nomeFile of file) {
       // Succede con le forme regionali che condividono il nome: si tiene la
       // prima e si segnala, invece di sovrascrivere in silenzio.
       conflitti.push(`${carta.nome}: ${gia} / ${carta.evolveDa}`);
+      // Con un'eccezione: **l'italiano batte l'inglese**. Questi nomi vengono
+      // mostrati — sono i gradini della linea evolutiva, e il fossile da cui
+      // Omanyte si mette in gioco — e i file dei set inglesi si leggono per
+      // primi in ordine alfabetico. La finestra diceva "Helix Fossil" a chi
+      // teneva in mano una carta con scritto *Vecchio Helixfossile*.
+      if (daSetInglese.get(chiave) && !inglese) {
+        evoluzioni.set(chiave, carta.evolveDa);
+        daSetInglese.set(chiave, false);
+      }
       continue;
     }
-    if (!gia) evoluzioni.set(chiave, carta.evolveDa);
+    if (!gia) {
+      evoluzioni.set(chiave, carta.evolveDa);
+      daSetInglese.set(chiave, inglese);
+    }
   }
 }
 
@@ -110,9 +133,29 @@ const da = Object.fromEntries([...evoluzioni.entries()].sort(([a], [b]) => a.loc
 // Allenatore, non un Pokémon. Chi legge l'indice deve poterlo sapere, o finisce
 // per stampare un fossile come se fosse un Pokémon Base — è successo davvero.
 // Il nome si riconosce solo qui, dove si vedono tutte le categorie del dataset.
+//
+// Si guardano **tutti** i valori `evolveDa` visti, non solo quelli finiti
+// nell'indice: lo stesso fossile ha nomi diversi da un set all'altro (*Vecchio
+// Helixfossile* in italiano, *Helix Fossil* e *Mysterious Fossil* nei set
+// inglesi) e nell'indice ne sopravvive uno solo, quello che ha vinto il
+// conflitto. Chi legge però parte dalla carta che ha in mano, che dichiara il
+// suo nome: fermare la catena solo sul vincitore lasciava *Vecchio
+// Helixfossile* a fare da Pokémon Base nella linea di Omanyte.
+//
+// Fra i nomi perdenti però ci sono anche i **refusi** del dataset — *Drowsee*
+// per Drowzee, *Tailow* per Taillow — e quelli non vanno scambiati per
+// Allenatore: fermare lì la catena direbbe che Hypno si mette in gioco da una
+// carta Allenatore, che è falso. Si tengono quindi i nomi che sono davvero una
+// carta Allenatore stampata, più — come prima — i vincitori dell'indice, che
+// coprono i casi senza carta corrispondente (`Nidoran?`, `Rocket's Meowth`).
+const vincitori = new Set(evoluzioni.values());
 const nonPokemon = [
   ...new Set(
-    [...evoluzioni.values()].filter((nome) => !speciePokemon.has(normalizza(nome))),
+    [...preEvoluzioniViste].filter(
+      (nome) =>
+        !speciePokemon.has(normalizza(nome)) &&
+        (carteAllenatore.has(normalizza(nome)) || vincitori.has(nome)),
+    ),
   ),
 ].sort((a, b) => a.localeCompare(b));
 
@@ -124,11 +167,27 @@ const nonPokemon = [
  * livello della specie.
  */
 const SCALA = ['Base', 'Livello 1', 'Livello 2'];
+
+/**
+ * Gli stadi che **non sono gradini**: la carta si mette sopra un Pokémon già in
+ * gioco (TURBO, VMAX, V ASTRO, MEGA) o si cala dalla mano per conto suo
+ * (V UNIONE). Restano fuori `Ricreato`, che è il fossile rianimato e si gioca
+ * come un Base: quello un gradino lo occupa davvero.
+ *
+ * Senza questo elenco *Omastar TURBO* saliva nella linea di Omastar come se
+ * fosse un Livello 2, inventando un gradino che nel gioco non esiste. Non si
+ * poteva dedurre dall'assenza in `stadi`: 229 specie ci mancano per altri
+ * motivi, quasi tutte perché nessuna loro stampa dichiara lo stadio.
+ */
+const NON_GRADINI = new Set(['TURBO', 'VMAX', 'V ASTRO', 'MEGA', 'V UNIONE']);
+
 const stadi = {};
+const esotici = [];
 for (const [nome, conta] of [...stadiVisti].sort(([a], [b]) => a.localeCompare(b))) {
   const [vincitore] = [...conta].sort((x, y) => y[1] - x[1]);
   const livello = SCALA.indexOf(vincitore[0]);
   if (livello >= 0) stadi[nome] = livello;
+  else if (NON_GRADINI.has(vincitore[0])) esotici.push(nome);
 }
 
 /**
@@ -193,13 +252,14 @@ function deduciCollegamenti(da, stadi) {
 const dedotti = deduciCollegamenti(da, stadi);
 for (const [nome, pre] of Object.entries(dedotti)) da[nome] = pre;
 
-const indice = { da, nonPokemon, stadi };
+const indice = { da, nonPokemon, stadi, esotici };
 writeFileSync(USCITA, `${JSON.stringify(indice, null, 0)}\n`);
 
 const peso = (JSON.stringify(indice).length / 1024).toFixed(1);
 console.log(`Letti ${file.length} set, ${carteLette} carte con evolveDa dichiarato.`);
 console.log(`Scritte ${Object.keys(da).length} specie in ${USCITA} (${peso} KB).`);
 console.log(`Stadio noto per ${Object.keys(stadi).length} specie.`);
+console.log(`Specie con stadio non canonico (fuori dai gradini): ${esotici.length}`);
 console.log(`Collegamenti dedotti dai nomi a tema: ${Object.keys(dedotti).length}`);
 for (const [nome, pre] of Object.entries(dedotti)) console.log(`   ${nome} ← ${pre}`);
 console.log(`Pre-evoluzioni che non sono Pokémon (fossili e simili): ${nonPokemon.length}`);

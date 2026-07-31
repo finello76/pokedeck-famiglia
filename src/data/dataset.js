@@ -56,6 +56,13 @@ let cacheNonPokemon = null;
 let cacheStadi = null;
 
 /**
+ * Specie il cui stadio non è un gradino evolutivo: TURBO, VMAX, V ASTRO, MEGA,
+ * V UNIONE. Vedi `speciEsotiche()`.
+ * @type {Set<string>|null}
+ */
+let cacheEsotici = null;
+
+/**
  * Scarica un JSON dalla cartella dei dati.
  * @param {string} nomeFile
  * @returns {Promise<any>}
@@ -278,8 +285,10 @@ async function assicuraEvoluzioni() {
       cacheNonPokemon = new Set((nuovo ? indice.nonPokemon ?? [] : []).map(normalizza));
       // `stadi` è arrivato dopo `da` e `nonPokemon`: un file vecchio rimasto
       // nella cache del service worker non ce l'ha, e chi lo legge deve
-      // sopravvivere a una mappa vuota.
+      // sopravvivere a una mappa vuota. Vale identico per `esotici`, arrivato
+      // per ultimo.
       cacheStadi = (nuovo ? indice.stadi : null) ?? {};
+      cacheEsotici = new Set((nuovo ? indice.esotici ?? [] : []).map(normalizza));
     });
   await caricamentoEvoluzioni;
 }
@@ -355,6 +364,25 @@ export async function indiceEvoluzioni() {
 export async function preEvoluzioniNonPokemon() {
   await assicuraEvoluzioni();
   return cacheNonPokemon ?? new Set();
+}
+
+/**
+ * Le specie che nella piramide evolutiva **non occupano un gradino**.
+ *
+ * Sono le carte con stadio TURBO, VMAX, V ASTRO, MEGA e V UNIONE: si mettono
+ * sopra un Pokémon già in gioco, o si calano dalla mano per conto loro. Senza
+ * questo elenco *Omastar TURBO* risaliva la linea di Omastar come se fosse un
+ * Livello 2, inventando un gradino.
+ *
+ * Non basta guardare `indiceStadi()`: 229 specie non hanno stadio noto per
+ * tutt'altro motivo — nessuna loro stampa lo dichiara — e non vanno confuse
+ * con queste.
+ *
+ * @returns {Promise<Set<string>>} nomi normalizzati
+ */
+export async function speciEsotiche() {
+  await assicuraEvoluzioni();
+  return cacheEsotici ?? new Set();
 }
 
 /**
