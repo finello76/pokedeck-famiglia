@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="src/ui/contatore-energie/contatore-energie.css" />
     <link rel="stylesheet" href="src/ui/visore-carta/visore-carta.css" />
     <link rel="stylesheet" href="src/ui/linea-evolutiva/linea-evolutiva.css" />
+    <link rel="stylesheet" href="src/ui/tavolo-partita/tavolo-partita.css" />
     <link rel="stylesheet" href="src/ui/procedura-guidata/procedura-guidata.css" />
     <link rel="stylesheet" href="src/ui/mazzo-generato/mazzo-generato.css" />
     <link rel="stylesheet" href="src/ui/vista-regole/vista-regole.css" />
@@ -131,6 +132,21 @@
         <section class="pannello no-stampa" id="mazzo-personalizzato"></section>
       </div>
 
+      <!-- La mini partita: si gioca coi mazzi salvati, per imparare le regole
+           vedendole applicate invece che leggendole. -->
+      <div data-vista="partita" hidden>
+        <section class="pannello">
+          <h2>Mini partita</h2>
+          <p class="aiuto">
+            Due mazzi salvati si affrontano davvero: debolezza, ritirata, stati
+            speciali, Premi. Le mosse che non puoi fare restano a schermo e ti
+            dicono perché.
+          </p>
+          <div id="scelta-partita"></div>
+        </section>
+        <tavolo-partita id="tavolo"></tavolo-partita>
+      </div>
+
       <div data-vista="regole" hidden>
         <vista-regole id="regole"></vista-regole>
       </div>
@@ -219,6 +235,12 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6" width="14" height="10" rx="2.5" opacity=".5"/><rect x="7" y="9" width="14" height="10" rx="2.5"/></svg>
         </span>
         <span class="etichetta">Mazzi</span>
+      </button>
+      <button type="button" data-vai="partita">
+        <span class="icona" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" fill="currentColor" opacity=".45"/><path d="M3.5 12h17" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="var(--colore-fondo)" stroke="currentColor" stroke-width="1.8"/></svg>
+        </span>
+        <span class="etichetta">Partita</span>
       </button>
       <button type="button" data-vai="regole">
         <span class="icona" aria-hidden="true">

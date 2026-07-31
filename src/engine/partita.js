@@ -26,6 +26,7 @@
 
 import { Casuale } from './casuale.js';
 import { formatoPer } from './formati.js';
+import { giocabileOra, interpreta } from './allenatori.js';
 import {
   fraIDueTurni,
   puoAgire,
@@ -267,9 +268,20 @@ export function schiera(stato, indiceMano, dove = 'panchina') {
   else g.panchina.push(messo);
 
   nuovo.registro.push({ tipo: 'schiera', chi: nuovo.diChi, carta, dove });
-  // Finita la preparazione di entrambi comincia il primo turno.
-  if (nuovo.fase === 'preparazione' && nuovo.giocatori.every((x) => x.attivo)) {
-    nuovo.fase = 'turno';
+
+  if (nuovo.fase === 'preparazione') {
+    // In preparazione si sceglie **solo** il Pokémon attivo, a turno: la
+    // panchina si riempie giocando. È una semplificazione voluta — al tavolo si
+    // schiera tutto insieme a carte coperte — perché qui una mossa per volta è
+    // anche una spiegazione per volta, e la panchina si capisce meglio quando
+    // serve davvero.
+    if (nuovo.giocatori.every((x) => x.attivo)) {
+      nuovo.fase = 'turno';
+      nuovo.diChi = 0;
+      // Il primo turno comincia pescando: è la prima cosa che si fa, sempre.
+      return pesca(nuovo);
+    }
+    nuovo.diChi = 1 - nuovo.diChi;
   }
   return nuovo;
 }
@@ -410,6 +422,70 @@ export function ritirati(stato, indicePanchina) {
 }
 
 /**
+ * Gioca una carta Allenatore dalla mano.
+ *
+ * Quello che la partita sa fare lo fa (vedi `engine/allenatori.js`); quello che
+ * non sa lo **dichiara**: la carta finisce comunque negli scarti e nel registro
+ * resta il testo, perché la schermata lo mostri e chi gioca lo applichi. È il
+ * confine dichiarato di cui parla quel modulo — una partita che esegue metà
+ * carta e tace sull'altra metà insegnerebbe la regola sbagliata.
+ *
+ * @param {object} stato
+ * @param {number} indiceMano
+ * @param {{panchina?: number}} [scelte] dove serve un bersaglio (lo scambio)
+ * @returns {object}
+ */
+export function giocaAllenatore(stato, indiceMano, scelte = {}) {
+  const nuovo = copia(stato);
+  const g = nuovo.giocatori[nuovo.diChi];
+  const carta = g.mano[indiceMano];
+  if (carta?.categoria !== 'Allenatore') return stato;
+  if (!giocabileOra(carta, g).possibile) return stato;
+
+  const effetto = interpreta(carta);
+  g.mano.splice(indiceMano, 1);
+  g.scarti.push(carta);
+  if (carta.tipoAllenatore === 'Aiuto') g.aiutoGiocato = true;
+
+  let esito = nuovo;
+  switch (effetto.tipo) {
+    case 'pesca':
+      for (let i = 0; i < effetto.quante; i += 1) esito = pesca(esito);
+      break;
+    case 'cura':
+      if (esito.giocatori[esito.diChi].attivo) {
+        const attivo = esito.giocatori[esito.diChi].attivo;
+        attivo.danni = Math.max(0, attivo.danni - effetto.quanti);
+      }
+      break;
+    case 'scambia': {
+      const mio = esito.giocatori[esito.diChi];
+      const i = scelte.panchina ?? 0;
+      if (mio.attivo && mio.panchina[i]) {
+        // Come una ritirata gratuita: gli stati speciali restano fuori dal campo.
+        mio.attivo.stati = statiDopoLaPanchina();
+        const uscente = mio.attivo;
+        mio.attivo = mio.panchina[i];
+        mio.panchina[i] = uscente;
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
+  esito.registro.push({
+    tipo: 'allenatore',
+    chi: nuovo.diChi,
+    carta,
+    effetto: effetto.tipo,
+    testo: effetto.testo,
+    daApplicareAMano: effetto.tipo === 'manuale',
+  });
+  return esito;
+}
+
+/**
  * Se le Energie attaccate bastano per un attacco.
  *
  * Con `energiaUniversale` (regola della casa) ogni Energia vale per qualsiasi
@@ -455,7 +531,7 @@ export function energieSufficienti(slotAttivo, attacco, casa) {
  * @returns {{danno: number, debolezza: boolean, resistenza: boolean, base: number}}
  */
 export function dannoConTipi(base, attaccante, difensore) {
-  let danno = Number(base) || 0;
+  let danno = dannoStampato(base);
   const tipo = attaccante?.tipi?.[0];
   let debolezza = false;
   let resistenza = false;
@@ -474,7 +550,27 @@ export function dannoConTipi(base, attaccante, difensore) {
     resistenza = true;
   }
 
-  return { danno, debolezza, resistenza, base: Number(base) || 0 };
+  return { danno, debolezza, resistenza, base: dannoStampato(base) };
+}
+
+/**
+ * Il numero di danno stampato su un attacco.
+ *
+ * Sulle carte non è quasi mai un numero pulito: `"20+"` vuol dire "venti e poi
+ * leggi l'effetto", `"30×"` vuol dire "trenta per qualcosa", `"10-"` "dieci o
+ * meno". `Number("20+")` è `NaN`, e un `NaN` diventa **zero danni**: l'attacco
+ * si giocava e non faceva niente, in silenzio.
+ *
+ * Si tiene la parte fissa e si lascia il resto all'effetto, che la partita
+ * mostra a chi gioca — il "+" dipende quasi sempre da un lancio di moneta o da
+ * quante Energie hai addosso, cose che stanno scritte nel testo.
+ *
+ * @param {string|number|null|undefined} valore
+ * @returns {number}
+ */
+export function dannoStampato(valore) {
+  const cifre = String(valore ?? '').match(/\d+/);
+  return cifre ? Number(cifre[0]) : 0;
 }
 
 /**
@@ -603,7 +699,9 @@ function chiudiTurno(stato) {
   prossimo.aiutoGiocato = false;
   prossimo.ritirataFatta = false;
   dopoKo.registro.push({ tipo: 'turno', chi: dopoKo.diChi, numero: dopoKo.turno });
-  return dopoKo;
+  // Ogni turno comincia con una pescata: è la regola, ed è anche il momento in
+  // cui un mazzo finito fa perdere la partita.
+  return pesca(dopoKo);
 }
 
 /**
@@ -663,6 +761,20 @@ export function mosseDisponibili(stato) {
         etichetta: `${carta.nome} in panchina`,
         possibile: g.panchina.length < stato.formato.panchina,
         perche: 'La panchina è piena.',
+      });
+    } else if (carta.categoria === 'Allenatore') {
+      const quando = giocabileOra(carta, g);
+      const effetto = interpreta(carta);
+      mosse.push({
+        tipo: 'allenatore',
+        indice: i,
+        etichetta: `Gioca ${carta.nome}`,
+        possibile: quando.possibile,
+        perche: quando.perche,
+        // La schermata deve poter avvisare **prima** che questa carta va
+        // applicata a mano: scoprirlo dopo averla giocata è una sorpresa.
+        aMano: effetto.tipo === 'manuale',
+        testo: effetto.testo,
       });
     } else if (carta.categoria === 'Pokémon' && g.attivo && evolveDa(carta, g.attivo.carta)) {
       mosse.push({

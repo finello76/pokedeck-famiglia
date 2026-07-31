@@ -143,6 +143,19 @@ Dopo aver cambiato qualunque file in `data/set/`, alzare **`VERSIONE_DATI` in
 dell'app e si svuota solo quando quel numero cambia. Senza, i dati nuovi non
 arrivano mai a chi quel set l'aveva già aperto.
 
+I dati che servono a **giocare** (debolezza, resistenza, testi degli attacchi,
+effetti degli Allenatori), che `scarica-set.mjs` non chiede:
+
+```bash
+node tools/arricchisci-carte.mjs   # una richiesta per carta: ~1 ora, riprendibile
+```
+
+Senza, la mini partita non sa cos'e' una debolezza e gli stati speciali non
+esistono. E' riprendibile (`arricchita: true` su ogni carta gia' fatta) e
+**aggiunge** campi invece di riscrivere i file, come farebbe `scarica-set --forza`:
+quello ributterebbe via le ristampe completate e le scansioni recuperate.
+Dopo, alzare `VERSIONE_DATI` in `sw.js`.
+
 Infine i dati di gioco che TCGdex non replica sulle ristampe:
 
 ```bash
@@ -277,7 +290,15 @@ Attenzione: gli id dei set TCGdex differiscono da quelli di pokemon-tcg-data
   esiste il filtro per rarità (`src/data/rarita.js`), che riduce i 35 valori grezzi e mescolati
   al francese di TCGdex a una dozzina di classi ordinate dal comune al più raro.
 - **v2 — Wizard mazzi + regole della casa**: il cuore del progetto (vedi sotto).
-- **v3 — Mini partita esplicativa**: simulazione guidata passo-passo di alcuni turni.
+- **v3 — Mini partita esplicativa**: *fatta*. Due mazzi salvati si affrontano davvero
+  (`engine/partita.js`, puro e con un seme: le partite sono ripetibili). Simula mano
+  iniziale e Premi per formato, mulligan, un'Energia per turno, evoluzioni, ritirata,
+  **debolezza e resistenza**, i cinque **stati speciali** e le tre condizioni di
+  vittoria. Le regole della casa del mazzo entrano per **codice**, non per testo.
+  Gli Allenatori: poche formule intere riconosciute (`engine/allenatori.js`), tutto il
+  resto si gioca mostrando il testo e lo applica chi gioca — una simulazione che
+  sbaglia in silenzio insegnerebbe la regola sbagliata. Vedi
+  `docs/apprendimento/19-simulare-un-gioco.md`.
 
 I prezzi restano fuori dalla v1: sono l'unico punto in cui l'app chiama la rete di sua
 iniziativa, e non deve mai farlo da sola.

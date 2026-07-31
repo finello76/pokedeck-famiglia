@@ -31,6 +31,7 @@ import { mostraVersione } from './versione.js';
 import './vista-mazzi.js';
 import './vista-impostazioni.js';
 import './vista-personalizzato.js';
+import './vista-partita.js';
 import '../ui/scheda-carta/scheda-carta.js';
 import '../ui/griglia-collezione/griglia-collezione.js';
 import { carteMancanti, mancantiPerNome } from '../data/completamento.js';

@@ -16,8 +16,10 @@ import {
   attacca,
   attaccaEnergia,
   dannoConTipi,
+  dannoStampato,
   energieSufficienti,
   evolvi,
+  giocaAllenatore,
   iniziaPartita,
   mosseDisponibili,
   manoImpossibile,
@@ -57,18 +59,20 @@ function partitaDiProva(extra = {}) {
   });
 }
 
-/** Porta la partita al primo turno vero, con un attivo per parte. */
+/**
+ * Porta la partita al primo turno vero, con un attivo per parte.
+ *
+ * In preparazione il motore alterna i giocatori da sé: qui basta schierare due
+ * volte. Se una mano non ha Base si rimescola, come al tavolo.
+ */
 function conAttivi(stato) {
   let s = stato;
-  for (let giro = 0; giro < 2; giro += 1) {
-    // Mano senza Base: si rimescola, come al tavolo.
+  for (let giro = 0; giro < 2 && s.fase === 'preparazione'; giro += 1) {
     while (manoImpossibile(s, s.diChi)) s = rimescolaMano(s, s.diChi);
     const i = s.giocatori[s.diChi].mano.findIndex((c) => c.categoria === 'Pokémon');
     s = schiera(s, i, 'attivo');
-    // In preparazione il turno non passa da solo: si alterna a mano.
-    if (s.fase === 'preparazione') s = { ...s, diChi: 1 - s.diChi };
   }
-  return { ...s, diChi: 0 };
+  return s;
 }
 
 test('la preparazione distribuisce mano e Premi secondo il formato', () => {
@@ -91,13 +95,23 @@ test('la partita è ripetibile: stesso seme, stessa mano', () => {
   );
 });
 
-test('finché mancano gli attivi si resta in preparazione', () => {
+test('in preparazione, schierato il proprio attivo tocca all’altro', () => {
   let s = partitaDiProva();
+  while (manoImpossibile(s, 0)) s = rimescolaMano(s, 0);
   const i = s.giocatori[0].mano.findIndex((c) => c.categoria === 'Pokémon');
   s = schiera(s, i, 'attivo');
 
   assert.equal(s.fase, 'preparazione', 'manca ancora l’avversario');
   assert.ok(s.giocatori[0].attivo);
+  assert.equal(s.diChi, 1, 'senza passare la mano, l’avversario non schiererebbe mai');
+});
+
+test('quando entrambi hanno l’attivo comincia il turno, e si pesca', () => {
+  const s = conAttivi(partitaDiProva());
+
+  assert.equal(s.fase, 'turno');
+  assert.equal(s.diChi, 0, 'comincia chi ha schierato per primo');
+  assert.ok(s.registro.some((e) => e.tipo === 'pesca'), 'il turno comincia pescando');
 });
 
 test('un’Energia non si mette a terra come Pokémon', () => {
@@ -448,4 +462,77 @@ test('rimescolare non perde carte per strada', () => {
   s = rimescolaMano(s, 0);
 
   assert.equal(s.giocatori[0].mano.length + s.giocatori[0].mazzo.length, prima);
+});
+
+// --- Carte Allenatore -----------------------------------------------------
+
+const aiuto = (nome, effetto) => ({ nome, categoria: 'Allenatore', effetto, tipoAllenatore: 'Aiuto' });
+
+test('un Allenatore riconosciuto fa quello che dice', () => {
+  let s = conAttivi(partitaDiProva());
+  s.giocatori[0].mano.push(aiuto('Barry', 'Pesca tre carte.'));
+  const primaMano = s.giocatori[0].mano.length;
+  s = giocaAllenatore(s, s.giocatori[0].mano.length - 1);
+
+  // Una carta esce dalla mano, tre entrano.
+  assert.equal(s.giocatori[0].mano.length, primaMano - 1 + 3);
+  assert.equal(s.giocatori[0].scarti.at(-1).nome, 'Barry', 'la carta finisce negli scarti');
+});
+
+test('«Cura 30 danni» toglie i danni all’attivo, senza scendere sotto zero', () => {
+  let s = conAttivi(partitaDiProva());
+  s.giocatori[0].attivo.danni = 20;
+  s.giocatori[0].mano.push({ nome: 'Pozione', categoria: 'Allenatore', effetto: 'Cura 30 danni da uno dei tuoi Pokémon.', tipoAllenatore: 'Strumento' });
+  s = giocaAllenatore(s, s.giocatori[0].mano.length - 1);
+
+  assert.equal(s.giocatori[0].attivo.danni, 0);
+});
+
+test('un Allenatore che il motore non capisce si gioca lo stesso, e lo dichiara', () => {
+  let s = conAttivi(partitaDiProva());
+  s.giocatori[0].mano.push(aiuto('Malpi', 'Il tuo avversario mostra le carte che ha in mano…'));
+  s = giocaAllenatore(s, s.giocatori[0].mano.length - 1);
+
+  const riga = s.registro.at(-1);
+  assert.equal(riga.tipo, 'allenatore');
+  assert.equal(riga.daApplicareAMano, true, 'la schermata deve poterlo dire a chi gioca');
+  assert.match(riga.testo, /mostra le carte/);
+});
+
+test('il secondo Aiuto nello stesso turno non si gioca', () => {
+  let s = conAttivi(partitaDiProva());
+  s.giocatori[0].mano.push(aiuto('Barry', 'Pesca tre carte.'), aiuto('Cynthia', 'Pesca due carte.'));
+  s = giocaAllenatore(s, s.giocatori[0].mano.length - 2);
+  const dopoPrimo = s;
+  const i = s.giocatori[0].mano.findIndex((c) => c.nome === 'Cynthia');
+  s = giocaAllenatore(s, i);
+
+  assert.equal(s, dopoPrimo, 'lo stato non cambia');
+});
+
+test('le mosse avvisano PRIMA che una carta va applicata a mano', () => {
+  let s = conAttivi(partitaDiProva());
+  s.giocatori[0].mano.push(aiuto('Malpi', 'Il tuo avversario mostra le carte…'));
+  const mossa = mosseDisponibili(s).find((m) => m.tipo === 'allenatore');
+
+  assert.equal(mossa.aMano, true, 'scoprirlo dopo averla giocata sarebbe una sorpresa');
+  assert.equal(mossa.possibile, true);
+});
+
+test('i danni scritti come «20+» o «30×» valgono la loro parte fissa', () => {
+  // `Number("20+")` è NaN, e un NaN diventa zero danni: l'attacco si giocava e
+  // non faceva niente, senza dirlo.
+  assert.equal(dannoStampato('20+'), 20);
+  assert.equal(dannoStampato('30×'), 30);
+  assert.equal(dannoStampato('10-'), 10);
+  assert.equal(dannoStampato(40), 40);
+  assert.equal(dannoStampato(undefined), 0, 'un attacco senza danno non ne fa');
+  assert.equal(dannoStampato('nessuno'), 0);
+});
+
+test('la debolezza raddoppia anche un danno scritto con la crocetta', () => {
+  const esito = dannoConTipi('20+', pk('X', { tipi: ['Fuoco'] }), {
+    debolezza: { tipo: 'Fuoco', valore: '×2' },
+  });
+  assert.equal(esito.danno, 40);
 });
