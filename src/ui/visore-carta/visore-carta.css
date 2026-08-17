@@ -320,7 +320,17 @@ visore-carta .tela .freccia[hidden] {
   display: none;
 }
 
-/* --- Contatore copie: unica cosa sotto la carta --- */
+/* --- Contatore copie e pulsanti: le sole cose sotto la carta --- */
+
+/* I blocchi a pulsante — "La voglio", "Linea evolutiva" — stanno centrati sotto
+   la carta come il contatore delle copie, che si centra da sé con
+   `margin-inline: auto`. Il pulsante è un inline-block dentro un blocco largo
+   tutta la riga: senza questo si incollerebbe al bordo sinistro. */
+visore-carta .blocco {
+  flex: none;
+  text-align: center;
+}
+
 /* "La voglio", al posto del contatore sulle carte che non hai. Viola come il
    badge dei desideri nella griglia: stesso significato, stesso colore. */
 visore-carta .voglio-visore {
@@ -334,8 +344,28 @@ visore-carta .voglio-visore {
   color: #fff;
 }
 
+/* "Linea evolutiva". Stessa pillola di "La voglio" ma smorzata: quello scrive
+   nel database, questo apre una finestra. Sul fondo scuro del visore il
+   contorno traslucido è l'unico modo di dire "secondario" senza spegnere il
+   testo, che su nero diventerebbe illeggibile. */
+visore-carta .linea-visore {
+  width: auto;
+  margin-block-start: 0.6rem;
+  padding: 0.55rem 1.2rem;
+  border: 1px solid rgb(255 255 255 / 32%);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+visore-carta .linea-visore:hover {
+  background: rgb(255 255 255 / 16%);
+  border-color: rgb(255 255 255 / 55%);
+}
+
 visore-carta .copie-blocco {
-  flex: none;
   margin-block-start: 0.75rem;
   display: flex;
   align-items: center;

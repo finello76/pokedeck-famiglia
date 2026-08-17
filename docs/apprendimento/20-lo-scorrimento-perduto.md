@@ -4,7 +4,10 @@
 > `scrollTo`: la pagina si accorciava per un decimo di secondo, e il browser
 > faceva il resto. Cos'è il *clamping* dello scorrimento, perché ridisegnare
 > tutto è una decisione e non un dettaglio, e come si conferma un'interfaccia
-> ottimista senza il ridisegno che prima rimetteva a posto le bugie.
+> ottimista senza il ridisegno che prima rimetteva a posto le bugie. Il guasto
+> era uno, i gesti che lo facevano tre — cuore, copie, «la voglio»: le altre due
+> sorelle stanno nella sezione 7, con le trappole dello stato condiviso che si
+> vedono solo alla seconda.
 > Esempi: [`src/ui/griglia-collezione/griglia-collezione.js`](../../src/ui/griglia-collezione/griglia-collezione.js),
 > [`src/app/app.js`](../../src/app/app.js).
 
@@ -266,13 +269,96 @@ Dopo la correzione, la stessa misura sulla stessa azione: `scrollHeight` fermo a
 
 ---
 
+## 7. Le tre sorelle
+
+Il cuore era il primo di tre. Gli altri due sono arrivati subito dopo, segnalati
+dalla stessa persona nella stessa frase: *«quando aggiungo ai preferiti o le
+voglio o aggiungo, lo scroll torna all'inizio»*. Sono tre gesti che si fanno
+**scorrendo**, cioè nel punto della collezione più lontano dalla cima:
+
+| gesto | metodo | cosa cambia davvero in pagina |
+|---|---|---|
+| cuore | `aggiornaPreferita()` | la classe del cuore, il bordo della card |
+| `+` / `−` | `aggiornaQuantita()` | il badge `×N`, la testata del set, il riepilogo |
+| ★ «la voglio» | `aggiornaDesiderio()` | la card intera (da mancante a desiderio), il riepilogo |
+
+Tre metodi e non uno generico, perché le tre domande sono diverse. Ma tutti e tre
+hanno dovuto rispondere alla stessa domanda difficile, e vale la pena isolarla.
+
+### Non indovinare se la card deve restare: chiedilo al filtro
+
+Un aggiornamento chirurgico funziona finché la modifica cambia **l'aspetto** di
+una card. Quando ne cambia l'*appartenenza all'elenco* il ridisegno serve
+davvero: l'ultima copia tolta con «solo ciò che ho» attivo, un desiderio comprato
+mentre guardi la lista dei desideri. La tentazione è enumerare quei casi in una
+catena di `if`. Non regge: dipende da sette filtri, e domani da otto.
+
+La forma che regge è chiedere al filtro stesso, che è già l'unica autorità in
+materia (`raggruppa.js`, funzione pura, testata):
+
+```js
+if (filtra([voce], this.#effettivi()).length !== Number(Boolean(card))) {
+  this.#disegnaRisultati();   // "dovrebbe starci" e "ci sta" non coincidono
+  return true;
+}
+```
+
+Due fatti osservabili — *deve stare a schermo?* e *ci sta?* — confrontati fra
+loro. Non «com'era prima»: le voci sono **oggetti condivisi** fra le due griglie,
+quindi la prima che passa le ha già cambiate sotto il naso alla seconda, e "prima"
+a quel punto non esiste più per nessuno.
+
+### Due trappole dello stato condiviso
+
+**Il `push` che allunga l'array di qualcun altro.** `aggiornaCollezione()` passa
+lo *stesso* array a tutte le griglie. Un desiderio nuovo va aggiunto alle voci
+che la griglia conosce, ma con `push` comparirebbe anche nelle altre viste senza
+che nessuno gliel'abbia detto:
+
+```js
+this.#voci = [...this.#voci, voce];   // riferimento nuovo: è cosa di questa griglia
+```
+
+È la regola dell'immutabilità applicata per un motivo concreto e non per
+disciplina — la stessa che in Angular ti fa restituire un array nuovo invece di
+mutarne uno con `OnPush`.
+
+**La voce amputata.** Su ogni card viaggia `card._voce`, e conteneva sette campi
+scelti a mano: quelli che serviva al visore. Bastavano finché la card era di sola
+lettura. Da quando una card *mancante* può diventare un desiderio sul posto,
+quella voce entra fra le voci della griglia — e una voce senza `serie` finisce
+nel gruppo sbagliato al primo cambio di filtro. L'elenco dei campi da copiare era
+diventato "tutti", e la correzione è dirlo:
+
+```js
+card._voce = { ...voce, mancante };
+```
+
+Morale trasferibile: **una copia parziale è un contratto**, e vale finché nessuno
+usa quell'oggetto per uno scopo nuovo. Quando lo scopo cambia, la copia parziale
+non dà errore — dà un dato che sembra giusto.
+
+### Dove la card resta, e perché non si sposta
+
+Una carta appena desiderata cambia posto: da "fra le mancanti, in fondo alla
+sezione" a "fra le carte tue". `aggiornaDesiderio()` **non** la sposta: la
+riscrive dov'è, col bordo del desiderio e il badge `★1`. Ci andrà al prossimo
+giro lungo.
+
+Non è pigrizia, è la stessa scelta di tutta questa correzione: spostarla adesso
+vorrebbe dire toglierla da sotto il dito che l'ha appena toccata. Una UI
+"perfettamente coerente" a ogni istante, se per esserlo deve muovere ciò che stai
+guardando, è meno usabile di una che aspetta il momento buono.
+
+---
+
 ## Esercizi
 
-1. **Il fratello ancora da curare.** Gli stepper `+` / `−` di ogni card passano
-   ancora da `aggiornaCollezione()`. Riproduci il salto con la misura della
-   sezione 6. Poi elenca cosa dovrebbe aggiornare un `aggiornaQuantita()`
-   chirurgico: quali numeri cambiano in pagina oltre al badge della card?
-   (Suggerimento: la testata del set e la riga di riepilogo.)
+1. **Il terzo caso che manca.** `aggiornaQuantita()` con `quantita === 0`
+   ridisegna: la carta esce dall'elenco e la pagina si accorcia davvero.
+   Progetta l'alternativa chirurgica (togliere la card e riscrivere i contatori)
+   e di' quale problema *nuovo* introdurrebbe con le sezioni di set — cosa resta
+   a schermo se quella era l'unica carta del set?
 
 2. **Il caso che resta.** Nella vista Preferiti, togliendo un cuore, la card
    sparisce e la pagina si accorcia davvero. È lo stesso difetto? Motiva la

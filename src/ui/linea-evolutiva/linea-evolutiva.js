@@ -164,12 +164,20 @@ export class LineaEvolutiva extends HTMLElement {
     this.querySelector('.corpo-linea').innerHTML =
       '<p class="attesa-linea">ricostruisco la linea evolutiva…</p>';
 
-    try {
-      this.#dialogo.showModal();
-    } catch {
-      // Se un browser rifiuta il top-layer si ripiega su `show()`: il
-      // `position: fixed` del CSS copre comunque lo schermo.
-      this.#dialogo.show();
+    // Già aperta: si riusa così com'è, con la linea nuova dentro. Riaprirla non
+    // è un'operazione innocua — `showModal()` su un dialog aperto solleva
+    // `InvalidStateError`, e `show()` sullo stesso dialog **anche**, quindi non
+    // c'è ripiego che tenga e l'errore uscirebbe da `apri()` lasciando la
+    // finestra ferma sull'attesa. Ci si arriva davvero: dalla linea si apre il
+    // visore su un gradino, e dal visore si chiede la linea di quel gradino.
+    if (!this.#dialogo.open) {
+      try {
+        this.#dialogo.showModal();
+      } catch {
+        // Se un browser rifiuta il top-layer si ripiega su `show()`: il
+        // `position: fixed` del CSS copre comunque lo schermo.
+        this.#dialogo.show();
+      }
     }
     bloccaScorrimento(CHIAVE_SCROLL);
   }

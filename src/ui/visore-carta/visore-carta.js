@@ -25,6 +25,8 @@
  * alla lista: frecce, tastiera, swipe.
  *
  * @fires visore-carta#quantita-cambiata - detail: `{ idSet, numero, delta }`
+ * @fires visore-carta#desiderio-richiesto - detail: `{ idSet, numero }`
+ * @fires visore-carta#linea-richiesta - detail: `{ voce }` (solo Pokémon)
  *
  * @example
  * document.querySelector('visore-carta').mostra(carta, 'Set Base');
@@ -102,6 +104,9 @@ export class VisoreCarta extends HTMLElement {
               <button class="piu" type="button" aria-label="Aggiungi una copia">+</button>
             </div>
           </div>
+          <div class="blocco linea-blocco" hidden>
+            <button class="linea-visore" type="button">Linea evolutiva</button>
+          </div>
         </div>
       </dialog>
     `;
@@ -124,6 +129,25 @@ export class VisoreCarta extends HTMLElement {
           detail: { idSet: voce.idSet, numero: voce.numero },
         }),
       );
+      this.chiudi();
+    });
+
+    // "Linea evolutiva": la famiglia di questo Pokémon, con dentro segnato cosa
+    // hai. Prima si poteva chiedere **solo dai Preferiti**, dove il pulsante sta
+    // al posto degli stepper: per vedere la linea di un Machoke bisognava prima
+    // dichiarare che Machoke ti piace. Qui si arriva da qualunque vista — dal
+    // catalogo, da un buco in un set, dalla ricerca — perché il visore è il posto
+    // in cui una carta la si sta già guardando.
+    //
+    // Il visore si chiude, come per "La voglio", e non per fare ordine: la linea
+    // è un altro `<dialog>` modale, e dalla linea si arriva qui (si apre il
+    // visore su un gradino). Restando aperti si impilerebbero, e la linea nuova
+    // si disegnerebbe **sotto** il visore che l'ha chiesta. Chiudendo, la pila
+    // resta alta una. Vedi `docs/apprendimento/18-un-indice-al-contrario.md`.
+    this.querySelector('.linea-visore').addEventListener('click', () => {
+      const voce = this.#lista[this.#indice];
+      if (!voce?.carta) return;
+      this.dispatchEvent(new CustomEvent('linea-richiesta', { bubbles: true, detail: { voce } }));
       this.chiudi();
     });
 
@@ -387,6 +411,7 @@ export class VisoreCarta extends HTMLElement {
     avviso.title = inglese ? SPIEGAZIONE : '';
 
     this.#rendiCopie(voce);
+    this.#rendiLinea(voce);
 
     // Frecce: con una carta sola spariscono; agli estremi si disabilitano.
     const sola = this.#lista.length <= 1;
@@ -420,6 +445,21 @@ export class VisoreCarta extends HTMLElement {
     const n = voce.quantita ?? 0;
     this.querySelector('.copie-num').textContent = n;
     this.querySelector('.copie-blocco .meno').disabled = n === 0;
+  }
+
+  /**
+   * Mostra o nasconde il pulsante della linea evolutiva.
+   *
+   * Solo sui Pokémon: su un Allenatore o su un'Energia aprirebbe una finestra
+   * con dentro una carta sola. Non serve invece che la carta sia **tua** — la
+   * domanda "che faccia hanno i parenti di questo?" viene soprattutto davanti a
+   * una carta che non hai ancora.
+   *
+   * @param {object} voce
+   */
+  #rendiLinea(voce) {
+    const blocco = this.querySelector('.linea-blocco');
+    if (blocco) blocco.hidden = voce.carta?.categoria !== 'Pokémon';
   }
 
   /**

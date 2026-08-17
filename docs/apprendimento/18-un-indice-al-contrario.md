@@ -353,6 +353,74 @@ Il punto 3 merita una nota di progettazione: la funzione aveva un tetto giusto
 scelta è stata **parametrizzare il tetto lasciando invariato il default**, non
 abbassarlo per tutti. Chi c'era prima non se ne accorge.
 
+## Parte 6 — Il quinto difetto: la porta che sta in un'altra stanza
+
+Passata qualche settimana d'uso è arrivata la segnalazione più semplice di tutte:
+«aggiungere un mostra linea evolutiva senza dovere aggiungere ai preferiti».
+
+Non è un bug: è la Parte 4 letta dall'altro lato. Il pulsante stava nel piede
+delle card **della sola vista Preferiti**, e ci stava per una ragione buona — là
+il piede era libero, e la domanda "ho anche il resto della linea?" viene proprio
+guardando le carte che ti piacciono. Ma un comando che esiste in una vista sola è
+un comando che, per usarlo, chiede di *cambiare i dati*: mettere un cuore a una
+carta per poterne vedere la famiglia. Il cuore è una scelta di gusto, e questa
+funzione gliel'aveva trasformata in un mezzo.
+
+La cura non aggiunge un secondo pulsante nella griglia — nel piede del catalogo
+ci sono già `+` e `−`, e una terza cosa lì sotto sarebbe un bersaglio in più da
+sfiorare scorrendo (è la stessa ragione per cui nei Preferiti gli stepper sono
+stati *togliti*). Va invece nel **visore**, sotto la carta:
+
+```js
+#rendiLinea(voce) {
+  const blocco = this.querySelector('.linea-blocco');
+  if (blocco) blocco.hidden = voce.carta?.categoria !== 'Pokémon';
+}
+```
+
+Il visore è il posto giusto per tre motivi che vale la pena saper enunciare:
+
+- **ci si arriva da ogni vista.** Catalogo, desideri, preferiti, un buco in un
+  set, un risultato della ricerca globale: tutti passano da `carta-scelta`. Un
+  comando messo lì lo ereditano tutti, oggi e domani;
+- **è il momento in cui la carta la si sta già guardando.** Il costo di scoperta
+  è zero: chi ha aperto la carta a schermo intero sta facendo esattamente la
+  domanda a cui la linea risponde;
+- **non serve possedere la carta.** La condizione è `categoria === 'Pokémon'` e
+  nient'altro — «che faccia hanno i parenti di questo?» è una domanda che viene
+  soprattutto davanti a una carta che *non* hai.
+
+### Il modale che si apre due volte
+
+Aprendo questa strada si chiude un anello: dalla linea si apre il visore su un
+gradino (Parte 5, «Manca lo zoom»), e ora dal visore si chiede la linea di quel
+gradino. Il visore si chiude prima di annunciarlo, come fa già "La voglio", così
+la pila dei pannelli resta alta uno. Ma la finestra della linea, in quel giro, è
+**ancora aperta** — e riaprire un `<dialog>` aperto non è innocuo:
+
+| chiamata | dialog chiuso | dialog aperto e modale |
+|---|---|---|
+| `showModal()` | apre nel top layer | `InvalidStateError` |
+| `show()` | apre nel flusso | `InvalidStateError` — anche qui |
+
+Il ripiego `try { showModal() } catch { show() }`, scritto per i browser che non
+agganciano il top layer, qui non ripiega su niente: la seconda chiamata solleva a
+sua volta, l'eccezione esce da `apri()`, e la finestra resta ferma sul testo
+«ricostruisco la linea evolutiva…» — perché quel testo `apri()` lo scrive
+*prima* di provare ad aprire. Un solo controllo lo evita:
+
+```js
+if (!this.#dialogo.open) {
+  try { this.#dialogo.showModal(); } catch { this.#dialogo.show(); }
+}
+bloccaScorrimento(CHIAVE_SCROLL);   // fuori: la chiave è idempotente
+```
+
+La riga di `bloccaScorrimento` sta fuori dall'`if` apposta, e va bene proprio
+perché è un `Set` di chiavi e non un contatore: rimetterci la stessa chiave non
+fa niente. È lo stesso ragionamento della Parte 5, e la seconda volta che una
+scelta di progetto ti salva è quando capisci che era una scelta.
+
 ## Domande di verifica
 
 1. **La direzione mancante.** `rovescia()` ricostruisce la mappa a ogni apertura

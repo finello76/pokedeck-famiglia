@@ -91,10 +91,44 @@ function mostraStato(elemento, testo, errore = false) {
 }
 
 /**
+ * L'ultima lettura della collezione, desideri compresi.
+ *
+ * Non è una cache per andare più veloce: è il riferimento rispetto a cui si
+ * calcolano le carte **mancanti** e la ricerca per nome, due cose che avvengono
+ * molto dopo il caricamento — mentre scorri. Da quando una modifica non ricarica
+ * più tutta la pagina, quel riferimento va tenuto aggiornato per conto suo, o
+ * l'app continuerebbe a proporre come mancante una carta appena aggiunta.
+ * @type {object[]}
+ */
+let ultimeVoci = [];
+
+/**
+ * Rilegge la collezione dal database e rinfresca i numeri che dipendono da
+ * **tutta** la collezione: il contatore delle energie, che conta anche le
+ * energie stampate nei set, e non solo quelle generiche.
+ *
+ * Costa una lettura e nessun nodo del DOM: è la parte che si può rifare a ogni
+ * modifica senza che nessuno se ne accorga. Quella cara era il ridisegno.
+ *
+ * @returns {Promise<object[]>} le voci, desideri compresi
+ */
+async function rileggiCollezione() {
+  ultimeVoci = await elencoCompleto({ conDesideri: true });
+  // Le statistiche lavorano solo su ciò che si possiede davvero, o direbbero di
+  // avere carte che non hai.
+  const stat = await statistiche(ultimeVoci.filter((v) => !v.desiderata));
+  contatore.dati = stat.energie;
+  return ultimeVoci;
+}
+
+/**
  * Ricarica collezione, griglia e statistiche dal database.
  *
- * Unico punto di aggiornamento: qualunque modifica finisce qui, così le tre
- * viste non possono mai disallinearsi fra loro.
+ * Il giro lungo: rilegge **e ridisegna tutto**. Va bene quando cambia la forma
+ * della collezione (un import, una carta nuova), ma per una singola card è uno
+ * spreco che si vede — vedi `aggiornaPreferita()`, `aggiornaQuantita()` e
+ * `aggiornaDesiderio()` nella griglia, e
+ * `docs/apprendimento/20-lo-scorrimento-perduto.md`.
  *
  * @returns {Promise<void>}
  */
@@ -102,18 +136,21 @@ async function aggiornaCollezione() {
   // La griglia mostra anche i desideri, contrassegnati; tutto il resto —
   // statistiche, conteggio energie, carte mancanti — lavora solo su ciò che si
   // possiede davvero, o direbbe di avere carte che non hai.
-  const voci = await elencoCompleto({ conDesideri: true });
-  const possedute = voci.filter((v) => !v.desiderata);
-  const stat = await statistiche(possedute);
+  const voci = await rileggiCollezione();
 
   // Il confronto con la collezione di riferimento lo fa il livello dati: la
   // griglia riceve una funzione e non sa da dove arrivino le carte.
-  griglia.caricaMancanti = (idSet) => carteMancanti(idSet, possedute);
+  // Le due funzioni leggono `ultimeVoci` **al momento della chiamata**, non ora:
+  // una sezione-set chiede le sue mancanti anche mezz'ora dopo, e catturando qui
+  // l'elenco continuerebbe a proporre come mancanti le carte aggiunte nel
+  // frattempo.
+  griglia.caricaMancanti = (idSet) =>
+    carteMancanti(idSet, ultimeVoci.filter((v) => !v.desiderata));
   // La ricerca per nome deve trovare anche ciò che manca nei set di cui non
   // possiedi niente: là non c'è nessuna sezione da riempire. Qui si passano
   // **tutte** le voci, desideri compresi, o una carta già nella lista dei
   // desideri comparirebbe due volte.
-  griglia.cercaMancantiPerNome = (testo) => mancantiPerNome(testo, voci);
+  griglia.cercaMancantiPerNome = (testo) => mancantiPerNome(testo, ultimeVoci);
   // Le energie base generiche non vanno nella griglia: non hanno scansione né
   // numero di collezione e si contano già nel contatore dedicato qui sotto.
   const daMostrare = voci.filter((voce) => voce.idSet !== SET_ENERGIE_GENERICHE);
@@ -123,7 +160,6 @@ async function aggiornaCollezione() {
   // menu a tendina (serie, set, rarità) si ridurrebbero a ciò che è preferito e
   // non si capirebbe più cosa stanno filtrando.
   grigliaPreferiti.voci = daMostrare;
-  contatore.dati = stat.energie;
 
   // I prezzi già scaricati si rimostrano subito, anche offline: sono l'ultima
   // quotazione nota, con la sua data. Non si va in rete finché non lo chiede
@@ -139,10 +175,13 @@ async function aggiornaCollezione() {
 
 // Le energie base si aggiungono e si tolgono dal contatore stesso, una alla
 // volta: numero di collezione non ne hanno, quindi la "chiave" è il tipo.
+// Sono le uniche carte che nella griglia non compaiono, quindi qui basta
+// rileggere: ridisegnare la collezione per un'energia generica era il ridisegno
+// più inutile dei tre.
 contatore.addEventListener('energia-cambiata', async (evento) => {
   const { tipo, delta } = evento.detail;
   await aggiungiCopie(SET_ENERGIE_GENERICHE, tipo, delta);
-  await aggiornaCollezione();
+  await rileggiCollezione();
 });
 
 // Le schede annunciano il click da qualunque punto della pagina: un solo
@@ -156,10 +195,18 @@ document.addEventListener('carta-scelta', (evento) => {
 
 // La stessa modifica arriva da due parti: gli stepper della griglia e quello
 // del visore a schermo intero. Un solo gestore per entrambe.
+//
+// Come per il cuore, si evita il ridisegno completo: una copia in più cambia una
+// card e due contatori, non l'intera collezione. I numeri che dipendono da tutto
+// (le energie) si rifanno lo stesso, perché costano una lettura e nessun nodo.
 async function cambiaQuantita(evento) {
   const { idSet, numero, delta } = evento.detail;
-  await aggiungiCopie(idSet, numero, delta);
-  await aggiornaCollezione();
+  const quantita = await aggiungiCopie(idSet, numero, delta);
+  await rileggiCollezione();
+  // Una carta che le griglie non conoscono — appena creata da un'altra parte
+  // dell'app — non ha una card da aggiornare: là serve il giro lungo.
+  const esiti = griglie.map((g) => g.aggiornaQuantita(idSet, numero, quantita));
+  if (esiti.some((fatto) => !fatto)) await aggiornaCollezione();
 }
 for (const g of griglie) g.addEventListener('quantita-cambiata', cambiaQuantita);
 visore.addEventListener('quantita-cambiata', cambiaQuantita);
@@ -188,20 +235,38 @@ for (const g of griglie) {
 // La stella sulle carte che non hai: le mette nella lista desideri, una copia.
 // Non passa da `cambiaQuantita`: là si contano le carte tue, qui si dichiara di
 // volerne una — due store diversi della stessa riga (vedi `impostaDesiderio`).
+//
+// Anche qui niente ridisegno: la stella si tocca scorrendo un set a caccia dei
+// buchi, cioè nel punto della collezione più lontano dalla cima. La card si
+// riscrive da sola (`aggiornaDesiderio()`), e il giro lungo resta per il caso in
+// cui a schermo quella card non ci sia — l'unico modo perché accada è che il
+// desiderio arrivi da una vista che le mancanti non le mostra.
 async function vogliCarta(evento) {
   const { idSet, numero } = evento.detail;
   await impostaDesiderio(idSet, numero, 1);
-  await aggiornaCollezione();
+  await rileggiCollezione();
+  const fatto = griglie.map((g) => g.aggiornaDesiderio(idSet, numero, 1)).some(Boolean);
+  if (!fatto) await aggiornaCollezione();
   mostraToast('Aggiunta alla lista desideri.');
 }
 for (const g of griglie) g.addEventListener('desiderio-richiesto', vogliCarta);
 // Anche dal visore a schermo intero, dove la stessa carta si guarda da vicino.
 visore.addEventListener('desiderio-richiesto', vogliCarta);
 
-// "Linea evolutiva", il pulsante che nei Preferiti sta al posto degli stepper.
+// "Linea evolutiva": il pulsante che nei Preferiti sta al posto degli stepper, e
+// quello sotto la carta nel visore — da lì la linea si chiede su **qualsiasi**
+// carta, senza doverla prima mettere fra i preferiti.
 // La finestra si apre subito e i gradini arrivano dopo: cercare Machop e
 // Machamp nel catalogo può voler dire scaricare il file di un set.
-avviaLineaEvolutiva(griglie, document.querySelector('#linea'));
+//
+// La collezione è `ultimeVoci` e non `griglia.voci`: è la stessa cosa più le
+// energie generiche (che una linea evolutiva non ha), ed è l'unico elenco che il
+// visore non avrebbe saputo dare.
+avviaLineaEvolutiva(
+  [...griglie, visore],
+  document.querySelector('#linea'),
+  () => ultimeVoci,
+);
 
 // "Calcola quotazione": l'unico punto in cui l'app va in rete di sua volontà.
 // La griglia dice quali carte sta mostrando, qui si scaricano i prezzi e le si

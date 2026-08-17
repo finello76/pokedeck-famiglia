@@ -212,6 +212,164 @@ export class GrigliaCollezione extends HTMLElement {
   }
 
   /**
+   * Rifà la card di una carta di cui sono cambiate le copie, senza ridisegnare
+   * la griglia. Stessa ragione del cuore (`aggiornaPreferita()`): il `+` si
+   * tocca scorrendo, e un ridisegno completo riportava in cima.
+   *
+   * Cambiano tre cose e solo tre: la card, i due contatori in alto, e — quando
+   * la carta entra o esce dall'elenco visibile — l'elenco stesso. L'ultimo caso
+   * è l'unico che vale un ridisegno, e non si indovina: si chiede al filtro se
+   * quella voce passava prima e se passa adesso. Esempi di "esce": l'ultima
+   * copia tolta con il filtro «solo ciò che ho» attivo, o un desiderio comprato
+   * mentre guardi la lista dei desideri.
+   *
+   * @param {string} idSet
+   * @param {string} numero
+   * @param {number} quantita quante copie ne hai **adesso**
+   * @returns {boolean} `false` se questa carta non è fra le voci che la griglia
+   *   conosce: là non c'è card da aggiornare e chi chiama deve ricaricare.
+   * @example
+   * const quantita = await aggiungiCopie('sv08', '118', 1);
+   * griglia.aggiornaQuantita('sv08', '118', quantita);
+   */
+  aggiornaQuantita(idSet, numero, quantita) {
+    const voce = this.#voci.find(
+      (v) => v.idSet === idSet && String(v.numero) === String(numero),
+    );
+    if (!voce) return false;
+
+    // Comprare una carta desiderata la fa diventare tua: è la stessa regola di
+    // `aggiungiCopie()`, e va rispecchiata qui o la card resterebbe tratteggiata.
+    voce.quantita = quantita;
+    if (quantita > 0) delete voce.desiderata;
+
+    if (quantita === 0) {
+      // L'elenco perde una voce: la riga nel database non c'è più. **Non** si
+      // tocca l'array con `splice`, che è lo stesso oggetto passato a tutte le
+      // griglie: si sostituisce il riferimento di questa, che è cosa sua.
+      this.#voci = this.#voci.filter((v) => v !== voce);
+      this.#disegnaRisultati();
+      return true;
+    }
+
+    // Le voci sono oggetti condivisi fra le griglie, quindi la prima che passa
+    // di qui le ha già cambiate sotto il naso alle altre: la domanda non può
+    // essere «cos'era prima», che a quel punto nessuno sa più. Si guardano
+    // invece due fatti osservabili — deve stare a schermo? ci sta? — e si
+    // ridisegna solo quando non coincidono.
+    const card = this.#cardDi(idSet, numero, false);
+    if (filtra([voce], this.#effettivi()).length !== Number(Boolean(card))) {
+      this.#disegnaRisultati();
+      return true;
+    }
+
+    if (card) {
+      const nuova = this.#card(voce);
+      this.#riusaImmagine(card, nuova);
+      card.replaceWith(nuova);
+    }
+    this.#scriviContatori();
+    return true;
+  }
+
+  /**
+   * Fa diventare desiderio, sul posto, una carta che la griglia stava mostrando
+   * fra le mancanti. Terza sorella di `aggiornaPreferita()` e
+   * `aggiornaQuantita()`, e per lo stesso motivo: la stella si tocca **mentre si
+   * scorre** un set a caccia dei buchi, ed è proprio lì che ridisegnare
+   * riportava in cima (`docs/apprendimento/20-lo-scorrimento-perduto.md`).
+   *
+   * La card resta dov'è, in fondo alla sezione fra le mancanti, e cambia
+   * aspetto: bordo del desiderio e badge `★1` al posto della stella. Un
+   * ridisegno la sposterebbe fra le carte tue, che è la sua casa definitiva —
+   * ma spostarla adesso vorrebbe dire toglierla da sotto il dito che l'ha
+   * appena toccata. Ci va al prossimo giro lungo.
+   *
+   * @param {string} idSet
+   * @param {string|number} numero
+   * @param {number} quante quante copie ne vorresti
+   * @returns {boolean} `false` se di quella carta non c'è nessuna card mancante
+   *   a schermo: là non c'è niente da correggere sul posto e chi chiama deve
+   *   ricaricare.
+   * @example
+   * await impostaDesiderio('sv08', '118', 1);
+   * griglia.aggiornaDesiderio('sv08', '118', 1);
+   */
+  aggiornaDesiderio(idSet, numero, quante) {
+    const card = this.#cardDi(idSet, numero, true);
+    if (!card) return false;
+
+    // Da adesso è una carta di cui la griglia risponde: entra fra le voci, o il
+    // `−` che la toglie dai desideri non troverebbe niente da togliere. La voce
+    // arriva dalla card perché le mancanti non stanno in `#voci` — le costruisce
+    // `#voceMancante()` e vivono solo nel DOM.
+    //
+    // Array nuovo e non `push`: quello di prima è lo **stesso oggetto** passato a
+    // tutte le griglie, e allungarlo lo allungherebbe anche a loro.
+    const voce = { ...card._voce, quantita: quante, desiderata: true };
+    delete voce.mancante;
+    this.#voci = [...this.#voci, voce];
+
+    // Con un filtro sui desideri attivo la carta cambia di posto, non aspetto:
+    // «solo ciò che ho» la fa sparire. È l'unico caso che vale un ridisegno, e
+    // per fortuna è quello in cui la stella non c'è nemmeno — le mancanti non si
+    // mostrano nelle viste che filtrano carte tue (`#soloTue()`).
+    if (filtra([voce], this.#effettivi()).length === 0) {
+      this.#disegnaRisultati();
+      return true;
+    }
+
+    const nuova = this.#card(voce);
+    this.#riusaImmagine(card, nuova);
+    card.replaceWith(nuova);
+    this.#scriviContatori();
+    return true;
+  }
+
+  /**
+   * La card a schermo di una carta, fra le tue o fra le mancanti.
+   *
+   * Il terzo parametro non è pignoleria: della stessa carta possono esserci due
+   * card in pagina in due momenti diversi della sua vita — una fra le tue e una
+   * nell'area «che non hai» della ricerca — e chi chiama sa quale delle due sta
+   * cercando. Prendere quella sbagliata vorrebbe dire riscrivere la card che non
+   * è cambiata.
+   *
+   * @param {string} idSet
+   * @param {string|number} numero
+   * @param {boolean} mancante quale delle due card si vuole
+   * @returns {HTMLElement|undefined}
+   */
+  #cardDi(idSet, numero, mancante) {
+    return [...this.querySelectorAll('.carta-griglia')].find(
+      (c) =>
+        Boolean(c._voce?.mancante) === mancante &&
+        c._voce?.idSet === idSet &&
+        String(c._voce?.numero) === String(numero),
+    );
+  }
+
+  /**
+   * Passa alla card nuova l'immagine che quella vecchia aveva già a schermo.
+   *
+   * Senza, ogni tocco su `+` rimetterebbe la miniatura a `data-src`: l'immagine
+   * sparisce, l'osservatore la richiede, e la card sfarfalla mentre conti le
+   * copie. La scansione è la stessa carta di un istante fa — non c'è niente da
+   * ricaricare.
+   *
+   * @param {HTMLElement} vecchia
+   * @param {HTMLElement} nuova
+   */
+  #riusaImmagine(vecchia, nuova) {
+    const prima = vecchia.querySelector('img:not([data-src])');
+    const dopo = nuova.querySelector('img[data-src]');
+    if (!prima?.getAttribute('src') || !dopo) return;
+    dopo.src = prima.getAttribute('src');
+    delete dopo.dataset.src;
+    osservatore.unobserve(dopo);
+  }
+
+  /**
    * Porta un cuore nello stato dato: classe, stato ARIA, etichette e bordo
    * della card. Un posto solo, perché lo stesso cambio arriva da due parti —
    * il tocco (che anticipa) e la risposta del database (che conferma o smentisce).
@@ -608,22 +766,44 @@ export class GrigliaCollezione extends HTMLElement {
 
     const voci = filtra(this.#voci, this.#effettivi());
     const gruppi = raggruppa(voci);
-    const copie = voci.reduce((s, v) => s + v.quantita, 0);
+
+    this.#scriviContatori(voci, gruppi);
+    contenitore.replaceChildren(...gruppi.map((gruppo) => this.#disegnaSerie(gruppo)));
+    this.#aggiornaTrovate();
+  }
+
+  /**
+   * Riscrive le due righe che contano: «12 carte» in testata e «31 copie in 3
+   * serie» sotto i filtri.
+   *
+   * Sta a parte dal disegno dell'elenco perché una copia in più o in meno
+   * cambia **questi numeri e basta**: la card la si riscrive da sola, e le
+   * sezioni non hanno motivo di essere buttate via (vedi `aggiornaQuantita()`).
+   *
+   * @param {object[]} [voci] le voci già filtrate, se chi chiama le ha
+   * @param {import('./raggruppa.js').GruppoSerie[]} [gruppi] idem
+   */
+  #scriviContatori(voci, gruppi) {
+    const riepilogo = this.querySelector('.riepilogo');
+    if (!riepilogo) return;
+    const conteggio = this.querySelector('.conteggio-vis');
+    const visibili = voci ?? filtra(this.#voci, this.#effettivi());
+    const serie = gruppi ?? raggruppa(visibili);
+    const copie = visibili.reduce((s, v) => s + v.quantita, 0);
     const filtriAttivi = Object.values(this.#filtri).some(Boolean);
 
-    if (conteggio) conteggio.textContent = `${voci.length} ${voci.length === 1 ? 'carta' : 'carte'}`;
+    if (conteggio) {
+      conteggio.textContent = `${visibili.length} ${visibili.length === 1 ? 'carta' : 'carte'}`;
+    }
 
     riepilogo.innerHTML =
       this.#voci.length === 0
         ? 'La collezione è vuota: tocca il pulsante <strong>＋</strong> in basso per aggiungere la prima carta.'
-        : `${copie} copie in ${gruppi.length} serie` +
-          valoreAschermo(voci, this.#prezzi) +
+        : `${copie} copie in ${serie.length} serie` +
+          valoreAschermo(visibili, this.#prezzi) +
           (filtriAttivi
             ? ' · <button type="button" data-azione="azzera-filtri" class="collegamento">azzera filtri</button>'
             : '');
-
-    contenitore.replaceChildren(...gruppi.map((gruppo) => this.#disegnaSerie(gruppo)));
-    this.#aggiornaTrovate();
   }
 
   /**
@@ -940,22 +1120,19 @@ export class GrigliaCollezione extends HTMLElement {
     if (mancante) card.classList.add('mancante');
     if (voce.desiderata) card.classList.add('desiderata');
     if (voce.preferita) card.classList.add('preferita');
-    // idSet/numero/quantita servono al visore per mostrare e modificare le copie
-    // possedute mentre la carta è aperta a schermo intero.
-    card._voce = {
-      carta: voce.carta,
-      nomeSet: voce.nomeSet,
-      idSet: voce.idSet,
-      numero: voce.numero,
-      quantita: voce.quantita,
-      // Viaggia fino al visore: là la scansione è tutto ciò che si legge, ed è
-      // il punto in cui sapere che è inglese conta di più.
-      linguaSet: voce.linguaSet,
-      // Anche questo viaggia: nel visore una carta che non hai non deve
-      // mostrare il contatore delle copie, che la aggiungerebbe come posseduta.
-      mancante,
-      desiderata: voce.desiderata,
-    };
+    // La voce **intera**, più il fatto che questa card è una carta che non hai.
+    // Prima qui se ne copiavano sette campi scelti a mano — quelli che serviva
+    // al visore — e per il visore bastavano: `idSet`/`numero`/`quantita` per
+    // modificare le copie, `linguaSet` perché là la scansione è tutto ciò che si
+    // legge e sapere che è inglese conta di più, `mancante` perché su una carta
+    // che non hai il contatore delle copie non deve comparire.
+    //
+    // Non bastano più da quando una card mancante può diventare un desiderio
+    // **sul posto** (`aggiornaDesiderio()`): quella voce entra fra le voci della
+    // griglia, e una voce amputata di `serie` finirebbe nel gruppo sbagliato al
+    // primo cambio di filtro. L'elenco dei campi da copiare era diventato
+    // "tutti": tanto vale dirlo.
+    card._voce = { ...voce, mancante };
 
     // Carta di un set non più scaricato: non sappiamo nulla, mostriamo solo la
     // sigla e il tasto per aggiungerne una copia.

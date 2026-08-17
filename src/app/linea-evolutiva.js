@@ -82,28 +82,36 @@ const SET_PER_CARTA_ALLARGATO = 6;
 const MAX_STAMPE_MIE = 3;
 
 /**
- * Collega le griglie alla finestra: al `linea-richiesta` di una card risponde
- * aprendo la linea di quella carta.
+ * Collega alla finestra chi può chiedere una linea evolutiva: le griglie e il
+ * visore a schermo intero. Al `linea-richiesta` risponde aprendo la linea di
+ * quella carta.
  *
- * @param {Array<HTMLElement>} griglie le viste che possono chiederla
+ * La collezione arriva come **funzione**, non come elenco: serve a dire quali
+ * gradini hai già in scatola, e la si legge al momento della richiesta — che può
+ * essere mezz'ora e dieci carte dopo l'avvio. Chiederla a `sorgente.voci` non
+ * bastava più: il visore un elenco di collezione non ce l'ha, ha le carte fra
+ * cui si sta scorrendo, che nella lista dei desideri sono carte che *non* hai.
+ *
+ * @param {Array<HTMLElement>} sorgenti le viste che possono chiederla
  * @param {import('../ui/linea-evolutiva/linea-evolutiva.js').LineaEvolutiva} finestra
+ * @param {() => Array<object>} collezione le voci di collezione, ora
  * @returns {void}
  */
-export function avviaLineaEvolutiva(griglie, finestra) {
+export function avviaLineaEvolutiva(sorgenti, finestra, collezione) {
   // Un giro per richiesta: se si chiude e si riapre su un'altra carta mentre la
   // prima sta ancora cercando, i risultati vecchi non devono arrivare dopo e
   // riempire la finestra con la linea sbagliata.
   let giro = 0;
 
-  for (const griglia of griglie) {
-    griglia.addEventListener('linea-richiesta', async (evento) => {
+  for (const sorgente of sorgenti) {
+    sorgente.addEventListener('linea-richiesta', async (evento) => {
       const { voce } = evento.detail;
       if (!voce?.carta) return;
 
       const mio = ++giro;
       finestra.apri(voce.carta.nome);
       try {
-        const { gradini, daCercare, origine } = await struttura(voce, griglia.voci ?? []);
+        const { gradini, daCercare, origine } = await struttura(voce, collezione());
         if (mio !== giro) return;
         finestra.origine = origine;
         finestra.gradini = gradini;
