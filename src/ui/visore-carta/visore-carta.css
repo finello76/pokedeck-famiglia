@@ -435,3 +435,45 @@ visore-carta .finiture-visore {
 visore-carta .finiture-visore[hidden] {
   display: none;
 }
+
+/* Carta della lista desideri: si dice com'è messa e si offre l'unica cosa che
+   ha senso fare da qui, cioè dichiarare di averla comprata. Stessa forma del
+   contatore delle copie — etichetta a sinistra, comando a destra — perché
+   occupa lo stesso posto e risponde alla stessa domanda ("questa carta, a che
+   punto sta?"). Viola come il badge ★ della griglia. */
+visore-carta .desiderio-blocco {
+  margin-block-start: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: color-mix(in srgb, var(--colore-proxy) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--colore-proxy) 55%, transparent);
+  border-radius: 16px;
+  padding: 0.7rem 1rem;
+  max-inline-size: 420px;
+  inline-size: 100%;
+  margin-inline: auto;
+  text-align: start;
+}
+
+visore-carta .desiderio-etichetta {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+visore-carta .ho-visore {
+  width: auto;
+  flex: none;
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: #fff;
+  color: #1b2233;
+}
+
+visore-carta .desiderio-blocco[hidden] {
+  display: none;
+}

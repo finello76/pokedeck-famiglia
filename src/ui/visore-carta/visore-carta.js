@@ -97,6 +97,15 @@ export class VisoreCarta extends HTMLElement {
           <div class="blocco voglio-blocco" hidden>
             <button class="voglio-visore" type="button">★ La voglio</button>
           </div>
+          <!-- Carta della lista desideri: NON si contano copie possedute,
+               perché non ne possiedi nessuna. Il numero che porta con sé è
+               "quante ne vorrei", e mostrarlo sotto "Copie possedute" diceva
+               che ce l'hai. Il pulsante è la scorciatoia del momento in cui la
+               compri davvero. -->
+          <div class="blocco desiderio-blocco" hidden>
+            <span class="etichetta desiderio-etichetta">★ Nella lista desideri</span>
+            <button class="ho-visore" type="button">Ce l'ho</button>
+          </div>
           <div class="blocco copie-blocco" hidden>
             <span class="etichetta">Copie possedute</span>
             <div class="copie-stepper">
@@ -134,6 +143,30 @@ export class VisoreCarta extends HTMLElement {
         }),
       );
       this.chiudi();
+    });
+
+    // "Ce l'ho": il desiderio si è avverato. Non è una scorciatoia estetica —
+    // senza, l'unico modo di dire "ora ce l'ho" era chiudere il visore e
+    // toccare il `+` sulla card. Il livello dati fa il resto: aggiungere copie
+    // a una carta desiderata azzera il desiderio e riparte da una copia
+    // posseduta (`aggiungiCopie()`), quindi qui basta annunciare `+1`.
+    //
+    // Il visore resta aperto, al contrario di "La voglio": là la carta cambiava
+    // natura e usciva dall'elenco che stavi guardando; qui invece diventa una
+    // carta tua come le altre, e vorrai vedere il contatore delle copie che
+    // prende il posto della stella.
+    this.querySelector('.ho-visore').addEventListener('click', () => {
+      const voce = this.#lista[this.#indice];
+      if (!voce || voce.idSet == null || voce.numero == null) return;
+      delete voce.desiderata;
+      voce.quantita = 1;
+      this.#rendi();
+      this.dispatchEvent(
+        new CustomEvent('quantita-cambiata', {
+          bubbles: true,
+          detail: { idSet: voce.idSet, numero: voce.numero, delta: 1 },
+        }),
+      );
     });
 
     // "Linea evolutiva": la famiglia di questo Pokémon, con dentro segnato cosa
@@ -442,25 +475,41 @@ export class VisoreCarta extends HTMLElement {
   #rendiCopie(voce) {
     const blocco = this.querySelector('.copie-blocco');
     const voglio = this.querySelector('.voglio-blocco');
+    const desiderio = this.querySelector('.desiderio-blocco');
     // Le copie si possono modificare solo se sappiamo dove salvarle. Con una
     // carta arrivata senza contesto (idSet/numero) il blocco sparisce.
     if (voce.idSet == null || voce.numero == null) {
       blocco.hidden = true;
       voglio.hidden = true;
+      desiderio.hidden = true;
       return;
     }
-    // Carta che non hai: il "+" direbbe "ne ho una in più" di una carta mai
-    // posseduta. Al suo posto la stella, come sulle card della griglia.
+    // Tre stati e non due, perché tre sono i modi in cui una carta può stare
+    // rispetto alla collezione: **ce l'ho** (si contano le copie), **la voglio**
+    // (è nella lista desideri, e le copie sono zero per definizione), **non ce
+    // l'ho e non l'ho chiesta** (si può volere).
     //
+    // Il desiderio mancava, e il suo numero — "quante ne vorrei" — finiva sotto
+    // l'etichetta "Copie possedute": una carta segnata come desiderata si
+    // apriva dicendo che ne possiedi una.
+    const desiderata = Boolean(voce.desiderata);
     // «Non averla» si misura sulle **copie**, non sul flag `mancante`. Quel
     // flag ce l'hanno solo le card nate nell'elenco delle mancanti di un set:
     // la stessa carta guardata dalla finestra della linea evolutiva — cioè
     // esattamente dove ci si accorge che manca un gradino — arrivava senza, e
     // là la stella non compariva.
-    const daVolere = !voce.desiderata && (Boolean(voce.mancante) || !(voce.quantita > 0));
+    const daVolere = !desiderata && (Boolean(voce.mancante) || !(voce.quantita > 0));
+
     voglio.hidden = !daVolere;
-    blocco.hidden = daVolere;
-    if (daVolere) return;
+    desiderio.hidden = !desiderata;
+    blocco.hidden = daVolere || desiderata;
+
+    if (desiderata) {
+      const quante = voce.quantita ?? 1;
+      this.querySelector('.desiderio-etichetta').textContent =
+        quante > 1 ? `★ Nella lista desideri (${quante})` : '★ Nella lista desideri';
+    }
+    if (daVolere || desiderata) return;
     const n = voce.quantita ?? 0;
     this.querySelector('.copie-num').textContent = n;
     this.querySelector('.copie-blocco .meno').disabled = n === 0;
