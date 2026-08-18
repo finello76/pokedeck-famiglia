@@ -128,6 +128,12 @@ export function avviaLineaEvolutiva(sorgenti, finestra, collezione) {
             quantita: 0,
             nomeSet: trovata?.set?.nome ?? '',
             linguaSet: trovata?.set?.lingua ?? null,
+            // Dove sta quella carta, non solo com'è fatta: aprendola nel visore
+            // si vuole poterla mettere nella lista desideri, ed è **qui** che
+            // la voglia viene — davanti al gradino che manca. Senza queste due
+            // righe il visore non sa dove scriverla e nasconde la stella.
+            idSet: trovata?.set?.id ?? null,
+            numero: trovata?.carta?.numero ?? null,
             corrente: false,
           });
         }
@@ -202,6 +208,10 @@ async function struttura(voce, collezione) {
             quantita: mia.quantita ?? 0,
             nomeSet: mia.nomeSet,
             linguaSet: mia.linguaSet,
+            // Come per le carte cercate qui sotto: servono al visore per
+            // modificare le copie senza tornare al catalogo.
+            idSet: mia.idSet,
+            numero: mia.numero,
             corrente: `${mia.idSet}:${mia.numero}` === corrente,
           });
         }

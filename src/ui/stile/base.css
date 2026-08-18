@@ -419,6 +419,19 @@ main {
   margin-bottom: var(--spazio);
 }
 
+/* Il contatore delle energie viene subito dopo l'ultima card della collezione,
+   che non ha margine sotto: senza questo, il riquadro risultava incollato alla
+   griglia come se ne fosse la continuazione. La riga d'aiuto invece perde il
+   suo margine, perché è il primo figlio del riquadro e lo spazio glielo dà già
+   l'imbottitura. */
+#pannello-energie {
+  margin-top: calc(var(--spazio) * 1.5);
+}
+
+#pannello-energie .aiuto {
+  margin-top: 0;
+}
+
 /* Ritorno alla schermata da cui si è entrati. Sta in cima e non in fondo
    perché è la prima cosa che si cerca quando si è aperta la cosa sbagliata,
    e su un telefono in fondo vuol dire "dopo tutto il contenuto". */
@@ -1428,6 +1441,33 @@ button.secondario:hover {
   font-size: 1.3rem;
 }
 
+/* Terza strada: il mazzo intero. Stessa riga della frazione — menu largo e
+   tasto quadrato in fondo — perché è lo stesso gesto: scegli e conferma. */
+.riga-mazzo {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+  margin-top: 0.7rem;
+}
+
+.riga-mazzo select {
+  flex: 1;
+  min-width: 0;
+  border-radius: 14px;
+  border: 1px solid var(--colore-bordo);
+  background: var(--colore-superficie);
+  /* Il nome del mazzo è lungo ("Kit Allenatore Lycanroc — 30 carte"): il menu
+     non deve allargare il foglio, quindi taglia invece di spingere. */
+  text-overflow: ellipsis;
+}
+
+.riga-mazzo .cerca {
+  flex: none;
+  inline-size: 58px;
+  border-radius: 14px;
+  font-size: 1.3rem;
+}
+
 /* Le due strade per trovare la stessa carta: numero/totale oppure nome.
    Non e' un filtro ma un bivio, quindi due voci sempre visibili — anche perche'
    quale delle due si puo' usare lo decide la carta che hai in mano, non una
@@ -1532,12 +1572,24 @@ button.secondario:hover {
   color: var(--colore-proxy);
 }
 
+/* Due comandi in riga e, sotto, la finitura a tutta larghezza.
+
+   Era un flex con `flex-wrap` e `space-between`, e con tre figli si rompeva:
+   ogni riga distribuisce i **suoi** elementi ai due bordi, quindi a seconda di
+   quanti ne entravano i pulsanti finivano ora a destra ora a sinistra senza un
+   motivo visibile. Una griglia a due colonne non ha quel margine di
+   interpretazione: prima colonna a sinistra, seconda a destra, e la finitura
+   occupa la riga sotto perché la chiede esplicitamente. */
 .quante-riga {
-  display: flex;
+  display: grid;
+  /* Prima colonna sul contenuto, seconda che si prende tutto il resto: così la
+     riga occupa **tutta** la larghezza e la pastiglia delle finiture, che sta
+     sotto e attraversa le due colonne, è larga quanto il foglio. Con due
+     colonne `auto` e `space-between` le colonne si stringono sul contenuto, e
+     la pastiglia veniva larga quanto i due comandi di sopra. */
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
-  flex-wrap: wrap;
   padding: 0.2rem 0.2rem 0.3rem;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1548,6 +1600,9 @@ button.secondario:hover {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* Sta nella colonna che si prende lo spazio libero: senza questo resterebbe
+     appiccicato a "Ce l'ho / La voglio" invece che al bordo destro. */
+  justify-self: end;
 }
 
 .quante-stepper button {
@@ -1719,29 +1774,39 @@ button.secondario:hover {
 }
 
 /* La finitura della carta che si sta aggiungendo: normale, holo, reverse.
-   Stessa forma dei due modi "Ce l'ho / La voglio" che stanno sopra — sono
-   tutte e due domande sulla carta in mano — ma più piccoli, perché la finitura
-   è una precisazione e non la scelta principale. */
+
+   Stesso stampo di `.quante-modo` ("Ce l'ho / La voglio") e di `.modi-ricerca`:
+   nel foglio di aggiunta tutte le scelte a due o tre stati hanno la stessa
+   faccia, una pastiglia con dentro i segmenti. I colori sono bianchi
+   traslucidi e non quelli del tema, perché questo foglio è **blu** in tutti e
+   due i temi: con `--colore-superficie` erano tre riquadri chiari appiccicati
+   sopra il blu.
+
+   Occupa tutta la riga sotto gli altri due comandi (vedi `.quante-riga`). */
 .quante-finitura {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 0.3rem;
-  width: 100%;
-  margin-top: 0.5rem;
+  gap: 0.2rem;
+  margin-top: 0.15rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 28%);
 }
 
 .quante-finitura .finitura {
   flex: 1;
-  padding: 0.4rem 0.3rem;
+  width: auto;
+  padding: 0.35rem 0.4rem;
   font-size: 0.78rem;
   font-weight: 700;
-  border-radius: 10px;
-  border: 1px solid var(--colore-bordo);
-  background: var(--colore-superficie);
-  color: var(--colore-testo-tenue);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(255 255 255 / 80%);
+  cursor: pointer;
 }
 
 .quante-finitura .finitura.attivo {
-  border-color: var(--colore-primario);
-  background: color-mix(in srgb, var(--colore-primario) 14%, transparent);
-  color: var(--colore-primario);
+  background: rgb(255 255 255 / 22%);
+  color: #fff;
 }

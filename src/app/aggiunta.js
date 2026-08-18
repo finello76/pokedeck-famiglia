@@ -21,9 +21,17 @@
  * @module app/aggiunta
  */
 
-import { cercaPerNumeroStampato, cercaPerNomeGlobale, urlImmagine } from '../data/dataset.js';
-import { aggiungiCopie, impostaDesiderio } from '../data/collezione.js';
+import {
+  cercaPerNumeroStampato,
+  cercaPerNomeGlobale,
+  urlImmagine,
+  caricaSet,
+  elencoSet,
+} from '../data/dataset.js';
+import { aggiungiCopie, aggiungiMolte, impostaDesiderio } from '../data/collezione.js';
 import { VARIANTI } from '../data/varianti.js';
+import { elencoPrefatti } from '../data/mazzi-prefatti.js';
+import { chiediConferma } from './chiedi-conferma.js';
 import { segnaposto, seImmagineRotta } from '../ui/segnaposto.js';
 import { pastigliaLingua } from '../ui/lingua-set.js';
 import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
@@ -49,8 +57,17 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
   const risultati = document.querySelector('#risultati');
   if (!fab || !foglio || !form) return;
 
-  /** Quale delle due strade è a schermo: `'frazione'` o `'nome'`. */
+  const sceltaMazzo = document.querySelector('#scelta-mazzo');
+  const bottoneMazzo = document.querySelector('#aggiungi-mazzo');
+
+  /** Quale delle tre strade è a schermo: `'frazione'`, `'nome'` o `'mazzo'`. */
   let modoRicerca = 'frazione';
+
+  /**
+   * I mazzi aggiungibili, letti una volta sola alla prima apertura del modo.
+   * @type {Array<{id: string, nome: string, dettaglio: string, carte: Array<{idSet: string, numero: string, copie: number}>}>|null}
+   */
+  let mazzi = null;
 
   /** Quante copie aggiunge un tocco su un candidato. */
   let quante = 1;
@@ -80,7 +97,7 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
    * frazione perché è il caso normale: la stragrande maggioranza delle carte
    * il totale ce l'ha stampato.
    *
-   * @param {'frazione'|'nome'} quale
+   * @param {'frazione'|'nome'|'mazzo'} quale
    */
   function mostraModo(quale) {
     modoRicerca = quale;
@@ -92,7 +109,142 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     }
     risultati.replaceChildren();
     mostraStato('');
+    if (quale === 'mazzo') {
+      // L'elenco si costruisce alla prima apertura e non all'avvio dell'app:
+      // legge il catalogo dei prefatti e l'indice dei set, e chi non aggiunge
+      // mai un mazzo intero non deve pagarli.
+      riempiMazzi();
+      return;
+    }
     (quale === 'nome' ? campoNome : campoNumero)?.focus();
+  }
+
+  /**
+   * Riempie il menu dei mazzi, la prima volta che serve.
+   *
+   * Due sorgenti, e la differenza conta:
+   *
+   * - i **mazzi prefatti** (`data/mazzi-prefatti.json`) hanno la composizione
+   *   vera, copie comprese: il Kit Allenatore Lycanroc sono 18 carte diverse e
+   *   30 copie, perché le Energie base dentro sono tredici;
+   * - gli altri **Kit Allenatore** sono set del catalogo, e di un set si sa
+   *   quali carte contiene ma non in quante copie: là si aggiunge una copia di
+   *   ciascuna, e l'etichetta lo dice invece di far finta.
+   *
+   * @returns {Promise<void>}
+   */
+  async function riempiMazzi() {
+    if (!sceltaMazzo || mazzi) return;
+    sceltaMazzo.innerHTML = '<option>carico i mazzi…</option>';
+
+    const [prefatti, set] = await Promise.all([elencoPrefatti(), elencoSet()]);
+    const daPrefatti = prefatti.map((m) => ({
+      id: `prefatto:${m.id}`,
+      nome: m.nome,
+      dettaglio: `${m.carte.reduce((s, c) => s + (c.quantita ?? 1), 0)} carte`,
+      carte: m.carte.map((c) => ({
+        idSet: c.carta.idSet,
+        numero: String(c.carta.numero),
+        copie: c.quantita ?? 1,
+      })),
+    }));
+
+    // I kit già coperti dai prefatti non si ripetono: la versione con le copie
+    // vere è sempre migliore di "una di ciascuna".
+    const giaPresi = new Set(prefatti.flatMap((m) => m.carte.map((c) => c.carta.idSet)));
+    const daSet = set
+      .filter(
+        (s) => /trainer kit|kit allenatore/i.test(s.nome) && !giaPresi.has(s.id) && s.carte > 0,
+      )
+      .map((s) => ({
+        id: `set:${s.id}`,
+        nome: s.nome,
+        dettaglio: etichettaSet(s),
+        carte: null,
+      }));
+
+    mazzi = [...daPrefatti, ...daSet];
+    sceltaMazzo.innerHTML = mazzi.length
+      ? mazzi
+          .map(
+            (m) =>
+              `<option value="${escapeHtml(m.id)}">${escapeHtml(m.nome)} — ${escapeHtml(m.dettaglio)}</option>`,
+          )
+          .join('')
+      : '<option value="">nessun mazzo disponibile</option>';
+  }
+
+  /**
+   * Aggiunge alla collezione tutte le carte del mazzo scelto.
+   *
+   * Si chiede conferma perché è l'unica azione dell'app che scrive **decine di
+   * righe** in un colpo: sbagliare mazzo e accorgersene dopo vorrebbe dire
+   * togliere trenta carte a mano.
+   *
+   * @returns {Promise<void>}
+   */
+  async function aggiungiMazzo() {
+    const mazzo = mazzi?.find((m) => m.id === sceltaMazzo?.value);
+    if (!mazzo) return;
+
+    try {
+      mostraStato('Leggo il mazzo…');
+      // I prefatti la lista ce l'hanno già; per un set va letto il file, e può
+      // volerci una richiesta.
+      const carte = mazzo.carte ?? (await carteDelSet(mazzo.id.slice(4)));
+      if (!carte.length) {
+        mostraStato('Di questo mazzo non conosco le carte.', true);
+        return;
+      }
+      const copie = carte.reduce((s, c) => s + c.copie, 0);
+      mostraStato('');
+
+      const va = await chiediConferma({
+        titolo: `Aggiungere «${mazzo.nome}»?`,
+        aiuto: `Entrano ${copie} carte (${carte.length} diverse). Le copie si sommano a quelle che hai già.`,
+        conferma: 'Aggiungi',
+      });
+      if (!va) return;
+
+      const { aggiunte, nuove } = await aggiungiMolte(carte);
+      await onAggiornata();
+      onMessaggio(
+        `${mazzo.nome}: ${aggiunte} carte aggiunte` +
+          (nuove ? `, ${nuove} mai avute prima.` : '.'),
+      );
+      chiudi();
+    } catch (errore) {
+      mostraStato(`Aggiunta non riuscita: ${errore.message}`, true);
+    }
+  }
+
+  /**
+   * Cosa promette un kit preso dal catalogo dei set.
+   *
+   * Di alcuni kit vecchi il dataset ha una carta sola su trenta — sono set che
+   * TCGdex elenca ma non ha riempito. Dirlo è meglio che scrivere "una copia di
+   * ognuna delle 30 carte" e aggiungerne una: chi lo legge sceglie sapendo.
+   *
+   * @param {{carte?: number, totale?: number}} s la voce dell'indice dei set
+   * @returns {string}
+   */
+  function etichettaSet(s) {
+    const ho = s.carte ?? 0;
+    const totale = s.totale ?? ho;
+    const carte = `${ho} ${ho === 1 ? 'carta' : 'carte'}`;
+    return ho < totale
+      ? `${carte} su ${totale}: le altre non sono nei dati`
+      : `una copia di ognuna delle ${totale} carte`;
+  }
+
+  /**
+   * Le carte di un set, una copia ciascuna.
+   * @param {string} idSet
+   * @returns {Promise<Array<{idSet: string, numero: string, copie: number}>>}
+   */
+  async function carteDelSet(idSet) {
+    const set = await caricaSet(idSet);
+    return (set?.carte ?? []).map((c) => ({ idSet, numero: String(c.numero), copie: 1 }));
   }
 
   function apri() {
@@ -131,6 +283,7 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     const scelta = evento.target.closest('[data-ricerca]');
     if (scelta) mostraModo(scelta.dataset.ricerca);
   });
+  bottoneMazzo?.addEventListener('click', aggiungiMazzo);
   document.addEventListener('vista-cambiata', aggiornaFab);
   aggiornaFab();
 

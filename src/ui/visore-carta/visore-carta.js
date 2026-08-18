@@ -451,7 +451,13 @@ export class VisoreCarta extends HTMLElement {
     }
     // Carta che non hai: il "+" direbbe "ne ho una in più" di una carta mai
     // posseduta. Al suo posto la stella, come sulle card della griglia.
-    const daVolere = Boolean(voce.mancante) && !voce.desiderata;
+    //
+    // «Non averla» si misura sulle **copie**, non sul flag `mancante`. Quel
+    // flag ce l'hanno solo le card nate nell'elenco delle mancanti di un set:
+    // la stessa carta guardata dalla finestra della linea evolutiva — cioè
+    // esattamente dove ci si accorge che manca un gradino — arrivava senza, e
+    // là la stella non compariva.
+    const daVolere = !voce.desiderata && (Boolean(voce.mancante) || !(voce.quantita > 0));
     voglio.hidden = !daVolere;
     blocco.hidden = daVolere;
     if (daVolere) return;

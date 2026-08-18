@@ -67,11 +67,10 @@
         <griglia-collezione id="griglia"></griglia-collezione>
 
         <section class="pannello" id="pannello-energie">
-          <p class="aiuto">
-            Le energie base arrivano quasi sempre dai mazzi di partenza e non
-            appartengono a nessun set catalogato: qui si contano e basta, coi
-            tasti <strong>−</strong> e <strong>+</strong>, senza numero di collezione.
-          </p>
+          <!-- Le energie base non hanno numero di collezione: qui si contano e
+               basta. La spiegazione lunga stava male sopra il contatore — chi
+               apre questa sezione ha già capito cosa fanno i tasti. -->
+          <p class="aiuto">Energie base, senza numero di collezione: si contano coi tasti − e +.</p>
           <contatore-energie id="contatore-energie"></contatore-energie>
         </section>
       </div>
@@ -258,6 +257,7 @@
           <div class="modi-ricerca" role="group" aria-label="Come cercare la carta">
             <button type="button" class="modo attivo" data-ricerca="frazione">Numero / totale</button>
             <button type="button" class="modo" data-ricerca="nome">Nome</button>
+            <button type="button" class="modo" data-ricerca="mazzo">Mazzo</button>
           </div>
 
           <p class="aiuto" data-per="frazione">
@@ -288,6 +288,18 @@
             </div>
             <button type="submit" class="cerca" aria-label="Cerca">↵</button>
           </form>
+
+          <!-- Terza strada: un mazzo intero. Un Kit Allenatore sono trenta
+               carte, e inserirle una per una vuol dire trenta ricerche. -->
+          <p class="aiuto" data-per="mazzo" hidden>
+            I mazzi che il catalogo conosce come prodotto. Le copie si sommano a
+            quelle che hai già.
+          </p>
+          <div class="riga-mazzo" data-per="mazzo" hidden>
+            <select id="scelta-mazzo" aria-label="Quale mazzo aggiungere"></select>
+            <button type="button" id="aggiungi-mazzo" class="cerca" aria-label="Aggiungi il mazzo">＋</button>
+          </div>
+
           <p id="stato-ricerca" class="stato" hidden></p>
           <div id="risultati" aria-live="polite"></div>
         </div>

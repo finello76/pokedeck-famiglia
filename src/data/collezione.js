@@ -216,6 +216,65 @@ export async function aggiungiCopie(idSet, numero, copie = 1, variante = 'normal
 }
 
 /**
+ * Aggiunge in un colpo solo le copie di tante carte diverse.
+ *
+ * Serve a catalogare un **mazzo intero** — un Kit Allenatore sono trenta carte,
+ * un mazzo tematico sessanta — dove aggiungerle una per una vuol dire trenta
+ * ricerche e trenta tocchi. Le carte che già possiedi non si azzerano: le copie
+ * si **sommano**, come farebbe `aggiungiCopie()` una alla volta.
+ *
+ * Una transazione sola e non trenta: mezza scrittura andata a buon fine
+ * lascerebbe metà mazzo in collezione senza che nessuno sappia quale metà.
+ *
+ * @param {Array<{idSet: string, numero: string|number, copie?: number}>} carte
+ * @param {string} [variante='normale'] la finitura di **tutte** le copie
+ *   aggiunte: un mazzo sigillato è di carte normali, e chiedere la finitura
+ *   carta per carta su sessanta carte non lo farebbe nessuno.
+ * @returns {Promise<{aggiunte: number, nuove: number}>} quante copie in tutto e
+ *   quante carte non avevi affatto
+ * @example
+ * await aggiungiMolte([{ idSet: 'tk-sm-l', numero: '1' }, { idSet: 'tk-sm-l', numero: '4', copie: 2 }]);
+ */
+export async function aggiungiMolte(carte, variante = 'normale') {
+  const tutte = await leggiTutto(STORE_COLLEZIONE);
+  const esistenti = new Map(tutte.map((r) => [r.id, r]));
+  const adesso = new Date().toISOString();
+
+  /** @type {Map<string, object>} le righe da scrivere, una per carta */
+  const daScrivere = new Map();
+  let aggiunte = 0;
+  let nuove = 0;
+
+  for (const { idSet, numero, copie = 1 } of carte) {
+    if (!idSet || numero === undefined || numero === null || copie <= 0) continue;
+    const id = chiave(idSet, numero);
+    // Se la stessa carta compare due volte nell'elenco, la seconda parte da
+    // quella già preparata: è il caso delle energie ripetute di un mazzo.
+    const partenza = daScrivere.get(id) ?? esistenti.get(id);
+    if (!partenza) nuove += 1;
+    // Un desiderio che compri diventa tuo e riparte da zero, come in
+    // `aggiungiCopie()`: sommare alle copie "desiderate" farebbe risultare
+    // posseduto ciò che non hai mai avuto.
+    const base = partenza?.desiderata ? null : partenza;
+    const { quantita, varianti } = applica(base, variante, copie);
+    aggiunte += copie;
+
+    daScrivere.set(id, {
+      id,
+      idSet,
+      numero: String(numero),
+      quantita,
+      ...(partenza?.preferita && !partenza?.desiderata ? { preferita: true } : {}),
+      ...(varianti ? { varianti } : {}),
+      aggiornatoIl: adesso,
+    });
+  }
+
+  if (daScrivere.size) await scriviMolte(STORE_COLLEZIONE, [...daScrivere.values()]);
+  return { aggiunte, nuove };
+}
+
+/**
  * Toglie una carta dalla collezione.
  * @param {string} idSet
  * @param {string|number} numero

@@ -6,3 +6,10 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# I mockup esportati da Claude Design (`docs/mockup/`): sono un riferimento
+# VISIVO, non codice dell'app — prototipi React con dentro `support.js`, un
+# bundle generato da qualche migliaio di righe che a ogni riesportazione risulta
+# "modificato" per intero. Il codice vero sta in `src/`, e il redesign una volta
+# tradotto vive lì.
+docs/mockup/
