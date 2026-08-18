@@ -11,6 +11,7 @@
 
 import { elencoCompleto, svuotaTutto, scriviMoltePer } from './collezione.js';
 import { recordSalvati, scriviRecord } from './mazzi-salvati.js';
+import { ripartizione } from './varianti.js';
 
 /**
  * Versione del formato del file.
@@ -57,6 +58,9 @@ export async function esporta() {
       // carta per carta, e rifarla su un telefono nuovo vorrebbe dire riscorrere
       // tutta la collezione.
       ...(r.preferita ? { preferita: true } : {}),
+      // Quante di quelle copie sono holo o reverse. Assente quando sono tutte
+      // normali, che è il caso più comune: i file restano identici a prima.
+      ...(r.varianti ? { varianti: r.varianti } : {}),
       // Solo per leggibilità umana: all'import viene ignorato, perché la
       // verità sta nel dataset. Se un nome cambia, l'import resta valido.
       nome: r.carta?.nome ?? null,
@@ -111,6 +115,25 @@ export function validaImport(dati) {
     throw new Error('Manca l\'elenco delle carte.');
   }
 
+  /**
+   * Le finiture di una carta del file, o niente.
+   *
+   * Non solleva mai: un conteggio storto è un dato **in più** rispetto al
+   * totale, e far fallire l'import di duemila carte per una riga con scritto
+   * "reverse: pippo" sarebbe sproporzionato. Si ritaglia e si va avanti.
+   *
+   * @param {object} c la carta come sta nel file
+   * @param {number} quantita il totale già validato
+   * @returns {{varianti?: {holo?: number, reverse?: number}}}
+   */
+  const finiture = (c, quantita) => {
+    const { holo, reverse } = ripartizione({ quantita, varianti: c?.varianti });
+    const speciali = {};
+    if (holo) speciali.holo = holo;
+    if (reverse) speciali.reverse = reverse;
+    return Object.keys(speciali).length ? { varianti: speciali } : {};
+  };
+
   const voci = [];
   dati.carte.forEach((c, indice) => {
     const quantita = Number(c?.quantita);
@@ -132,6 +155,10 @@ export function validaImport(dati) {
       // impossibile la scarta `scriviMoltePer()`, non qui: questa funzione
       // valida il file, non decide cosa sia coerente.
       ...(c.preferita ? { preferita: true } : {}),
+      // Le finiture passano da `ripartizione()`, che le ritaglia al totale: un
+      // file con "tre reverse su due copie" non deve poter entrare, e un file
+      // vecchio senza il campo resta una riga di sole copie normali.
+      ...finiture(c, quantita),
     });
   });
 

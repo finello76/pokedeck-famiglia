@@ -12,6 +12,7 @@
 import { STORE_COLLEZIONE, leggiTutto, leggi, scrivi, cancella, svuota, scriviMolte } from './deposito.js';
 import { trovaCarta, elencoSet, elencoSerie } from './dataset.js';
 import { conteggioEnergie } from './energie.js';
+import { applica, ripartizione } from './varianti.js';
 
 /**
  * Identificativo del "set" fittizio delle energie base generiche.
@@ -73,9 +74,13 @@ async function cartaDi(idSet, numero) {
  * @param {string} idSet
  * @param {string|number} numero
  * @param {number} quantita
+ * @param {{holo?: number, reverse?: number}|null} [varianti] quante di quelle
+ *   copie sono holo o reverse. Omesso, si tengono quelle già scritte sulla riga
+ *   **ritagliate al nuovo totale**: chi imposta un totale più basso non deve
+ *   ritrovarsi tre reverse su due copie.
  * @returns {Promise<void>}
  */
-export async function impostaQuantita(idSet, numero, quantita) {
+export async function impostaQuantita(idSet, numero, quantita, varianti) {
   const id = chiave(idSet, numero);
   if (quantita <= 0) {
     await cancella(STORE_COLLEZIONE, id);
@@ -86,12 +91,23 @@ export async function impostaQuantita(idSet, numero, quantita) {
   // preferiti in silenzio. Il desiderio no — chi arriva qui sta dichiarando di
   // possedere la carta, e `aggiungiCopie()` conta proprio su questo.
   const esistente = await leggi(STORE_COLLEZIONE, id);
+  const finiture =
+    varianti === undefined
+      ? ripartizione({ quantita, varianti: esistente?.varianti })
+      : ripartizione({ quantita, varianti });
+  const speciali = {};
+  if (finiture.holo) speciali.holo = finiture.holo;
+  if (finiture.reverse) speciali.reverse = finiture.reverse;
+
   await scrivi(STORE_COLLEZIONE, {
     id,
     idSet,
     numero: String(numero),
     quantita: Math.floor(quantita),
     ...(esistente?.preferita ? { preferita: true } : {}),
+    // Come `preferita`: assente vuol dire "tutte normali", quindi le righe
+    // scritte prima che le finiture esistessero restano valide senza toccarle.
+    ...(Object.keys(speciali).length ? { varianti: speciali } : {}),
     aggiornatoIl: new Date().toISOString(),
   });
 }
@@ -184,15 +200,19 @@ export async function impostaPreferita(idSet, numero, preferita = true) {
  * @example
  * await aggiungiCopie('sv08', 118, 2);  // ne avevo 1 → 3
  */
-export async function aggiungiCopie(idSet, numero, copie = 1) {
+export async function aggiungiCopie(idSet, numero, copie = 1, variante = 'normale') {
   const esistente = await leggi(STORE_COLLEZIONE, chiave(idSet, numero));
   // Aggiungere copie a una carta desiderata vuol dire che l'hai comprata: il
   // desiderio si azzera e si riparte da zero copie possedute. Sommare alle
   // copie "desiderate" farebbe risultare posseduto ciò che non hai mai avuto.
-  const partenza = esistente?.desiderata ? 0 : (esistente?.quantita ?? 0);
-  const nuova = partenza + copie;
-  await impostaQuantita(idSet, numero, nuova);
-  return Math.max(0, nuova);
+  const partenza = esistente?.desiderata ? null : esistente;
+  // Il conto delle finiture lo fa `data/varianti.js`, che è puro e provato: qui
+  // resta solo la scrittura. `quantita` continua a essere **il totale**, quindi
+  // chi di finiture non sa niente — il motore, le statistiche, le mancanti —
+  // legge esattamente il numero di prima.
+  const { quantita, varianti } = applica(partenza, variante, copie);
+  await impostaQuantita(idSet, numero, quantita, varianti);
+  return Math.max(0, quantita);
 }
 
 /**
@@ -346,6 +366,10 @@ export function scriviMoltePer(voci) {
       // con `desiderata` e `preferita` insieme descriverebbe uno stato che
       // l'app non sa mostrare.
       ...(v.preferita && !v.desiderata ? { preferita: true } : {}),
+      // Le finiture arrivano già ritagliate al totale da `validaImport()`. Su
+      // un desiderio non si scrivono: è una carta che non hai, e "ne vorrei due
+      // di cui una reverse" è un dettaglio che la lista della spesa non porta.
+      ...(v.varianti && !v.desiderata ? { varianti: v.varianti } : {}),
       aggiornatoIl: adesso,
     })),
   );

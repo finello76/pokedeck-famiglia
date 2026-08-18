@@ -419,3 +419,19 @@ visore-carta .copie-num {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* La ripartizione fra normale, holo e reverse. Sotto il contatore e in piccolo:
+   è una precisazione del numero che sta sopra, non un dato nuovo. Compare solo
+   quando c'è qualcosa di speciale da dire (vedi `#rendiFiniture()`). */
+visore-carta .finiture-visore {
+  flex: none;
+  margin: 0.35rem 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 72%);
+}
+
+visore-carta .finiture-visore[hidden] {
+  display: none;
+}

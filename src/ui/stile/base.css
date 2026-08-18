@@ -1717,3 +1717,31 @@ button.secondario:hover {
     transform: translate(-50%, 14px);
   }
 }
+
+/* La finitura della carta che si sta aggiungendo: normale, holo, reverse.
+   Stessa forma dei due modi "Ce l'ho / La voglio" che stanno sopra — sono
+   tutte e due domande sulla carta in mano — ma più piccoli, perché la finitura
+   è una precisazione e non la scelta principale. */
+.quante-finitura {
+  display: flex;
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.quante-finitura .finitura {
+  flex: 1;
+  padding: 0.4rem 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid var(--colore-bordo);
+  background: var(--colore-superficie);
+  color: var(--colore-testo-tenue);
+}
+
+.quante-finitura .finitura.attivo {
+  border-color: var(--colore-primario);
+  background: color-mix(in srgb, var(--colore-primario) 14%, transparent);
+  color: var(--colore-primario);
+}

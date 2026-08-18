@@ -23,6 +23,7 @@
 
 import { cercaPerNumeroStampato, cercaPerNomeGlobale, urlImmagine } from '../data/dataset.js';
 import { aggiungiCopie, impostaDesiderio } from '../data/collezione.js';
+import { VARIANTI } from '../data/varianti.js';
 import { segnaposto, seImmagineRotta } from '../ui/segnaposto.js';
 import { pastigliaLingua } from '../ui/lingua-set.js';
 import { bloccaScorrimento, sbloccaScorrimento } from './blocca-scroll.js';
@@ -57,6 +58,16 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
   /** Se il tocco mette la carta nella lista desideri invece che in collezione. */
   let desiderio = false;
 
+  /**
+   * Che finitura hanno le copie che si stanno aggiungendo.
+   *
+   * Resta scelta fra una carta e l'altra, come `quante`: chi apre una bustina
+   * si trova in mano una fila di reverse, e rimettere "Normale" a ogni carta
+   * sarebbe un tocco in più ogni volta. Si azzera solo alla chiusura del
+   * pannello, dove si azzerano anche le altre due.
+   */
+  let variante = 'normale';
+
   const suCatalogo = () => (location.hash.slice(1) || 'catalogo') === 'catalogo';
   const aggiornaFab = () => {
     fab.hidden = !(suCatalogo() && foglio.hidden);
@@ -89,6 +100,9 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
     // Si riparte sempre da "ce l'ho": è il caso normale, e ricordare l'ultima
     // scelta farebbe catalogare come desiderate le carte che si hanno in mano.
     desiderio = false;
+    // Stesso ragionamento: la finitura più comune è quella normale, e
+    // ricordarla farebbe segnare reverse una fila di carte che non lo sono.
+    variante = 'normale';
     foglio.hidden = false;
     bloccaScorrimento();
     aggiornaFab();
@@ -254,6 +268,16 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
         <span class="quante-num">${quante}</span>
         <button type="button" class="piu" aria-label="Una in più">+</button>
       </div>
+      ${
+        desiderio
+          ? ''
+          : `<div class="quante-finitura" role="group" aria-label="Che finitura ha la carta">
+        ${VARIANTI.map(
+          ({ codice, etichetta }) =>
+            `<button type="button" class="finitura${codice === variante ? ' attivo' : ''}" data-finitura="${codice}">${escapeHtml(etichetta)}</button>`,
+        ).join('')}
+      </div>`
+      }
     `;
     const num = riga.querySelector('.quante-num');
     riga.querySelector('.meno').addEventListener('click', () => {
@@ -264,6 +288,19 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
       quante += 1;
       num.textContent = quante;
     });
+    // La finitura non cambia niente a schermo se non se stessa: la si sceglie e
+    // vale per i tocchi seguenti, come le copie. Sui desideri non compare —
+    // "ne vorrei due, di cui una reverse" è un dettaglio che una lista della
+    // spesa non porta, e la riga del desiderio non lo salverebbe comunque.
+    riga.querySelectorAll('[data-finitura]').forEach((bottone) =>
+      bottone.addEventListener('click', () => {
+        variante = bottone.dataset.finitura;
+        for (const b of riga.querySelectorAll('[data-finitura]')) {
+          b.classList.toggle('attivo', b.dataset.finitura === variante);
+        }
+      }),
+    );
+
     riga.querySelectorAll('[data-modo]').forEach((bottone) =>
       bottone.addEventListener('click', () => {
         desiderio = bottone.dataset.modo === 'voglio';
@@ -327,9 +364,15 @@ export function avviaAggiunta({ onAggiornata, onMessaggio }) {
           await onAggiornata();
           onMessaggio(`${carta.nome}: nella lista desideri (${quante}).`);
         } else {
-          const totale = await aggiungiCopie(set.id, carta.numero, quante);
+          const totale = await aggiungiCopie(set.id, carta.numero, quante, variante);
           await onAggiornata();
-          onMessaggio(`${carta.nome}: ora ne hai ${totale}.`);
+          const finitura = VARIANTI.find((v) => v.codice === variante);
+          // La finitura si dice solo quando non è quella normale: "ora ne hai 3
+          // (normale)" sarebbe rumore su nove aggiunte su dieci.
+          onMessaggio(
+            `${carta.nome}: ora ne hai ${totale}` +
+              (variante === 'normale' ? '.' : ` (+${quante} ${finitura.etichetta.toLowerCase()}).`),
+          );
         }
         // Pronti per la prossima carta senza chiudere il pannello.
         risultati.replaceChildren();

@@ -35,6 +35,7 @@ import { formatoDi } from '../../data/legalita.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 import { pastigliaLingua } from '../lingua-set.js';
 import { numeriDex } from '../../data/dex.js';
+import { segniVarianti } from '../../data/varianti.js';
 import { normalizzaNome } from '../../engine/nomi.js';
 import {
   FILTRI_VUOTI,
@@ -282,13 +283,17 @@ export class GrigliaCollezione extends HTMLElement {
    * @param {string} idSet
    * @param {string} numero
    * @param {number} quantita quante copie ne hai **adesso**
+   * @param {{holo?: number, reverse?: number}|null} [varianti] com'è ripartita
+   *   adesso quella pila. Va passata perché togliendo l'ultima copia normale se
+   *   ne va una reverse, e il segno sulla card lo direbbe con un ridisegno di
+   *   ritardo — cioè mai, che è il punto di questo metodo.
    * @returns {boolean} `false` se questa carta non è fra le voci che la griglia
    *   conosce: là non c'è card da aggiornare e chi chiama deve ricaricare.
    * @example
    * const quantita = await aggiungiCopie('sv08', '118', 1);
    * griglia.aggiornaQuantita('sv08', '118', quantita);
    */
-  aggiornaQuantita(idSet, numero, quantita) {
+  aggiornaQuantita(idSet, numero, quantita, varianti) {
     const voce = this.#voci.find(
       (v) => v.idSet === idSet && String(v.numero) === String(numero),
     );
@@ -298,6 +303,10 @@ export class GrigliaCollezione extends HTMLElement {
     // `aggiungiCopie()`, e va rispecchiata qui o la card resterebbe tratteggiata.
     voce.quantita = quantita;
     if (quantita > 0) delete voce.desiderata;
+    if (varianti !== undefined) {
+      if (varianti) voce.varianti = varianti;
+      else delete voce.varianti;
+    }
 
     if (quantita === 0) {
       // L'elenco perde una voce: la riga nel database non c'è più. **Non** si
@@ -513,9 +522,16 @@ export class GrigliaCollezione extends HTMLElement {
 
     this.addEventListener('click', (evento) => {
       // Lista o griglia fitta: cambia solo l'aspetto, quindi niente ridisegno.
-      const vista = evento.target.closest('[data-vista]');
+      //
+      // L'attributo si chiama `data-densita` e **non** `data-vista`, che
+      // sembrerebbe il nome giusto: `data-vista` ce l'hanno già le quattro
+      // sezioni dell'app (`app/viste.js`, «catalogo», «preferiti», …), e
+      // `closest()` risale fino a loro. Chiamandolo così, questo primo `if`
+      // ingoiava **ogni** clic della griglia — aprire una carta, il cuore, gli
+      // stepper — impostando come densità la stringa "catalogo".
+      const vista = evento.target.closest('[data-densita]');
       if (vista) {
-        this.#vista = vista.dataset.vista;
+        this.#vista = vista.dataset.densita;
         ricorda(`pokedeck-vista:${this.id || 'griglia'}`, this.#vista);
         this.#applicaVista();
         return;
@@ -863,7 +879,7 @@ export class GrigliaCollezione extends HTMLElement {
   #bottoneVista(codice, spiegazione, disegno) {
     const attivo = this.#vista === codice;
     return `
-      <button type="button" data-vista="${codice}" class="bottone-vista${attivo ? ' attivo' : ''}"
+      <button type="button" data-densita="${codice}" class="bottone-vista${attivo ? ' attivo' : ''}"
               aria-pressed="${attivo}" title="${escapeHtml(spiegazione)}"
               aria-label="${escapeHtml(spiegazione)}">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">${disegno}</svg>
@@ -879,8 +895,8 @@ export class GrigliaCollezione extends HTMLElement {
    */
   #applicaVista() {
     this.classList.toggle('vista-fitta', this.#vista === 'fitta');
-    for (const bottone of this.querySelectorAll('[data-vista]')) {
-      const attivo = bottone.dataset.vista === this.#vista;
+    for (const bottone of this.querySelectorAll('[data-densita]')) {
+      const attivo = bottone.dataset.densita === this.#vista;
       bottone.classList.toggle('attivo', attivo);
       bottone.setAttribute('aria-pressed', String(attivo));
     }
@@ -1355,7 +1371,7 @@ export class GrigliaCollezione extends HTMLElement {
       ? `<span class="badge-qty badge-desiderio" title="Nella lista desideri">★${voce.quantita}</span>`
       : mancante || !voce.quantita
         ? ''
-        : `<span class="badge-qty">×${voce.quantita}</span>`;
+        : `<span class="badge-qty">×${voce.quantita}</span>${this.#segniFinitura(voce)}`;
     const prezzo = this.#badgePrezzo(voce);
     const meta =
       c.categoria === 'Pokémon'
@@ -1401,6 +1417,30 @@ export class GrigliaCollezione extends HTMLElement {
       seImmagineRotta(img, c, 'segnaposto-mini');
     }
     return card;
+  }
+
+  /**
+   * Le finiture speciali possedute, sotto il contatore delle copie: `1H`, `2R`.
+   *
+   * Sigle e non parole: a questa taglia "reverse holo" non ci sta, e sulla card
+   * la domanda è solo *ne ho una lucida?*. Il conto per esteso lo dice il
+   * visore, dove c'è spazio per scriverlo.
+   *
+   * Niente sulle carte tutte normali, che sono la gran parte: un segno che
+   * compare su ogni card non è più un segno.
+   *
+   * @param {object} voce
+   * @returns {string} HTML, vuoto quando non c'è niente da dire
+   */
+  #segniFinitura(voce) {
+    const segni = segniVarianti(voce);
+    if (!segni.length) return '';
+    return `<span class="badge-finiture">${segni
+      .map(
+        (s) =>
+          `<span class="segno-finitura" title="${escapeHtml(`${s.quante} ${s.etichetta}`)}">${s.quante}${s.sigla}</span>`,
+      )
+      .join('')}</span>`;
   }
 
   /**

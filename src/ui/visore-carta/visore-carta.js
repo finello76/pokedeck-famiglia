@@ -36,6 +36,7 @@
  */
 
 import { urlImmagine } from '../../data/dataset.js';
+import { applica, ripartizione, segniVarianti } from '../../data/varianti.js';
 import { bloccaScorrimento, sbloccaScorrimento } from '../../app/blocca-scroll.js';
 import { creaInclinazione, limita, MASSIMO } from './inclinazione.js';
 import { eInglese, SPIEGAZIONE } from '../lingua-set.js';
@@ -104,6 +105,9 @@ export class VisoreCarta extends HTMLElement {
               <button class="piu" type="button" aria-label="Aggiungi una copia">+</button>
             </div>
           </div>
+          <!-- La ripartizione fra normale, holo e reverse: qui c'è lo spazio per
+               scriverla per esteso, che sulla card non c'è. -->
+          <p class="finiture-visore" hidden></p>
           <div class="blocco linea-blocco" hidden>
             <button class="linea-visore" type="button">Linea evolutiva</button>
           </div>
@@ -340,10 +344,19 @@ export class VisoreCarta extends HTMLElement {
     const attuale = voce.quantita ?? 0;
     if (delta < 0 && attuale === 0) return;
 
-    voce.quantita = Math.max(0, attuale + delta);
+    // La stessa regola che applicherà il database, presa dallo stesso posto:
+    // `+` aggiunge una normale, `−` toglie da dove c'è — e se di normali non ce
+    // ne sono più, tocca a una reverse. Rifarla a mano qui vorrebbe dire due
+    // versioni della stessa regola, e la prima a divergere sarebbe questa.
+    const dopo = applica(voce, 'normale', delta);
+    voce.quantita = dopo.quantita;
+    if (dopo.varianti) voce.varianti = dopo.varianti;
+    else delete voce.varianti;
+
     const num = this.querySelector('.copie-num');
     if (num) num.textContent = voce.quantita;
     this.querySelector('.copie-blocco .meno').disabled = voce.quantita === 0;
+    this.#rendiFiniture(voce);
 
     this.dispatchEvent(
       new CustomEvent('quantita-cambiata', {
@@ -445,6 +458,35 @@ export class VisoreCarta extends HTMLElement {
     const n = voce.quantita ?? 0;
     this.querySelector('.copie-num').textContent = n;
     this.querySelector('.copie-blocco .meno').disabled = n === 0;
+    this.#rendiFiniture(voce);
+  }
+
+  /**
+   * Scrive com'è fatta la pila: «2 normali · 1 reverse».
+   *
+   * Compare **solo se c'è qualcosa di speciale**: su una carta tutta normale
+   * direbbe "1 normale", che è la stessa informazione del contatore appena
+   * sopra. Le finiture si registrano aggiungendo la carta (dove si sceglie), e
+   * qui si leggono: è la stessa divisione di ruoli del contatore delle copie,
+   * che nel visore si modifica ma non si spiega.
+   *
+   * @param {object} voce
+   */
+  #rendiFiniture(voce) {
+    const riga = this.querySelector('.finiture-visore');
+    if (!riga) return;
+    const segni = segniVarianti(voce);
+    if (!segni.length) {
+      riga.hidden = true;
+      return;
+    }
+    const { normale } = ripartizione(voce);
+    const pezzi = [
+      ...(normale ? [`${normale} normal${normale === 1 ? 'e' : 'i'}`] : []),
+      ...segni.map((s) => `${s.quante} ${s.etichetta.toLowerCase()}`),
+    ];
+    riga.textContent = pezzi.join(' · ');
+    riga.hidden = false;
   }
 
   /**

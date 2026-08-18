@@ -865,3 +865,42 @@ griglia-collezione.vista-fitta .carta-griglia .cuore svg {
   inline-size: 14px;
   block-size: 14px;
 }
+
+/* --- Finiture: holo e reverse --- */
+
+/* Sotto il contatore delle copie, non accanto: a destra in alto ci sono già il
+   numero e, nella vista fitta, pochissimo spazio. Sigle corte (`1H`, `2R`)
+   perché a questa taglia una parola non ci starebbe — il conto per esteso lo
+   scrive il visore. */
+.badge-finiture {
+  position: absolute;
+  top: 30px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.segno-finitura {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #fff;
+  /* Dorato: è il colore che significa "lucida" senza doverlo spiegare, e non
+     è nessuno degli altri segni della card (viola i desideri, rosso il cuore,
+     verde il prezzo). */
+  background: rgb(146 104 12 / 88%);
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+griglia-collezione.vista-fitta .badge-finiture {
+  top: 20px;
+  right: 3px;
+}
+
+griglia-collezione.vista-fitta .segno-finitura {
+  font-size: 0.55rem;
+  padding: 0 0.25rem;
+}

@@ -203,9 +203,16 @@ async function cambiaQuantita(evento) {
   const { idSet, numero, delta } = evento.detail;
   const quantita = await aggiungiCopie(idSet, numero, delta);
   await rileggiCollezione();
+  // Com'è ripartita adesso quella pila fra normali, holo e reverse: la sa solo
+  // il database, perché togliendo l'ultima copia normale se ne va una speciale.
+  const fresca = ultimeVoci.find(
+    (v) => v.idSet === idSet && String(v.numero) === String(numero),
+  );
   // Una carta che le griglie non conoscono — appena creata da un'altra parte
   // dell'app — non ha una card da aggiornare: là serve il giro lungo.
-  const esiti = griglie.map((g) => g.aggiornaQuantita(idSet, numero, quantita));
+  const esiti = griglie.map((g) =>
+    g.aggiornaQuantita(idSet, numero, quantita, fresca?.varianti ?? null),
+  );
   if (esiti.some((fatto) => !fatto)) await aggiornaCollezione();
 }
 for (const g of griglie) g.addEventListener('quantita-cambiata', cambiaQuantita);
