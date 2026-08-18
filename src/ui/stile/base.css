@@ -1257,13 +1257,22 @@ button.secondario:hover {
   );
 }
 
+/* Il foglio "Aggiungi una carta" si apre dall'ALTO, non dal basso.
+
+   Nato come bottom sheet, che è la forma giusta per un pannello che si comanda
+   col pollice. Ma qui dentro si **scrive**, e su un telefono la tastiera si
+   prende metà schermo dal basso: il pannello finiva sotto la tastiera proprio
+   mentre si digitava il numero della carta, e i candidati da toccare non si
+   vedevano affatto. Ancorato in alto, la tastiera sale sotto di lui e il
+   modulo resta a schermo. Il pulsante ＋ resta in basso, dov'è il pollice: è il
+   pannello che si sposta, non il comando. */
 .foglio {
   position: fixed;
   inset: 0;
   z-index: 60;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .foglio-fondo {
@@ -1275,12 +1284,16 @@ button.secondario:hover {
 .foglio-pannello {
   position: relative;
   background: var(--colore-fondo);
-  border-radius: 26px 26px 0 0;
-  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
-  max-block-size: 85%;
+  border-radius: 0 0 26px 26px;
+  /* La tacca del telefono sta in cima, e adesso in cima c'è questo pannello. */
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem;
+  /* `dvh` e non `%`: la percentuale si misura sul viewport di layout, che con
+     la tastiera aperta non si accorcia. Con `dvh` il pannello resta dentro lo
+     spazio davvero visibile, e il resto scorre. */
+  max-block-size: 85dvh;
   overflow-y: auto;
-  box-shadow: 0 -20px 50px rgb(0 0 0 / 35%);
-  animation: foglio-su 0.26s ease both;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 35%);
+  animation: foglio-giu 0.26s ease both;
 }
 
 /* Contenuto del foglio centrato come il resto su schermi larghi. */
@@ -1289,16 +1302,19 @@ button.secondario:hover {
     inline-size: min(32rem, 100%);
     margin-inline: auto;
     border-radius: 26px;
-    margin-block-end: 1rem;
+    margin-block-start: 1rem;
   }
 }
 
+/* La presa: sta in fondo al pannello, cioè sul bordo che si può "tirare" —
+   quello verso il centro dello schermo. In un foglio che scende dall'alto,
+   metterla in cima vorrebbe dire metterla contro la tacca del telefono. */
 .maniglia {
   inline-size: 38px;
   block-size: 5px;
   border-radius: 99px;
   background: var(--colore-bordo);
-  margin: 0 auto 0.8rem;
+  margin: 0.8rem auto 0;
 }
 
 .foglio-testa {
@@ -1741,6 +1757,19 @@ button.secondario:hover {
 
 .toast.mostra {
   animation: toast-su 2.2s ease forwards;
+}
+
+/* Il foglio dell'aggiunta entra dall'alto; `foglio-su` resta com'è perché la
+   usa anche la barra "Installa l'app", che dal basso ci sta bene. */
+@keyframes foglio-giu {
+  from {
+    transform: translateY(-28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes foglio-su {

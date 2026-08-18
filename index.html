@@ -243,7 +243,6 @@
     <div id="foglio-aggiunta" class="foglio no-stampa" hidden>
       <div class="foglio-fondo" data-chiudi></div>
       <div class="foglio-pannello" role="dialog" aria-label="Aggiungi una carta" aria-modal="true">
-        <div class="maniglia" aria-hidden="true"></div>
         <div class="foglio-testa">
           <h2>Aggiungi una carta</h2>
           <button type="button" class="chiudi-foglio" data-chiudi aria-label="Chiudi">✕</button>
@@ -303,6 +302,9 @@
           <p id="stato-ricerca" class="stato" hidden></p>
           <div id="risultati" aria-live="polite"></div>
         </div>
+        <!-- La presa in fondo: il foglio scende dall'alto, quindi il bordo
+             "afferrabile" è quello in basso. -->
+        <div class="maniglia" aria-hidden="true"></div>
       </div>
     </div>
 
