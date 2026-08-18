@@ -82,6 +82,87 @@ export function filtra(voci, filtri) {
 }
 
 /**
+ * I modi di ordinare il catalogo, nell'ordine in cui compaiono nel menu.
+ *
+ * `set` è l'ordine di sempre — serie dalla più vecchia, set, numero di
+ * collezione — ed è l'unico che tiene le carte **raggruppate per set**: è la
+ * vista "raccoglitore", quella in cui ha senso la barra di completamento e la
+ * domanda "cosa mi manca di questo set". Gli altri quattro sono elenchi piatti:
+ * mettono vicine carte di set lontani vent'anni, e una sezione-set con dentro
+ * una carta sola non racconterebbe niente.
+ *
+ * @type {Array<{codice: string, etichetta: string}>}
+ */
+export const ORDINAMENTI = [
+  { codice: 'set', etichetta: 'Set e numero di collezione' },
+  { codice: 'dex', etichetta: 'Numero del Pokédex' },
+  { codice: 'nome', etichetta: 'Nome (A→Z)' },
+  { codice: 'rarita', etichetta: 'Rarità (dalla più comune)' },
+  { codice: 'valore', etichetta: 'Valore (dal più caro)' },
+];
+
+/** Se questo ordinamento tiene le carte divise per set. @param {string} c */
+export const raggruppaPerSet = (c) => (c ?? 'set') === 'set';
+
+/**
+ * Ordina le voci già filtrate secondo uno dei criteri di `ORDINAMENTI`.
+ *
+ * Non tocca `set`: quell'ordine ce l'hanno già da `elencoCompleto()`, che
+ * ordina in un posto solo per non vedere le due decisioni divergere. Qui si
+ * riordina **una copia**, perché l'array arriva da `filtra()` ma le voci dentro
+ * sono le stesse di tutte le viste.
+ *
+ * Le carte a cui il criterio non si applica — un Allenatore quando si ordina
+ * per Pokédex, una carta mai quotata quando si ordina per valore — finiscono in
+ * fondo invece che all'inizio: un elenco che si apre su ciò di cui non sa
+ * niente sembra rotto.
+ *
+ * @param {object[]} voci già filtrate
+ * @param {string} criterio uno dei codici di `ORDINAMENTI`
+ * @param {object} [dati] i due dati che questo modulo non può conoscere: uno sta
+ *   in un indice a parte, l'altro nei prezzi scaricati. La rarità no — è
+ *   stampata sulla carta e la sa già `data/rarita.js`.
+ * @param {(voce: object) => number|null} [dati.dex] numero del Pokédex di una voce
+ * @param {(voce: object) => number|null} [dati.valore] prezzo in euro, se noto
+ * @returns {object[]} un array nuovo
+ * @example
+ * ordina(voci, 'dex', { dex: (v) => numeri.get(v.carta?.nome) ?? null });
+ */
+export function ordina(voci, criterio, dati = {}) {
+  const elenco = [...(voci ?? [])];
+  if (raggruppaPerSet(criterio)) return elenco;
+
+  const { dex = () => null, valore = () => null } = dati;
+  const rarita = (voce) => classeRarita(voce.carta)?.ordine ?? null;
+  // Una chiave per voce, calcolata **una volta sola**: dentro un comparatore
+  // girerebbe O(n log n) volte, e per il valore vuol dire una ricerca in mappa
+  // per ogni confronto.
+  const chiave = new Map();
+  for (const voce of elenco) {
+    const n =
+      criterio === 'dex' ? dex(voce) : criterio === 'valore' ? valore(voce) : rarita(voce);
+    chiave.set(voce, Number.isFinite(n) ? n : null);
+  }
+
+  const perNome = (a, b) => (a.carta?.nome ?? '').localeCompare(b.carta?.nome ?? '', 'it');
+
+  if (criterio === 'nome') return elenco.sort(perNome);
+
+  // Dal più caro; dal più comune e dal Pokédex più basso.
+  const verso = criterio === 'valore' ? -1 : 1;
+  return elenco.sort((a, b) => {
+    const na = chiave.get(a);
+    const nb = chiave.get(b);
+    if (na === null && nb === null) return perNome(a, b);
+    if (na === null) return 1;
+    if (nb === null) return -1;
+    // A parità — le sei stampe di Pikachu, le trenta carte comuni — il nome
+    // decide, così l'elenco non cambia ordine da un ridisegno all'altro.
+    return (na - nb) * verso || perNome(a, b);
+  });
+}
+
+/**
  * @typedef {object} GruppoSet
  * @property {string} idSet
  * @property {string} nomeSet

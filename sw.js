@@ -21,7 +21,7 @@
  * store vengono cancellati in fase di attivazione.
  */
 
-const VERSIONE = 'v79';
+const VERSIONE = 'v80';
 const CACHE_GUSCIO = `pokedeck-guscio-${VERSIONE}`;
 const CACHE_IMMAGINI = `pokedeck-immagini-${VERSIONE}`;
 
@@ -64,6 +64,7 @@ const GUSCIO = [
   './src/data/energie.js',
   './src/data/rarita.js',
   './src/data/legalita.js',
+  './src/data/dex.js',
   './src/data/prezzi.js',
   './src/data/scambio.js',
   './src/ui/segnaposto.js',
@@ -156,6 +157,13 @@ const GUSCIO = [
   // primo set che si apre — il formato si mostra sulla scheda di ogni carta —
   // e senza, offline, la pastiglia sparisce e il filtro Tornei resta vuoto.
   './data/legalita.json',
+  // I numeri del Pokédex: 62 KB, e servono a un solo ordinamento del catalogo.
+  // Sta nel guscio e non fra i file a richiesta perché l'ordinamento si sceglie
+  // una volta e poi resta: chi lo tiene su "Pokédex" lo vorrebbe anche offline,
+  // e senza numeri quella vista si appiattirebbe in un elenco alfabetico senza
+  // dire perché. Il caricamento resta pigro (`src/data/dex.js`): chi non usa
+  // quell'ordine non lo legge mai, ma se lo sceglie il file è già lì.
+  './data/dex.json',
   // Il catalogo dei mazzi prefatti: 50 KB, ed è il termine di paragone della
   // forza. Va precaricato perché senza non si può dire se una partita sarà
   // pari, e quella domanda ci si fa proprio quando si sta per giocare — cioè

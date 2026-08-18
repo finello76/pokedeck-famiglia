@@ -133,6 +133,28 @@ griglia-collezione {
   display: none;
 }
 
+/* Col mouse la fila che scorre non si può spostare.
+
+   Sul telefono funziona: il dito spinge, ed è il motivo per cui i chip stanno
+   su una riga sola invece di mangiarsi tre righe di schermo. Con un puntatore
+   fine non c'è nessun gesto equivalente — la rotella scorre la pagina, non la
+   fila — e la barra di scorrimento è nascosta apposta: gli ultimi tipi
+   (*Metallo*, *Oscurità*, *Psico*) diventano irraggiungibili, tagliati a metà
+   sul bordo destro. Segnalato usando l'app.
+
+   Dove c'è il mouse c'è quasi sempre anche più larghezza, quindi i chip vanno
+   a capo: due righe e nessun contenuto nascosto. Il `-1 * spazio` di margine
+   qui non serve più — sbordare oltre il margine di pagina ha senso per una
+   fila che scorre, non per una che finisce. */
+@media (hover: hover) and (pointer: fine) {
+  .chip-tipi {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
 .chip-tipo {
   flex: none;
   width: auto;
@@ -711,4 +733,135 @@ griglia-collezione .chip-formato[data-formato='expanded'] {
 .bottone-linea:hover {
   border-color: var(--colore-primario);
   color: var(--colore-primario);
+}
+
+/* --- Ordinamento e densità --- */
+
+/* Una riga sola sopra i risultati: a sinistra "come sono ordinate", a destra
+   "quanto sono grandi". Sono due domande sulla stessa cosa — come guardo la
+   collezione — e stanno fuori dal pannello dei filtri apposta: un filtro
+   toglie carte, questi due non ne tolgono nessuna. */
+griglia-collezione .barra-ordine {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+griglia-collezione .barra-ordine select {
+  flex: 1;
+  min-inline-size: 0;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--colore-testo-tenue);
+  background: var(--colore-superficie);
+}
+
+/* I due pulsanti della densità sono un interruttore, non due comandi: stanno
+   attaccati dentro una cornice sola, come i segmenti di un selettore. */
+griglia-collezione .scelta-vista {
+  flex: none;
+  display: flex;
+  border: 1px solid var(--colore-bordo);
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--colore-superficie);
+}
+
+griglia-collezione .bottone-vista {
+  inline-size: 42px;
+  block-size: 40px;
+  width: auto;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--colore-testo-tenue);
+}
+
+griglia-collezione .bottone-vista svg {
+  inline-size: 19px;
+  block-size: 19px;
+}
+
+griglia-collezione .bottone-vista.attivo {
+  background: color-mix(in srgb, var(--colore-primario) 14%, transparent);
+  color: var(--colore-primario);
+}
+
+griglia-collezione .bottone-vista:hover:not(.attivo) {
+  background: var(--colore-superficie-2);
+  color: var(--colore-testo);
+}
+
+/* --- Vista fitta: il raccoglitore da fiera --- */
+
+/* Cambia **solo** questo foglio: le card sono le stesse, con lo stesso HTML e
+   gli stessi eventi. Qui si toglie tutto ciò che non è la figurina — nome,
+   tipo, chip, comandi — perché a questa taglia non si leggerebbe comunque, e
+   quello che si cerca sfogliando è la carta, non la sua scheda. Per contarle o
+   modificarle si tocca la carta e si apre il visore. */
+griglia-collezione.vista-fitta .griglia-carte {
+  /* ~5 per riga su un telefono da 375px, come le tasche di una busta. */
+  grid-template-columns: repeat(auto-fill, minmax(4.2rem, 1fr));
+  gap: 0.4rem;
+}
+
+@container (min-width: 32rem) {
+  griglia-collezione.vista-fitta .griglia-carte {
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  }
+}
+
+griglia-collezione.vista-fitta .carta-griglia {
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+/* La scansione intera, non il taglio in alto: 63×88 è la proporzione della
+   carta vera, quindi con `cover` l'immagine riempie esattamente il riquadro
+   senza tagliare niente. È la differenza fra una miniatura e una figurina. */
+griglia-collezione.vista-fitta .miniatura {
+  height: auto;
+  aspect-ratio: 63 / 88;
+}
+
+griglia-collezione.vista-fitta .miniatura img {
+  object-position: center;
+}
+
+griglia-collezione.vista-fitta .corpo,
+griglia-collezione.vista-fitta .stepper,
+griglia-collezione.vista-fitta .piede-preferito,
+griglia-collezione.vista-fitta .badge-prezzo,
+griglia-collezione.vista-fitta .scan {
+  display: none;
+}
+
+/* Il badge delle copie resta: è l'unica cosa che la figurina non dice da sé.
+   Rimpicciolito, o su una carta da 67px coprirebbe mezza illustrazione. */
+griglia-collezione.vista-fitta .badge-qty {
+  top: 3px;
+  right: 3px;
+  font-size: 0.6rem;
+  padding: 0.05rem 0.3rem;
+}
+
+/* Il cuore si rimpicciolisce ma non sparisce: preferire una carta è il gesto
+   che si fa proprio sfogliando, e toglierlo qui vorrebbe dire uscire dalla
+   vista per farlo. */
+griglia-collezione.vista-fitta .carta-griglia .cuore {
+  top: 2px;
+  left: 2px;
+  inline-size: 24px;
+  block-size: 24px;
+  background: rgb(15 20 35 / 35%);
+}
+
+griglia-collezione.vista-fitta .carta-griglia .cuore svg {
+  inline-size: 14px;
+  block-size: 14px;
 }

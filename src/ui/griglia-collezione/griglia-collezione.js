@@ -34,7 +34,18 @@ import { formattaEuro, valoreDi } from '../../data/prezzi.js';
 import { formatoDi } from '../../data/legalita.js';
 import { segnaposto, seImmagineRotta } from '../segnaposto.js';
 import { pastigliaLingua } from '../lingua-set.js';
-import { FILTRI_VUOTI, filtra, progressoSet, raggruppa, valoriDisponibili } from './raggruppa.js';
+import { numeriDex } from '../../data/dex.js';
+import { normalizzaNome } from '../../engine/nomi.js';
+import {
+  FILTRI_VUOTI,
+  ORDINAMENTI,
+  filtra,
+  ordina,
+  progressoSet,
+  raggruppa,
+  raggruppaPerSet,
+  valoriDisponibili,
+} from './raggruppa.js';
 
 /**
  * Osservatore condiviso: carica l'immagine di una card solo quando sta per
@@ -77,6 +88,34 @@ const cediIlPasso = () =>
 /** Quante card mancanti si inseriscono per volta. Vedi `#aggiungiMancanti()`. */
 const BLOCCO_MANCANTI = 60;
 
+/**
+ * Legge una preferenza di vista, sopravvivendo a un `localStorage` che non c'è.
+ *
+ * Succede davvero: navigazione privata su iOS, cookie di terze parti bloccati,
+ * quota piena. Sono preferenze di aspetto — se non si ricordano, pazienza; se
+ * fanno esplodere il componente, la collezione non si vede più.
+ *
+ * @param {string} chiave
+ * @param {string} difetto
+ * @returns {string}
+ */
+function scelta(chiave, difetto) {
+  try {
+    return localStorage.getItem(chiave) ?? difetto;
+  } catch {
+    return difetto;
+  }
+}
+
+/** @see scelta @param {string} chiave @param {string} valore */
+function ricorda(chiave, valore) {
+  try {
+    localStorage.setItem(chiave, valore);
+  } catch {
+    /* niente da fare, e niente di grave */
+  }
+}
+
 export class GrigliaCollezione extends HTMLElement {
   /** @type {Array<object>} */
   #voci = [];
@@ -96,6 +135,23 @@ export class GrigliaCollezione extends HTMLElement {
   #mostraMancanti = false;
   /** @type {boolean} se il pannello dei filtri avanzati è aperto */
   #filtriAperti = false;
+  /**
+   * Come sono ordinate le carte: uno dei codici di `ORDINAMENTI`. Solo `'set'`
+   * le tiene divise per set; gli altri sono elenchi piatti.
+   * @type {string}
+   */
+  #ordine = 'set';
+  /**
+   * Quanto è fitta la vista: `'lista'` sono le card con nome, tipo e comandi;
+   * `'fitta'` sono le sole scansioni, tante per riga, come le pagine di un
+   * raccoglitore da fiera. Cambia **solo il CSS** — stesse card, stesso DOM,
+   * stessi eventi — perché due modi di disegnare la stessa carta sarebbero due
+   * posti da ricordarsi di aggiornare.
+   * @type {string}
+   */
+  #vista = 'lista';
+  /** @type {Map<string, number>|null} nome normalizzato → numero del Pokédex */
+  #dex = null;
   /** @type {Map<string, {euro: number|null, aggiornatoIl: string, senzaMercato: boolean}>} */
   #prezzi = new Map();
   /** @type {string} messaggio sotto il pulsante della quotazione */
@@ -415,11 +471,31 @@ export class GrigliaCollezione extends HTMLElement {
   }
 
   connectedCallback() {
+    // Ordine e densità si ricordano **per griglia**: il catalogo e i Preferiti
+    // si guardano in due modi diversi — là si cerca una carta, qui si sfoglia —
+    // e una preferenza sola costringerebbe a rigirare l'interruttore a ogni
+    // passaggio fra le due schede.
+    this.#ordine = scelta(`pokedeck-ordine:${this.id || 'griglia'}`, 'set');
+    this.#vista = scelta(`pokedeck-vista:${this.id || 'griglia'}`, 'lista');
     this.#disegna();
+    // Riaprendo l'app su "Pokédex" i numeri non ci sono ancora: si disegna
+    // subito con quello che si ha e si riordina quando arrivano, invece di
+    // tenere la collezione in attesa di un file da 60 KB.
+    if (this.#ordine === 'dex') this.#cambiaOrdine();
 
     // La casella di ricerca ridisegna solo i risultati, per non perdere il
     // focus mentre si scrive; i menu a tendina rifanno tutto.
     this.addEventListener('input', (evento) => {
+      // L'ordinamento non è un filtro: non toglie carte, le rimescola. Per
+      // "Pokédex" servono i numeri, che sono un file a parte e si scaricano
+      // solo a chi li chiede — quindi qui si può aspettare.
+      if (evento.target.dataset?.ordine !== undefined) {
+        this.#ordine = evento.target.value;
+        ricorda(`pokedeck-ordine:${this.id || 'griglia'}`, this.#ordine);
+        this.#cambiaOrdine();
+        return;
+      }
+
       const campo = evento.target.dataset?.filtro;
       if (!campo) return;
       this.#filtri[campo] = evento.target.value;
@@ -436,6 +512,15 @@ export class GrigliaCollezione extends HTMLElement {
     });
 
     this.addEventListener('click', (evento) => {
+      // Lista o griglia fitta: cambia solo l'aspetto, quindi niente ridisegno.
+      const vista = evento.target.closest('[data-vista]');
+      if (vista) {
+        this.#vista = vista.dataset.vista;
+        ricorda(`pokedeck-vista:${this.id || 'griglia'}`, this.#vista);
+        this.#applicaVista();
+        return;
+      }
+
       // Chip di un tipo elementale: agisce come il filtro "tipo", e ritoccarlo
       // lo azzera.
       const chip = evento.target.closest('[data-tipo-filtro]');
@@ -660,6 +745,19 @@ export class GrigliaCollezione extends HTMLElement {
 
       <div class="chip-tipi">${chipTipi}</div>
 
+      <div class="barra-ordine">
+        <select data-ordine aria-label="Ordina le carte">
+          ${ORDINAMENTI.map(
+            ({ codice, etichetta }) =>
+              `<option value="${codice}"${codice === this.#ordine ? ' selected' : ''}>${escapeHtml(etichetta)}</option>`,
+          ).join('')}
+        </select>
+        <div class="scelta-vista" role="group" aria-label="Quanto fitte le carte">
+          ${this.#bottoneVista('lista', 'Una per riga, con nome e comandi', '<path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>')}
+          ${this.#bottoneVista('fitta', 'Solo le figurine, tante per riga', '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>')}
+        </div>
+      </div>
+
       <div class="pannello-filtri"${this.#filtriAperti ? '' : ' hidden'}>
         <div class="filtri-extra">
           <div>
@@ -750,7 +848,42 @@ export class GrigliaCollezione extends HTMLElement {
            qui, fuori dalle serie: dentro falserebbero i conteggi "12/62". -->
       <div class="trovate-mancanti"></div>
     `;
+    this.#applicaVista();
     this.#disegnaRisultati();
+  }
+
+  /**
+   * Uno dei due pulsanti della densità.
+   *
+   * @param {string} codice `'lista'` o `'fitta'`
+   * @param {string} spiegazione cosa si vede scegliendolo
+   * @param {string} disegno il corpo dell'SVG
+   * @returns {string} HTML
+   */
+  #bottoneVista(codice, spiegazione, disegno) {
+    const attivo = this.#vista === codice;
+    return `
+      <button type="button" data-vista="${codice}" class="bottone-vista${attivo ? ' attivo' : ''}"
+              aria-pressed="${attivo}" title="${escapeHtml(spiegazione)}"
+              aria-label="${escapeHtml(spiegazione)}">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">${disegno}</svg>
+      </button>`;
+  }
+
+  /**
+   * Porta la densità scelta sul componente: una classe, e il CSS fa il resto.
+   *
+   * Le card non si ridisegnano — sono le stesse — quindi cambiare vista non
+   * costa un ridisegno e non perde né le mancanti caricate scorrendo né la
+   * posizione della pagina (vedi il documento 20).
+   */
+  #applicaVista() {
+    this.classList.toggle('vista-fitta', this.#vista === 'fitta');
+    for (const bottone of this.querySelectorAll('[data-vista]')) {
+      const attivo = bottone.dataset.vista === this.#vista;
+      bottone.classList.toggle('attivo', attivo);
+      bottone.setAttribute('aria-pressed', String(attivo));
+    }
   }
 
   /** Ridisegna solo l'elenco e i contatori: i controlli restano come sono. */
@@ -764,12 +897,66 @@ export class GrigliaCollezione extends HTMLElement {
     // proprio turno non devono più chiedere niente.
     this.#osservatoreSezioni?.disconnect();
 
-    const voci = filtra(this.#voci, this.#effettivi());
+    const voci = this.#ordinate(filtra(this.#voci, this.#effettivi()));
     const gruppi = raggruppa(voci);
 
     this.#scriviContatori(voci, gruppi);
-    contenitore.replaceChildren(...gruppi.map((gruppo) => this.#disegnaSerie(gruppo)));
+    contenitore.replaceChildren(
+      ...(raggruppaPerSet(this.#ordine)
+        ? gruppi.map((gruppo) => this.#disegnaSerie(gruppo))
+        : [this.#disegnaPiatto(voci)]),
+    );
     this.#aggiornaTrovate();
+  }
+
+  /**
+   * Cambia ordinamento, procurandosi prima i dati che gli servono.
+   *
+   * Solo il Pokédex ne ha bisogno: i numeri stanno in `data/dex.json` e si
+   * scaricano **la prima volta che qualcuno sceglie quell'ordine**, non
+   * all'avvio. Sono 60 KB che a chi ordina per set non servono mai, e dopo la
+   * prima volta li serve il service worker anche offline.
+   *
+   * @returns {Promise<void>}
+   */
+  async #cambiaOrdine() {
+    if (this.#ordine === 'dex' && !this.#dex) this.#dex = await numeriDex();
+    this.#disegnaRisultati();
+  }
+
+  /**
+   * Applica l'ordinamento scelto, procurando a `ordina()` i due dati che la
+   * parte pura non può avere: il numero del Pokédex e il prezzo.
+   *
+   * @param {object[]} voci già filtrate
+   * @returns {object[]}
+   */
+  #ordinate(voci) {
+    return ordina(voci, this.#ordine, {
+      // Il nome si normalizza con la **stessa** funzione che ha scritto
+      // l'indice (`engine/nomi.js`): se le due divergessero, l'indice
+      // smetterebbe di trovare in silenzio — vedi `data/dex.js`.
+      dex: (voce) => this.#dex?.get(normalizzaNome(voce.carta?.nome ?? '')) ?? null,
+      valore: (voce) => this.#prezzi.get(`${voce.idSet}:${voce.numero}`)?.euro ?? null,
+    });
+  }
+
+  /**
+   * L'elenco senza sezioni: una griglia sola, nell'ordine scelto.
+   *
+   * Le carte restano **le stesse card** della vista per set — stesso `#card()`,
+   * stessi eventi — perché l'unica cosa che cambia è che non stanno più dentro
+   * un set. Le intestazioni sparirebbero comunque da sole: ordinando per
+   * Pokédex, un set con dentro una carta sola è un titolo su niente.
+   *
+   * @param {object[]} voci già filtrate e ordinate
+   * @returns {HTMLElement}
+   */
+  #disegnaPiatto(voci) {
+    const griglia = document.createElement('div');
+    griglia.className = 'griglia-carte griglia-piatta';
+    griglia.replaceChildren(...voci.map((voce) => this.#card(voce)));
+    return griglia;
   }
 
   /**
@@ -821,7 +1008,15 @@ export class GrigliaCollezione extends HTMLElement {
    * @returns {boolean}
    */
   #mancantiPerSet() {
-    return this.#mostraMancanti && !this.#soloTue() && !this.#filtri.testo.trim();
+    // Le mancanti di un set arrivano **dentro la sua sezione**, e in un elenco
+    // piatto le sezioni non ci sono: senza questa condizione finirebbero in
+    // fondo alla griglia tutte insieme, fuori dall'ordine scelto.
+    return (
+      this.#mostraMancanti &&
+      raggruppaPerSet(this.#ordine) &&
+      !this.#soloTue() &&
+      !this.#filtri.testo.trim()
+    );
   }
 
   /** @see #mancantiPerSet */
