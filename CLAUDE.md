@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **PokéDeck Famiglia** — PWA statica per catalogare una collezione Pokémon TCG e generare
 mazzi equilibrati con regole della casa derivate dalle carenze della collezione.
-È anche un **progetto di apprendimento**: vedi "Materiale di studio", non è opzionale.
+Nato anche come **progetto di apprendimento**: i documenti di studio in
+`docs/apprendimento/` sono un archivio chiuso, vedi "Materiale di studio".
 
 Lingua di lavoro: italiano (UI, docs, commenti, commit).
 
@@ -98,6 +99,21 @@ normalizzato → `'idSet:numero …'` e sta nel `GUSCIO`, perché senza la ricer
 per nome è muta. `tests/nomi-indice.test.js` verifica che copra **tutti** i set
 presenti: se dimentichi di rilanciarlo dopo `scarica-set.mjs`, il test lo dice —
 altrimenti l'app continuerebbe a funzionare, solo senza le carte nuove.
+
+Poi i numeri del Pokédex, che servono a ordinare il catalogo «come il Pokédex»:
+
+```bash
+node tools/genera-indice-dex.mjs   # ricostruisce data/dex.json (~2000 richieste, 5 minuti)
+```
+
+Il `dexId` sta **solo nella scheda della singola carta** — prenderlo di là sarebbe
+un'ora, come `arricchisci-carte.mjs` — ma la domanda si può girare: `?dexId=eq:25`
+dà tutte le carte di Pikachu in una richiesta. Si interrogano `it` **ed** `en`:
+79 set hanno i dati in inglese e i loro nomi in un indice italiano non
+compaiono (con la sola passata italiana restavano senza numero 748 Pokémon su
+18.005, tutti lì). Copertura attuale 99,8%. Il file mappa nome normalizzato →
+numero, sta nel `GUSCIO` ma si carica solo a chi sceglie quell'ordinamento
+(`src/data/dex.js`).
 
 Attenzione: l'indice lo **scrive** `normalizzaNome` di `src/engine/nomi.js` e lo
 **legge** la `normalizza` privata di `src/data/dataset.js`, che è una copia
@@ -354,20 +370,21 @@ nella lista del mazzo. Uso esclusivamente domestico/familiare.
 - **Mobile-first**: deve essere comoda da telefono mentre si sfogliano le carte fisiche.
 - Il wizard "Crea nuovi mazzi" è una sequenza di domande, **una per schermata**.
 
-## Materiale di studio — OBBLIGATORIO
+## Materiale di studio — CHIUSO IL 18/08/2026
 
-Dopo **ogni funzionalità completata**, creare/aggiornare documenti in `docs/apprendimento/`:
+**Non si scrivono più documenti in `docs/apprendimento/`**, né nuovi né aggiornamenti
+(e nemmeno i PDF), salvo richiesta esplicita. I venti documenti già scritti restano dove
+sono: sono un archivio, non una cosa da tenere allineata.
 
-- COSA è stato fatto e **PERCHÉ quella soluzione**, con riferimenti ai file del progetto.
-- Approfondimento sulle tecnologie toccate man mano: classi ES e moduli, Web Components,
-  IndexedDB, service worker e ciclo di vita PWA, CSS moderno (custom properties, grid,
-  container queries, `@media print`).
-- Formato "sessione di studio": breve teoria + il codice del progetto come esempio +
-  2-3 esercizi o domande di verifica.
+La spiegazione del **perché** non sparisce, cambia posto — e resta obbligatoria lì:
 
-**Calibrazione**: lo studente conosce già JS e CSS di base e ha esperienza **Java e Angular**.
-Spiegare evidenziando le differenze rispetto a quel background (es. Web Components vs componenti
-Angular, moduli ES vs package Java, IndexedDB asincrono vs JDBC bloccante).
+- **commenti nel codice**: davanti a ogni scelta non ovvia, il motivo per cui è stata fatta
+  e cosa succedeva prima. È il posto dove la spiegazione la trova chi tocca quella riga;
+- **JSDoc** su ogni modulo e funzione pubblica, con `@example`;
+- **messaggi di commit lunghi**: cosa è cambiato, perché, e cosa si è scoperto provando.
+
+Restano obbligatori anche i **test delle parti pure** (`src/engine/` e i moduli puri di
+`data/` e `ui/`): sono verifica, non documentazione.
 
 ## Come lavorare
 
