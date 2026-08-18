@@ -136,6 +136,8 @@ export class GrigliaCollezione extends HTMLElement {
   #mostraMancanti = false;
   /** @type {boolean} se il pannello dei filtri avanzati è aperto */
   #filtriAperti = false;
+  /** @type {Animation|null} l'apertura/chiusura in corso del pannello filtri */
+  #animazione = null;
   /**
    * Come sono ordinate le carte: uno dei codici di `ORDINAMENTI`. Solo `'set'`
    * le tiene divise per set; gli altri sono elenchi piatti.
@@ -551,8 +553,7 @@ export class GrigliaCollezione extends HTMLElement {
       const apriFiltri = evento.target.closest('[data-apri-filtri]');
       if (apriFiltri) {
         this.#filtriAperti = !this.#filtriAperti;
-        const pannello = this.querySelector('.pannello-filtri');
-        if (pannello) pannello.hidden = !this.#filtriAperti;
+        this.#animaPannello(this.#filtriAperti);
         apriFiltri.setAttribute('aria-expanded', String(this.#filtriAperti));
         return;
       }
@@ -738,6 +739,18 @@ export class GrigliaCollezione extends HTMLElement {
       ),
     ].join('');
 
+    const pannelloFiltri = this.#pannelloFiltri({
+      serie,
+      setVisibili,
+      categorie,
+      stadi,
+      rarita,
+      formati,
+      dentroPreferiti,
+      opzioni,
+      opzioniSemplici,
+    });
+
     this.innerHTML = `
       <div class="testa-collezione">
         <span class="titolo">${escapeHtml(this.#titolo)}</span>
@@ -759,6 +772,8 @@ export class GrigliaCollezione extends HTMLElement {
         </button>
       </div>
 
+      ${pannelloFiltri}
+
       <div class="chip-tipi">${chipTipi}</div>
 
       <div class="barra-ordine">
@@ -769,12 +784,117 @@ export class GrigliaCollezione extends HTMLElement {
           ).join('')}
         </select>
         <div class="scelta-vista" role="group" aria-label="Quanto fitte le carte">
-          ${this.#bottoneVista('lista', 'Una per riga, con nome e comandi', '<path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>')}
-          ${this.#bottoneVista('fitta', 'Solo le figurine, tante per riga', '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>')}
+          ${this.#bottoneVista(
+            'lista',
+            'Card grandi, con nome e comandi',
+            // Due card larghe: si legge "poche e grandi" anche a 20px, mentre
+            // le tre righe di prima somigliavano all'icona dei filtri qui
+            // accanto — due comandi diversi con lo stesso disegno.
+            '<rect x="3.5" y="4.5" width="17" height="6.2" rx="1.8"/><rect x="3.5" y="13.3" width="17" height="6.2" rx="1.8"/>',
+          )}
+          ${this.#bottoneVista(
+            'fitta',
+            'Solo le figurine, tante per riga',
+            // Nove riquadri: la griglia fitta vera ne mette quattro o cinque
+            // per riga, e tre file dicono "tante" meglio di quattro quadrati.
+            '<rect x="3.5" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="3.5" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="9.7" width="4.6" height="4.6" rx="1.1"/><rect x="3.5" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="9.7" y="15.9" width="4.6" height="4.6" rx="1.1"/><rect x="15.9" y="15.9" width="4.6" height="4.6" rx="1.1"/>',
+          )}
         </div>
       </div>
 
-      <div class="pannello-filtri"${this.#filtriAperti ? '' : ' hidden'}>
+      <p class="riepilogo"></p>
+      <div class="serie-collezione"></div>
+      <!-- Le carte trovate col nome in set di cui non possiedi niente stanno
+           qui, fuori dalle serie: dentro falserebbero i conteggi "12/62". -->
+      <div class="trovate-mancanti"></div>
+    `;
+    this.#applicaVista();
+    this.#disegnaRisultati();
+  }
+
+  /**
+   * Apre o chiude il pannello dei filtri srotolandolo.
+   *
+   * L'animazione la fa **JavaScript** (Web Animations) e non una transizione
+   * CSS, per una ragione precisa: da `display: none` non parte nessuna
+   * transizione, e le due alternative CSS hanno entrambe un difetto.
+   * `grid-template-rows: 0fr → 1fr`, che sarebbe l'idioma moderno, qui collassa
+   * a zero — l'`overflow: hidden` del contenuto porta a zero il minimo
+   * automatico della riga, e con l'altezza del contenitore indefinita `1fr` non
+   * ha niente da cui prendere; misurato, non supposto. Un `max-height` a numero
+   * fisso invece funziona ma va indovinato: troppo basso taglia il pannello,
+   * troppo alto rende la transizione irregolare.
+   *
+   * Con `animate()` l'altezza si **misura** (`scrollHeight`) e, finita
+   * l'animazione, il valore torna a quello del foglio di stile: da aperto il
+   * pannello non ha nessun tetto, quindi può crescere — è quello che fa quando
+   * compare la riga di stato della quotazione.
+   *
+   * @param {boolean} apri
+   * @returns {void}
+   */
+  #animaPannello(apri) {
+    const pannello = this.querySelector('.pannello-filtri');
+    if (!pannello) return;
+
+    // Due tocchi rapidi: la seconda animazione deve sostituire la prima, o si
+    // accavallano e il pannello resta a mezz'aria.
+    this.#animazione?.cancel();
+
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      pannello.classList.toggle('aperto', apri);
+      return;
+    }
+
+    // Da chiuso `scrollHeight` misura comunque il contenuto: `max-height: 0` lo
+    // taglia, non lo rimpicciolisce.
+    const altezza = `${pannello.scrollHeight}px`;
+    // `overflow: hidden` in **entrambi** i fotogrammi: da aperto il foglio di
+    // stile lo mette a `visible` (o l'ombra e la punta verrebbero tagliate), e
+    // senza questa riga il contenuto straborderebbe mentre il pannello si
+    // chiude, invece di essere ritagliato dal bordo che sale.
+    const fotogrammi = [
+      { maxHeight: '0px', opacity: 0, overflow: 'hidden' },
+      { maxHeight: altezza, opacity: 1, overflow: 'hidden' },
+    ];
+    if (apri) pannello.classList.add('aperto');
+
+    this.#animazione = pannello.animate(apri ? fotogrammi : [...fotogrammi].reverse(), {
+      duration: 240,
+      easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)',
+    });
+    // Chiudendo, la classe se ne va **dopo**: finché l'animazione corre serve
+    // l'altezza naturale sotto, o si chiuderebbe di scatto e poi si animerebbe
+    // il vuoto. `catch` perché un `cancel()` fa fallire la promessa.
+    if (!apri) {
+      this.#animazione.finished
+        .then(() => pannello.classList.remove('aperto'))
+        .catch(() => {});
+    }
+  }
+
+  /**
+   * Il pannello dei filtri avanzati, dal pulsante-imbuto in giù.
+   *
+   * Sta in un pezzo a parte per una ragione di **posizione**: il pannello deve
+   * comparire subito sotto il pulsante che lo apre, cioè fra la barra di ricerca
+   * e i chip dei tipi. Prima stava in fondo ai controlli, sotto i chip e sotto
+   * la riga dell'ordinamento: si toccava l'imbuto in alto e compariva roba tre
+   * righe più giù, abbastanza lontano da non sembrare una conseguenza del
+   * tocco.
+   *
+   * Non è `hidden` ma una classe: `display: none` non si può animare, e
+   * un pannello che appare di scatto è la stessa cosa che non capire se si è
+   * aperto. L'apertura la fa il CSS con `grid-template-rows: 0fr → 1fr`.
+   *
+   * @param {object} dati i valori già calcolati da `#disegna()`
+   * @returns {string} HTML
+   */
+  #pannelloFiltri({ serie, setVisibili, categorie, stadi, rarita, formati, dentroPreferiti, opzioni, opzioniSemplici }) {
+    return `
+      <div class="pannello-filtri${this.#filtriAperti ? ' aperto' : ''}">
+       <div class="pannello-dentro">
+        <div class="pannello-corpo">
         <div class="filtri-extra">
           <div>
             <label for="filtro-serie">Serie</label>
@@ -856,16 +976,10 @@ export class GrigliaCollezione extends HTMLElement {
           <button type="button" class="secondario" data-quotazione>Calcola quotazione</button>
           <p class="stato-quotazione" hidden></p>
         </div>
+        </div>
+       </div>
       </div>
-
-      <p class="riepilogo"></p>
-      <div class="serie-collezione"></div>
-      <!-- Le carte trovate col nome in set di cui non possiedi niente stanno
-           qui, fuori dalle serie: dentro falserebbero i conteggi "12/62". -->
-      <div class="trovate-mancanti"></div>
     `;
-    this.#applicaVista();
-    this.#disegnaRisultati();
   }
 
   /**
@@ -878,11 +992,13 @@ export class GrigliaCollezione extends HTMLElement {
    */
   #bottoneVista(codice, spiegazione, disegno) {
     const attivo = this.#vista === codice;
+    // I riquadri sono pieni, non contornati: a 20px un contorno da 2px si
+    // chiude su se stesso e diventa una macchia. Il pieno resta leggibile.
     return `
       <button type="button" data-densita="${codice}" class="bottone-vista${attivo ? ' attivo' : ''}"
               aria-pressed="${attivo}" title="${escapeHtml(spiegazione)}"
               aria-label="${escapeHtml(spiegazione)}">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">${disegno}</svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${disegno}</svg>
       </button>`;
   }
 

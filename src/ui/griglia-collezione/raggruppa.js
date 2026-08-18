@@ -97,7 +97,7 @@ export const ORDINAMENTI = [
   { codice: 'set', etichetta: 'Set e numero di collezione' },
   { codice: 'dex', etichetta: 'Numero del Pokédex' },
   { codice: 'nome', etichetta: 'Nome (A→Z)' },
-  { codice: 'rarita', etichetta: 'Rarità (dalla più comune)' },
+  { codice: 'rarita', etichetta: 'Rarità (dalla più rara)' },
   { codice: 'valore', etichetta: 'Valore (dal più caro)' },
 ];
 
@@ -148,8 +148,10 @@ export function ordina(voci, criterio, dati = {}) {
 
   if (criterio === 'nome') return elenco.sort(perNome);
 
-  // Dal più caro; dal più comune e dal Pokédex più basso.
-  const verso = criterio === 'valore' ? -1 : 1;
+  // Il Pokédex sale (1, 2, 3…), gli altri due scendono: chi ordina per rarità o
+  // per valore sta cercando **il pezzo grosso**, non le comuni. Un elenco che si
+  // apre su venti energie base è un elenco da scorrere prima di cominciare.
+  const verso = criterio === 'dex' ? 1 : -1;
   return elenco.sort((a, b) => {
     const na = chiave.get(a);
     const nb = chiave.get(b);

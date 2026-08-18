@@ -68,13 +68,20 @@ test('per valore si scende dal più caro, e i non quotati stanno in fondo', () =
   assert.deepEqual(nomi(uscita), ['Charizard', 'Pikachu', 'Exeggutor']);
 });
 
-test('per rarità si sale dalla più comune, e la rarità la legge il modulo apposta', () => {
+test('per rarità si parte dalla più rara: è quella che si sta cercando', () => {
   const voci = [
     voce('Rara', { rarita: 'Rara' }),
     voce('Comune', { rarita: 'Comune' }),
     voce('Segreta', { rarita: 'Rara segreta' }),
   ];
-  assert.deepEqual(nomi(ordina(voci, 'rarita')), ['Comune', 'Rara', 'Segreta']);
+  assert.deepEqual(nomi(ordina(voci, 'rarita')), ['Segreta', 'Rara', 'Comune']);
+});
+
+test('una carta senza rarità resta in fondo anche a ordine invertito', () => {
+  // Il verso cambia, il posto di chi non ha il dato no: in cima sembrerebbe la
+  // più rara di tutte.
+  const voci = [voce('Ignota'), voce('Comune', { rarita: 'Comune' })];
+  assert.deepEqual(nomi(ordina(voci, 'rarita')), ['Comune', 'Ignota']);
 });
 
 test('per nome è alfabetico in italiano', () => {

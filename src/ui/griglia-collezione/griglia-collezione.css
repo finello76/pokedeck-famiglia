@@ -180,13 +180,87 @@ griglia-collezione {
   color: #fff;
 }
 
-/* Pannello dei filtri avanzati: nascosto finché non si tocca il pulsante-filtro. */
+/* Pannello dei filtri avanzati: si apre srotolandosi sotto il pulsante-imbuto,
+   dove prima compariva tre righe più in basso — sotto i chip e sotto la riga
+   dell'ordinamento — abbastanza lontano dal dito da non sembrare una
+   conseguenza del tocco.
+
+   Qui ci sono i due stati, aperto e chiuso; il movimento fra i due lo fa
+   `#animaPannello()` in JavaScript, e là c'è scritto perché non è una
+   transizione CSS. */
 .pannello-filtri {
-  margin: 0.2rem 0 0.9rem;
+  /* Chiuso: alto zero e ritagliato. Non `display: none`, che toglierebbe
+     l'elemento e con esso la possibilità di animarlo (e la misura della sua
+     altezza, che serve proprio prima di aprirlo). */
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Aperto **nessun tetto**: il pannello può crescere dopo essersi aperto — è
+   quello che succede quando compare la riga di stato della quotazione — e un
+   `max-height` fisso lo taglierebbe in silenzio. L'animazione la fa `animate()`
+   in `#animaPannello()`, che misura l'altezza vera e poi lascia il comando qui. */
+.pannello-filtri.aperto {
+  max-height: none;
+  opacity: 1;
+  margin: 0.45rem 0 0.9rem;
+  overflow: visible;
+}
+
+.pannello-dentro {
+  /* Chiuso, i dieci menu del pannello non devono essere raggiungibili col tab:
+     alto zero sono invisibili, ma esistono ancora. */
+  visibility: hidden;
+}
+
+.pannello-filtri.aperto .pannello-dentro {
+  visibility: visible;
+}
+
+/* Bordo, sfondo e imbottitura stanno **dentro**: sul contenitore che si
+   srotola lascerebbero una riga di 2px visibile anche da chiuso. */
+.pannello-corpo {
+  position: relative;
   padding: 0.9rem;
   border: 1px solid var(--colore-bordo);
   border-radius: 14px;
   background: var(--colore-superficie);
+  box-shadow: 0 10px 24px -14px rgb(28 35 51 / 45%);
+}
+
+/* La punta verso il pulsante che l'ha aperto: dice "questo viene da lì" meglio
+   di qualunque animazione. Sta a destra perché a destra sta l'imbuto. */
+.pannello-corpo::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  inset-inline-end: 16px;
+  inline-size: 11px;
+  block-size: 11px;
+  background: var(--colore-superficie);
+  border-inline-start: 1px solid var(--colore-bordo);
+  border-block-start: 1px solid var(--colore-bordo);
+  transform: rotate(45deg);
+  border-start-start-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pannello-filtri,
+  .pannello-dentro {
+    transition: none;
+  }
+}
+
+/* Pannello aperto: il pulsante resta acceso finché lo è. Senza, l'unico segno
+   era il pannello stesso — e con i filtri già attivi (che accendono il
+   pulsante allo stesso modo) non si distingueva aperto da chiuso. */
+.bottone-filtri[aria-expanded='true'] {
+  background: var(--colore-primario);
+  border-color: var(--colore-primario);
+  color: var(--colore-su-primario);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--colore-primario) 22%, transparent);
 }
 
 .filtri-extra {
@@ -748,10 +822,13 @@ griglia-collezione .barra-ordine {
   margin-bottom: 0.6rem;
 }
 
+/* Alto come la casella di ricerca e come il pulsante-filtro qui sopra (44px):
+   le due barre sono una sopra l'altra e altezze diverse si vedono subito. */
 griglia-collezione .barra-ordine select {
   flex: 1;
   min-inline-size: 0;
-  padding: 0.5rem 0.6rem;
+  height: 44px;
+  padding: 0 0.7rem;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--colore-testo-tenue);
@@ -763,38 +840,56 @@ griglia-collezione .barra-ordine select {
 griglia-collezione .scelta-vista {
   flex: none;
   display: flex;
+  gap: 2px;
+  padding: 3px;
   border: 1px solid var(--colore-bordo);
   border-radius: 13px;
-  overflow: hidden;
   background: var(--colore-superficie);
 }
 
+/* 48×38 dentro una cornice da 44: erano 42×40 attaccati ai bordi, e stretti
+   così sembravano schiacciati — l'icona toccava il contorno su tre lati.
+   Il bersaglio utile resta abbondante (48px di larghezza, il minimo comodo per
+   il pollice è 44). */
+/* `width`/`height` e non `inline-size`/`block-size`: in `base.css` i bottoni
+   hanno `width: 100%`, e per batterlo qui serve la **stessa** proprietà. Con
+   `inline-size: 48px` seguito da `width: auto` vinceva il secondo (stessa
+   proprietà, dichiarazione più in basso) e i pulsanti restavano larghi 20px —
+   erano i "pulsanti schiacciati". */
 griglia-collezione .bottone-vista {
-  inline-size: 42px;
-  block-size: 40px;
-  width: auto;
+  width: 48px;
+  height: 38px;
   padding: 0;
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 0;
+  border-radius: 10px;
   background: transparent;
   color: var(--colore-testo-tenue);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 griglia-collezione .bottone-vista svg {
-  inline-size: 19px;
-  block-size: 19px;
+  inline-size: 20px;
+  block-size: 20px;
 }
 
+/* Il segmento scelto è pieno, non tinto al 14%: fra due icone accanto la
+   differenza dev'essere di quelle che si vedono con la coda dell'occhio. */
 griglia-collezione .bottone-vista.attivo {
-  background: color-mix(in srgb, var(--colore-primario) 14%, transparent);
-  color: var(--colore-primario);
+  background: var(--colore-primario);
+  color: var(--colore-su-primario);
 }
 
 griglia-collezione .bottone-vista:hover:not(.attivo) {
   background: var(--colore-superficie-2);
   color: var(--colore-testo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  griglia-collezione .bottone-vista {
+    transition: none;
+  }
 }
 
 /* --- Vista fitta: il raccoglitore da fiera --- */
