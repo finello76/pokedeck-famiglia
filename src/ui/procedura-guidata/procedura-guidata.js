@@ -14,6 +14,15 @@
  */
 
 /**
+ * Quanti tipi si possono scegliere per un mazzo.
+ *
+ * È lo stesso tetto del motore (`MAX_TIPI_PER_MAZZO` in `engine/generazione.js`)
+ * e i due numeri devono restare d'accordo: qui impedisce di sceglierne tre, là
+ * taglia comunque l'elenco, perché il motore non si fida di chi lo chiama.
+ */
+const MAX_TIPI = 2;
+
+/**
  * Le domande, nell'ordine in cui vengono poste.
  *
  * `mostraSe` permette di saltare una domanda quando non ha senso: chiedere i
@@ -49,6 +58,56 @@ const DOMANDE = [
       { valore: 4, etichetta: '4 mazzi', dettaglio: 'Quattro giocatori', badge: '4' },
     ],
   },
+  {
+    chiave: 'tipiAMano',
+    testo: 'Di che tipo devono essere i mazzi?',
+    aiuto:
+      'Di solito li sceglie il sistema, prendendo i tipi che in collezione ' +
+      'hanno abbastanza Pokémon ed Energie per reggersi. Ma se il mazzo ce ' +
+      'l\'hai già in testa — quello di fuoco per il piccolo — puoi dirlo tu.',
+    // Con un tipo solo in collezione non c'è niente da scegliere.
+    mostraSe: (contesto) => (contesto.tipi?.length ?? 0) > 1,
+    opzioni: [
+      {
+        valore: false,
+        etichetta: 'Scegli tu',
+        dettaglio: 'I tipi che la collezione sa reggere meglio',
+        badge: '★',
+      },
+      {
+        valore: true,
+        etichetta: 'Li scelgo io',
+        dettaglio: 'Fino a due tipi per mazzo, uno per schermata',
+        badge: '✋',
+      },
+    ],
+  },
+  // Una schermata per mazzo, fino a quattro: sono le stesse domande scritte
+  // quattro volte, e `mostraSe` fa comparire solo quelle che servono davvero.
+  // Scritte a mano invece che generate, perché `DOMANDE` è un elenco di dati
+  // letto anche da `opzioniDaRisposte()`: un elenco che si costruisce da solo
+  // sarebbe più corto da scrivere e più difficile da leggere.
+  ...[1, 2, 3, 4].map((n) => ({
+    chiave: `tipiMazzo${n}`,
+    tipo: 'multi',
+    max: MAX_TIPI,
+    testo: `Mazzo ${n}: quali tipi?`,
+    aiuto:
+      'Al massimo due. Ogni tipo in più vuole le sue Energie, e un mazzo con ' +
+      'tre colori resta spesso senza quella giusta in mano. Se non scegli ' +
+      'niente, decide il sistema per questo mazzo.',
+    mostraSe: (contesto, risposte) =>
+      Boolean(risposte?.tipiAMano) && (Number(risposte?.numeroMazzi) || 2) >= n,
+    continua: (quanti) =>
+      quanti === 0 ? `Scegli tu per il mazzo ${n}` : `Continua con ${quanti} tip${quanti === 1 ? 'o' : 'i'}`,
+    opzioni: (contesto) =>
+      (contesto.tipi ?? []).map((t) => ({
+        valore: t.tipo,
+        etichetta: t.tipo,
+        dettaglio: `${t.pokemon} Pokémon · ${t.energie} Energi${t.energie === 1 ? 'a' : 'e'}`,
+        badge: String(t.pokemon),
+      })),
+  })),
   {
     chiave: 'riferimento',
     testo: 'Contro quale mazzo si gioca?',
@@ -125,10 +184,14 @@ const DOMANDE = [
   },
   {
     chiave: 'setEsclusi',
-    // L'unica domanda a scelta multipla: le altre si toccano e si va avanti,
-    // questa ha bisogno di un "Continua" perché non rispondere (nessun set
-    // escluso) è la risposta più comune, e va potuta dare esplicitamente.
+    // Le domande a scelta multipla si toccano e restano lì: hanno bisogno di un
+    // "Continua" perché non scegliere niente è una risposta legittima, e va
+    // potuta dare esplicitamente.
     tipo: 'multi',
+    // Qui spuntare vuol dire **togliere**, non prendere: il testo barrato lo
+    // dice prima di qualunque etichetta. Sui tipi, dove spuntare vuol dire
+    // "voglio questo", una barratura direbbe l'opposto della verità.
+    barra: true,
     testo: 'Ci sono set da lasciare fuori?',
     aiuto:
       'Le carte dei set che spunti non entreranno in nessun mazzo. Serve quando ' +
@@ -311,14 +374,37 @@ export class ProceduraGuidata extends HTMLElement {
     this.#rispondi(valore);
   }
 
-  /** Il pulsante "Continua" dice quante caselle sono accese, o che non lo è nessuna. */
+  /**
+   * Il pulsante "Continua" dice quante caselle sono accese, o che non lo è
+   * nessuna — e, dove c'è un tetto, spegne quelle che non si possono più
+   * accendere.
+   *
+   * L'etichetta la scrive la domanda (`continua`), perché "Continua senza 2
+   * set" ha senso sui set e nessuno sui tipi. Il testo dei set resta il valore
+   * predefinito: era l'unica domanda a scelta multipla, e non c'era motivo di
+   * farle scrivere una funzione per dire quello che diceva già.
+   */
   #aggiornaContinua() {
     const bottone = this.querySelector('[data-azione="continua"]');
     if (!bottone) return;
-    const quanti = this.querySelectorAll('.opzione.scelta').length;
-    bottone.textContent = quanti
-      ? `Continua senza ${quanti} set`
-      : 'Continua con tutti i set';
+    const domanda = this.#attive[this.#passo];
+    const scelte = this.querySelectorAll('.opzione.scelta').length;
+
+    bottone.textContent = domanda?.continua
+      ? domanda.continua(scelte)
+      : scelte
+        ? `Continua senza ${scelte} set`
+        : 'Continua con tutti i set';
+
+    // Raggiunto il tetto, le opzioni non scelte si spengono: un tocco che non
+    // fa niente si legge come un guasto. Quelle accese restano toccabili, o non
+    // si potrebbe più cambiare idea.
+    const pieno = Boolean(domanda?.max) && scelte >= domanda.max;
+    for (const opzione of this.querySelectorAll('.opzione')) {
+      const accesa = opzione.classList.contains('scelta');
+      opzione.disabled = pieno && !accesa;
+      opzione.classList.toggle('esaurita', pieno && !accesa);
+    }
   }
 
   /**
@@ -418,7 +504,7 @@ export class ProceduraGuidata extends HTMLElement {
     const opzioni = elencoOpzioni
       .map(
         (o) => `
-        <button type="button" class="opzione${multipla ? ' multipla' : ''}"
+        <button type="button" class="opzione${multipla ? ' multipla' : ''}${domanda.barra ? ' barrata' : ''}"
                 ${multipla ? 'data-azione="segno" aria-pressed="false"' : ''}
                 data-valore='${JSON.stringify(o.valore)}'>
           <span class="badge">${o.badge ?? '›'}</span>
@@ -444,9 +530,13 @@ export class ProceduraGuidata extends HTMLElement {
       <p class="aiuto">${domanda.aiuto}</p>
       <div class="opzioni">${opzioni}</div>
       ${domanda.tipo === 'numero' ? this.#campoNumero(domanda) : ''}
-      ${multipla ? '<button type="button" class="continua" data-azione="continua">Continua con tutti i set</button>' : ''}
+      ${multipla ? '<button type="button" class="continua" data-azione="continua"></button>' : ''}
       ${this.#passo > 0 ? '<button type="button" class="indietro" data-azione="indietro">← Torna indietro</button>' : ''}
     `;
+    // L'etichetta del "Continua" la scrive sempre lo stesso posto, anche a
+    // schermata appena disegnata: scriverla nel markup e poi correggerla al
+    // primo tocco vuol dire due testi da tenere d'accordo.
+    if (multipla) this.#aggiornaContinua();
   }
 }
 
@@ -482,6 +572,15 @@ export function opzioniDaRisposte(risposte) {
     // le toglie chi legge la collezione. Viaggia qui perché finisca nel piano
     // salvato — riaprendolo, deve essere leggibile con quali carte è nato.
     setEsclusi: Array.isArray(risposte.setEsclusi) ? risposte.setEsclusi : [],
+    // I tipi voluti mazzo per mazzo: `[['Lotta','Fuoco'], ['Erba']]`. Una
+    // schermata per mazzo diventa una riga sola per il motore. Un mazzo senza
+    // scelta resta un elenco vuoto, che vuol dire "decidi tu" — non "nessun
+    // tipo". Viaggia anche nel piano salvato: riaprendolo si deve poter
+    // leggere se quel mazzo di fuoco era stato chiesto o è capitato.
+    tipiScelti: Array.from({ length: Number(risposte.numeroMazzi) || 2 }, (_, i) => {
+      const scelti = risposte[`tipiMazzo${i + 1}`];
+      return Array.isArray(scelti) ? scelti.slice(0, MAX_TIPI) : [];
+    }),
     // Le carte desiderate non le possiedi: entrano nel motore solo se lo hai
     // chiesto, e il piano salvato deve ricordarlo o riaprendolo sembrerebbe
     // costruibile con la scatola che hai in casa.

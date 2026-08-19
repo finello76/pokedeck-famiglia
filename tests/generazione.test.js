@@ -123,6 +123,77 @@ test('non sceglie un tipo che non ha energie', () => {
   assert.deepEqual(tipi, ['Lampo'], 'Lotta ha piu\' carte ma zero energie: non attaccherebbe');
 });
 
+test('i tipi già presi a mano non si ripropongono a chi sceglie da solo', () => {
+  const analisi = analizza([
+    pk('Lucario', 'Lotta', 'Base', null, 5),
+    pk('Pikachu', 'Lampo', 'Base', null, 5),
+    en('Lotta', 6),
+    en('Lampo', 6),
+  ]);
+  const [tipi] = scegliTipi(analisi, 1, null, null, new Set(['Lotta']));
+  assert.deepEqual(tipi, ['Lampo'], 'Lotta è già del mazzo scelto a mano');
+});
+
+// --- tipi scelti a mano ---
+
+const dueTipi = () => [
+  pk('Lucario', 'Lotta', 'Base', null, 4),
+  pk('Machop', 'Lotta', 'Base', null, 4),
+  pk('Charmander', 'Fuoco', 'Base', null, 4),
+  pk('Vulpix', 'Fuoco', 'Base', null, 4),
+  pk('Pikachu', 'Lampo', 'Base', null, 4),
+  pk('Voltorb', 'Lampo', 'Base', null, 4),
+  en('Lotta', 8),
+  en('Fuoco', 8),
+  en('Lampo', 8),
+  al('Pozione', 8),
+];
+
+test('un mazzo bitipo prende i due tipi chiesti', () => {
+  const { mazzi } = generaMazzi(dueTipi(), {
+    taglia: 15,
+    numeroMazzi: 1,
+    tipiScelti: [['Lotta', 'Fuoco']],
+  });
+  assert.deepEqual(mazzi[0].tipi, ['Lotta', 'Fuoco']);
+  const tipiInMazzo = new Set(
+    mazzi[0].carte.filter((c) => c.carta.categoria === 'Pokémon').flatMap((c) => c.carta.tipi),
+  );
+  assert.ok(tipiInMazzo.has('Lotta') && tipiInMazzo.has('Fuoco'), 'entrambi i tipi in campo');
+  assert.ok(!tipiInMazzo.has('Lampo'), 'il tipo non chiesto resta fuori');
+});
+
+test('si sceglie per un mazzo e si lascia decidere per l\'altro', () => {
+  const { mazzi } = generaMazzi(dueTipi(), {
+    taglia: 15,
+    numeroMazzi: 2,
+    // Il secondo elenco è vuoto: vuol dire "decidi tu", non "nessun tipo".
+    tipiScelti: [['Fuoco'], []],
+  });
+  assert.deepEqual(mazzi[0].tipi, ['Fuoco']);
+  assert.ok(mazzi[1].tipi.length > 0, 'il secondo mazzo un tipo ce l\'ha');
+  assert.ok(!mazzi[1].tipi.includes('Fuoco'), 'e non è quello già scelto a mano');
+});
+
+test('più di due tipi non si possono chiedere: il motore taglia', () => {
+  const { mazzi } = generaMazzi(dueTipi(), {
+    taglia: 15,
+    numeroMazzi: 1,
+    tipiScelti: [['Lotta', 'Fuoco', 'Lampo']],
+  });
+  assert.deepEqual(mazzi[0].tipi, ['Lotta', 'Fuoco'], 'il terzo cade');
+});
+
+test('senza tipi scelti si comporta esattamente come prima', () => {
+  const voci = dueTipi();
+  const conVuoto = generaMazzi(voci, { taglia: 15, numeroMazzi: 2, tipiScelti: [], seme: 7 });
+  const senza = generaMazzi(voci, { taglia: 15, numeroMazzi: 2, seme: 7 });
+  assert.deepEqual(
+    conVuoto.mazzi.map((m) => m.tipi),
+    senza.mazzi.map((m) => m.tipi),
+  );
+});
+
 // --- generazione ---
 
 test('genera mazzi della taglia richiesta', () => {

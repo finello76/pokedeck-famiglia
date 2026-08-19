@@ -82,10 +82,22 @@ function cartaDaStampare(gradino, cima) {
  * @param {Casuale} [casuale] senza, la scelta resta deterministica (il migliore)
  * @param {Map<string, number>} [lineePerTipo] quante linee evolutive costruibili
  *   ha ciascun tipo, viste le carte libere e il budget di stampa
+ * @param {Set<string>} [giaPresi] tipi assegnati a mano ad altri mazzi, che qui
+ *   non vanno riproposti
  * @returns {string[][]} un elenco di tipi per mazzo
  */
-export function scegliTipi(analisi, numeroMazzi, casuale = null, lineePerTipo = null) {
+export function scegliTipi(
+  analisi,
+  numeroMazzi,
+  casuale = null,
+  lineePerTipo = null,
+  giaPresi = new Set(),
+) {
   const candidati = analisi.tipiPromettenti
+    // I tipi già assegnati a mano non si ripropongono: chi ha chiesto "Mazzo 1
+    // Lotta" non vuole trovarsi il Mazzo 2 pure di Lotta, che si contenderebbe
+    // le stesse carte.
+    .filter((t) => !giaPresi.has(t.tipo))
     .map((t) => ({
       tipo: t.tipo,
       // La media geometrica crolla se uno dei due fattori è zero: è
@@ -172,12 +184,26 @@ function estraiTipo(disponibili, casuale) {
 }
 
 /**
+ * Quanti tipi al massimo può avere un mazzo scelto a mano.
+ *
+ * Due, come dice la specifica ("preferenza per mazzi monotipo, max bitipo"), e
+ * per una ragione di gioco prima che di interfaccia: ogni tipo in più vuole le
+ * sue Energie, e un mazzo tricolore passa i turni a non poter attaccare perché
+ * ha in mano l'Energia sbagliata.
+ */
+const MAX_TIPI_PER_MAZZO = 2;
+
+/**
  * Genera i mazzi.
  *
  * @param {Array<{carta: object, quantita: number}>} voci collezione
  * @param {object} opzioni
  * @param {number} opzioni.taglia carte per mazzo (15/20/30/60)
  * @param {number} [opzioni.numeroMazzi=2]
+ * @param {string[][]} [opzioni.tipiScelti] i tipi voluti mazzo per mazzo
+ *   (`[['Lotta','Fuoco'], ['Erba']]`): al più due per mazzo, e dove l'elenco è
+ *   vuoto sceglie il motore. Serve a chi il mazzo ce l'ha già in testa —
+ *   "quello di fuoco per il piccolo" — invece di prendere quello che esce.
  * @param {boolean} [opzioni.ammettiEsotici=false]
  * @param {object} [opzioni.permessi] deroghe concesse dalle regole della casa
  *   (`evoluzioniComeBase`, `energiaUniversale`): arrivano dalla seconda passata
@@ -211,6 +237,7 @@ export function generaMazzi(voci, opzioni) {
     budgetProxy = 0,
     indiceEvoluzioni = {},
     nonPokemon = new Set(),
+    tipiScelti = [],
   } = opzioni;
   // Il budget è per mazzo, ma non ha senso che superi la quota Pokémon: un
   // mazzo interamente stampato non è più il tuo mazzo.
@@ -243,7 +270,21 @@ export function generaMazzi(voci, opzioni) {
     dispensa.cerca((c) => c.categoria === 'Pokémon' && classifica(c).livello !== null),
     { indiceEvoluzioni, nonPokemon, budget: budgetPerMazzo },
   );
-  const tipiPerMazzo = scegliTipi(analisi, numeroMazzi, casuale, lineePerTipo);
+  // I tipi chiesti a mano hanno la precedenza; dove non c'è scelta decide il
+  // motore, **sapendo cosa è già stato preso**: senza, il mazzo automatico
+  // poteva capitare sullo stesso tipo di quello scelto e i due si sarebbero
+  // contesi le stesse carte.
+  const aMano = Array.from({ length: numeroMazzi }, (_, i) =>
+    (tipiScelti[i] ?? []).filter(Boolean).slice(0, MAX_TIPI_PER_MAZZO),
+  );
+  const automatici = scegliTipi(
+    analisi,
+    numeroMazzi,
+    casuale,
+    lineePerTipo,
+    new Set(aMano.flat()),
+  );
+  const tipiPerMazzo = aMano.map((scelti, i) => (scelti.length ? scelti : automatici[i] ?? []));
 
   /** @type {Mazzo[]} */
   const mazzi = Array.from({ length: numeroMazzi }, (_, i) => ({

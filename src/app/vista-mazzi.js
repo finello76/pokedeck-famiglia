@@ -105,10 +105,19 @@ export async function preparaWizard() {
   const voci = await elencoCompleto();
   const stat = await statistiche(voci);
   const riferimento = await leggiRiferimento();
+  const analisi = (await import('../engine/analisi.js')).analizza(voci);
   wizard.contesto = {
     carte: stat.totaleCarte,
     energie: stat.energie.totaleBase,
-    orfani: (await import('../engine/analisi.js')).analizza(voci).orfani.length,
+    orfani: analisi.orfani.length,
+    // I tipi su cui si può centrare un mazzo, per chi vuole sceglierli a mano.
+    // Sono quelli **con almeno un Pokémon**: offrire "Drago" perché in scatola
+    // c'è una sola Energia Drago vorrebbe dire proporre un mazzo che non si può
+    // costruire. L'ordine è quello dell'analisi, dal tipo più numeroso, che è
+    // anche l'ordine in cui uno se li aspetta.
+    tipi: analisi.tipiPromettenti
+      .filter((t) => t.copie > 0)
+      .map((t) => ({ tipo: t.tipo, pokemon: t.copie, energie: t.energie })),
     // I set presenti in collezione, per la domanda su cosa lasciare fuori. La
     // domanda esiste perché una parte delle carte può essere già impegnata:
     // il Kit Allenatore con cui gioca un altro membro della famiglia non è

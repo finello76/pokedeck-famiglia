@@ -147,10 +147,21 @@ procedura-guidata .opzione.scelta .cerchio {
 }
 
 /* Un set escluso è un set che NON userai: il testo barrato lo dice prima di
-   qualunque etichetta. */
-procedura-guidata .opzione.scelta .etichetta {
+   qualunque etichetta. Vale **solo** dove spuntare significa togliere (la
+   classe la mette la domanda, vedi `barra` in procedura-guidata.js): sulla
+   scelta dei tipi, dove spuntare significa "voglio questo", il barrato
+   direbbe l'opposto. */
+procedura-guidata .opzione.scelta.barrata .etichetta {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
+}
+
+/* Raggiunto il tetto di scelte, le altre opzioni si spengono: restano
+   leggibili — servono a capire cosa si è escluso — ma si vede che non
+   rispondono. */
+procedura-guidata .opzione.esaurita {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 procedura-guidata .continua {
