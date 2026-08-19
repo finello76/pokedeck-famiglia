@@ -377,12 +377,36 @@ function elencoMazzi(piano) {
     elemento.conDeroga = carteConDeroga(mazzo, piano.permessi, piano.carenze);
     elemento.mazzo = mazzo;
     elemento.id = `mazzo-${indice}`;
-    if (tanti && indice > 0) elemento.hidden = true;
+    // Una **classe** e non l'attributo `hidden`, che qui era una trappola: la
+    // regola del browser è `[hidden] { display: none !important }`, e nessuna
+    // regola d'autore senza `!important` la scavalca. Sopra i 46rem il foglio
+    // di stile rimette in fila tutti i mazzi — ma non ci riusciva, e su tablet
+    // e desktop restava a schermo **un mazzo solo**, per giunta senza le schede
+    // per cambiarlo (là sono nascoste apposta). Era il difetto «se creo 2 mazzi
+    // ne mostra solo 1». Il foglio di stampa se ne era accorto e aveva messo un
+    // `!important`; a schermo mancava.
+    //
+    // La classe è anche più onesta con chi legge lo schermo: un elemento
+    // `hidden` ma visibile viene annunciato come nascosto.
+    if (tanti && indice > 0) elemento.classList.add('mazzo-nascosto');
     elenco.append(elemento);
     schede.push({ nome: mazzo.nome ?? `Mazzo ${indice + 1}`, indice });
   });
 
   if (tanti) {
+    // Chi ha chiesto due mazzi si aspetta di vederne due. Mostrandone uno per
+    // volta la riga di schede era l'unica cosa a dirlo, e da sola non bastava:
+    // somigliava ai chip dei filtri del catalogo, quindi si leggeva come "sto
+    // guardando una selezione" invece di "ce n'è un altro qui accanto". Il
+    // difetto è stato segnalato come «se creo 2 mazzi ne mostra solo 1».
+    //
+    // La riga qui sotto dice il numero a parole, prima che l'occhio arrivi
+    // alle schede.
+    const nota = document.createElement('p');
+    nota.className = 'conta-mazzi no-stampa';
+    nota.textContent = `${contaMazzi(piano.mazzi.length)} generati, uno per volta: tocca un nome per vedere l'altro.`;
+    frammento.append(nota);
+
     const barra = document.createElement('div');
     barra.className = 'mazzi-schede no-stampa';
     barra.setAttribute('role', 'tablist');
@@ -403,7 +427,7 @@ function elencoMazzi(piano) {
         bottone.setAttribute('aria-selected', String(Number(bottone.dataset.mazzo) === indice));
       }
       piano.mazzi.forEach((_, i) => {
-        elenco.querySelector(`#mazzo-${i}`).hidden = i !== indice;
+        elenco.querySelector(`#mazzo-${i}`).classList.toggle('mazzo-nascosto', i !== indice);
       });
     });
 

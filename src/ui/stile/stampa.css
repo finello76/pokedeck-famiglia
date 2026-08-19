@@ -82,6 +82,7 @@
   /* Stessa cosa un livello più su: a schermo, quando i mazzi sono più d'uno, si
      vede solo quello della scheda scelta. Sul foglio ci vanno tutti, o si
      stamperebbe un mazzo su tre. */
+  mazzo-generato.mazzo-nascosto,
   mazzo-generato[hidden] {
     display: block !important;
   }

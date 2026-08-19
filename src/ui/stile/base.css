@@ -680,42 +680,69 @@ button:hover {
 /* Un mazzo per volta: le schede costano un tocco e tolgono due schermate di
    scorrimento quando i mazzi sono tre o quattro. Stesso rimedio che
    <mazzo-generato> applica al proprio elenco carte, un livello più su. */
+/* "2 mazzi generati, uno per volta": si dice a parole quanti sono, perché la
+   riga di schede da sola veniva letta come un filtro — «ne mostra solo 1». */
+.conta-mazzi {
+  margin: var(--spazio) 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--colore-testo-tenue);
+}
+
+/* Le schede dei mazzi: un binario incassato con dentro le pastiglie, lo stesso
+   stampo di `.modi-ricerca` e `.quante-modo`. Prima erano chip staccati, cioè
+   la stessa faccia dei filtri per tipo del catalogo: qui invece non si filtra
+   niente, si passa da un mazzo all'altro, e la forma a segmento dice "uno di
+   questi" invece di "questi sono quelli accesi". */
 .mazzi-schede {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.2rem;
   overflow-x: auto;
-  margin-block: var(--spazio) 0.6rem;
+  margin-block: 0 0.6rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--colore-superficie-2);
   /* La riga di schede non deve far scorrere la pagina in orizzontale. */
   scrollbar-width: thin;
 }
 
 .mazzi-schede button {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
   width: auto;
-  background: var(--colore-superficie-2);
-  border: 1px solid var(--colore-bordo);
+  background: transparent;
+  border: 0;
   border-radius: 999px;
-  padding: 0.45rem 0.9rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--colore-testo-tenue);
 }
 
 .mazzi-schede button[aria-selected='true'] {
   background: var(--colore-primario);
-  border-color: var(--colore-primario);
   color: #fff;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--colore-primario) 60%, transparent);
 }
 
 /* Sopra i 46rem `.elenco-mazzi` diventa a più colonne e i mazzi ci stanno
    affiancati: lì le schede toglierebbero il confronto invece di aiutarlo.
    Stessa soglia della griglia, o si vedrebbe una scheda sola in due colonne. */
+/* Il mazzo che non è sotto la scheda scelta. Classe e non `hidden`: vedi
+   `elencoMazzi()` in `app/vista-mazzi.js` — con l'attributo, la regola qui
+   sotto che li rimette tutti in fila non riusciva a scavalcare il
+   `display: none !important` del browser. */
+.elenco-mazzi mazzo-generato.mazzo-nascosto {
+  display: none;
+}
+
 @media (min-width: 46rem) {
-  .mazzi-schede {
+  .mazzi-schede,
+  /* Là i mazzi si vedono tutti insieme, quindi "uno per volta" sarebbe falso. */
+  .conta-mazzi {
     display: none;
   }
 
-  .elenco-mazzi mazzo-generato[hidden] {
+  .elenco-mazzi mazzo-generato.mazzo-nascosto {
     display: block;
   }
 }
